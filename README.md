@@ -1,5 +1,11 @@
 # puplets
-Puplets website 
+Puplets website
+
+## Site Information
+- **Domain**: puplets.co.uk
+- **Etsy Shop**: https://www.etsy.com/shop/puplets/
+- **Hosting**: GitHub Pages
+
 # Collaboration Readme for Claude
 
 ## Overview
@@ -44,3 +50,33 @@ This document defines the workflow and expectations for collaborating with Claud
 
 ## Summary
 This collaboration promotes incremental delivery, full test coverage, and continuous feedback to build a stable, maintainable website with transparent communication and clear expectations.
+
+---
+
+## Setting Up Custom Domain (puplets.co.uk)
+
+Once the site is deployed to GitHub Pages, configure your custom domain:
+
+1. **In GitHub Repository Settings**:
+   - Go to Settings → Pages
+   - Under "Custom domain", enter: `puplets.co.uk`
+   - Click Save
+
+2. **In Your Domain Registrar DNS Settings**:
+   Add these records:
+   ```
+   Type: A
+   Name: @
+   Value: 185.199.108.153
+   Value: 185.199.109.153
+   Value: 185.199.110.153
+   Value: 185.199.111.153
+
+   Type: CNAME
+   Name: www
+   Value: mnkdog.github.io
+   ```
+
+3. **Enable HTTPS** (in GitHub Pages settings after DNS propagates)
+
+DNS propagation may take 24-48 hours.
