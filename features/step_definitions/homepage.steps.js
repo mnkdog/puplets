@@ -10,8 +10,16 @@ Then('I should see the text {string}', async function (text) {
   expect(content).to.include(text);
 });
 
-Then('I should see a link to the online store', async function () {
-  const storeLink = await this.page.locator('a[href*="store"]');
-  const count = await storeLink.count();
-  expect(count).to.be.greaterThan(0, 'No link to online store found');
+Then('I should see a link to {string}', async function (url) {
+  const link = await this.page.locator(`a[href="${url}"]`);
+  const count = await link.count();
+  expect(count).to.be.greaterThan(0, `No link to ${url} found`);
+});
+
+Then('the link text should contain {string} or {string}', async function (text1, text2) {
+  const etsyLink = await this.page.locator('a[href*="etsy.com"]');
+  const linkText = await etsyLink.textContent();
+  const lowerText = linkText.toLowerCase();
+  const containsEither = lowerText.includes(text1.toLowerCase()) || lowerText.includes(text2.toLowerCase());
+  expect(containsEither).to.be.true(`Link text "${linkText}" does not contain "${text1}" or "${text2}"`);
 });
