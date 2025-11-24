@@ -21,5 +21,5 @@ Then('the link text should contain {string} or {string}', async function (text1,
   const linkText = await etsyLink.textContent();
   const lowerText = linkText.toLowerCase();
   const containsEither = lowerText.includes(text1.toLowerCase()) || lowerText.includes(text2.toLowerCase());
-  expect(containsEither).to.be.true(`Link text "${linkText}" does not contain "${text1}" or "${text2}"`);
+  expect(containsEither, `Link text "${linkText}" does not contain "${text1}" or "${text2}"`).to.equal(true);
 });
