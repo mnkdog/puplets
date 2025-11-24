@@ -37,6 +37,12 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
+      - name: Start local server
+        run: npm run serve &
+
+      - name: Wait for server to be ready
+        run: npx wait-on http://localhost:8080 -t 30000
+
       - name: Run BDD tests
         run: npm run test:bdd
 
