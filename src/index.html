@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puplets</title>
+    <title>Puplets - Premium Dog Collars</title>
     <style>
         * {
             margin: 0;
@@ -12,72 +12,166 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F5F1ED;
+            color: #101820;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Decorative circles */
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+
+        .circle-red { background: #D6001C; width: 120px; height: 120px; top: 15%; left: 5%; }
+        .circle-blue { background: #0076CF; width: 150px; height: 150px; top: 10%; right: 10%; }
+        .circle-green { background: #00AD50; width: 100px; height: 100px; bottom: 20%; left: 8%; }
+        .circle-red-small { background: #D6001C; width: 80px; height: 80px; top: 60%; right: 15%; }
+        .circle-blue-small { background: #0076CF; width: 110px; height: 110px; bottom: 15%; right: 5%; }
+        .circle-green-small { background: #00AD50; width: 90px; height: 90px; top: 45%; left: 12%; }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+        }
+
+        .cart-button {
+            background: #101820;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s;
+        }
+
+        .cart-button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Main content */
+        .hero {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
             text-align: center;
-            padding: 20px;
+            min-height: calc(100vh - 100px);
+            padding: 2rem;
+            position: relative;
+            z-index: 5;
         }
 
-        .container {
-            max-width: 600px;
-        }
-
-        .logo {
-            margin-bottom: 2rem;
-        }
-
-        .logo img {
-            max-width: 200px;
+        .dog-illustration {
+            width: 200px;
             height: auto;
+            margin-bottom: 2rem;
+            stroke: #101820;
+            stroke-width: 2;
+            fill: none;
         }
 
         h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+            font-size: 4rem;
             font-weight: 700;
+            color: #101820;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
         }
 
-        p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
+        .tagline {
+            font-size: 1.5rem;
+            color: #5A4A42;
+            margin-bottom: 3rem;
+            max-width: 600px;
         }
 
-        .cta-button {
-            display: inline-block;
-            background: white;
-            color: #667eea;
-            padding: 1rem 2rem;
+        .shop-button {
+            background: #101820;
+            color: white;
+            padding: 1.25rem 3rem;
+            border-radius: 30px;
             text-decoration: none;
-            border-radius: 50px;
             font-weight: 600;
             font-size: 1.1rem;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(16, 24, 32, 0.2);
         }
 
-        .cta-button:hover {
+        .shop-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 6px 20px rgba(16, 24, 32, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .tagline { font-size: 1.2rem; }
+            nav { padding: 1rem 1.5rem; }
+            .circle { display: none; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">
-            <!-- Logo will be added here -->
-        </div>
+    <!-- Decorative circles -->
+    <div class="circle circle-red"></div>
+    <div class="circle circle-blue"></div>
+    <div class="circle circle-green"></div>
+    <div class="circle circle-red-small"></div>
+    <div class="circle circle-blue-small"></div>
+    <div class="circle circle-green-small"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <a href="/" class="logo-nav">
+            <svg class="logo-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20,50 Q20,30 35,25 L65,25 Q80,30 80,50 L80,70 Q80,80 70,80 L30,80 Q20,80 20,70 Z M35,40 Q35,35 40,35 Q45,35 45,40 Q45,45 40,45 Q35,45 35,40 Z M55,40 Q55,35 60,35 Q65,35 65,40 Q65,45 60,45 Q55,45 55,40 Z"
+                      stroke="#101820" stroke-width="2" fill="none"/>
+            </svg>
+            Puplets
+        </a>
+        <a href="#" class="cart-button">
+            <span>🛒</span>
+            Cart
+        </a>
+    </nav>
+
+    <!-- Hero section -->
+    <div class="hero">
+        <svg class="dog-illustration" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M40,60 L40,50 Q40,35 55,30 L145,30 Q160,35 160,50 L160,60 M60,60 L60,70 M140,60 L140,70 M50,50 Q50,45 55,45 Q60,45 60,50 M140,50 Q140,45 145,45 Q150,45 150,50"
+                  stroke="#101820" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        </svg>
 
         <h1>Puplets</h1>
-        <p>Handmade products for your furry friends</p>
-
-        <a href="https://www.etsy.com/shop/puplets/" class="cta-button">Visit Our Shop</a>
+        <p class="tagline">Premium dog collars for your beloved companion</p>
+        <a href="products.html" class="shop-button">Shop Now</a>
     </div>
 </body>
 </html>
