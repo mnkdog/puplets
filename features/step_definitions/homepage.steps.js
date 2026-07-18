@@ -49,3 +49,33 @@ Then('I should see colored elements in red, blue, and green', async function () 
   const count = await circles.count();
   expect(count).to.be.greaterThan(0, 'No colored circle elements found');
 });
+
+When('I click the {string} link in navigation', async function (linkText) {
+  await this.page.click(`nav a:has-text("${linkText}")`);
+  await this.page.waitForLoadState('networkidle');
+});
+
+Then('I should be on the about page', async function () {
+  const url = await this.page.url();
+  expect(url).to.include('about.html');
+});
+
+Given('I am on the about page', async function () {
+  await this.page.goto('http://localhost:8080/about.html');
+});
+
+Then('I should see the heading {string}', async function (headingText) {
+  const heading = await this.page.locator(`h1:has-text("${headingText}")`);
+  const count = await heading.count();
+  expect(count).to.be.greaterThan(0, `Heading "${headingText}" not found`);
+});
+
+Then('I should see text about veterinary school', async function () {
+  const content = await this.page.textContent('body');
+  expect(content).to.include('veterinary school');
+});
+
+Then('I should see text about Colchester Zoo', async function () {
+  const content = await this.page.textContent('body');
+  expect(content).to.include('Colchester Zoo');
+});
