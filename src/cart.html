@@ -251,8 +251,7 @@
             }
 
             const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-            const shipping = 3.99; // Flat rate shipping
-            const total = subtotal + shipping;
+            const total = subtotal; // Free shipping
 
             const itemsHTML = cart.map((item, index) => `
                 <div class="cart-item">
@@ -288,7 +287,7 @@
                     </div>
                     <div class="summary-row">
                         <span>Shipping</span>
-                        <span>£${shipping.toFixed(2)}</span>
+                        <span>FREE</span>
                     </div>
                     <div class="summary-row total">
                         <span>Total</span>
