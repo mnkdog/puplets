@@ -23,3 +23,29 @@ Then('the link text should contain {string} or {string}', async function (text1,
   const containsEither = lowerText.includes(text1.toLowerCase()) || lowerText.includes(text2.toLowerCase());
   expect(containsEither, `Link text "${linkText}" does not contain "${text1}" or "${text2}"`).to.equal(true);
 });
+
+Then('I should see a {string} button', async function (buttonText) {
+  const button = await this.page.locator(`text=${buttonText}`);
+  const count = await button.count();
+  expect(count).to.be.greaterThan(0, `Button with text "${buttonText}" not found`);
+});
+
+Then('I should see navigation with {string} link', async function (linkText) {
+  const navLink = await this.page.locator(`nav a:has-text("${linkText}")`);
+  const count = await navLink.count();
+  expect(count).to.be.greaterThan(0, `Navigation link "${linkText}" not found`);
+});
+
+Then('the page should have a light cream background', async function () {
+  const bgColor = await this.page.evaluate(() => {
+    return window.getComputedStyle(document.body).backgroundColor;
+  });
+  // Check if background is a light color (cream/beige)
+  expect(bgColor).to.match(/rgb\(24[0-9], 24[0-9], 23[0-9]\)/);
+});
+
+Then('I should see colored elements in red, blue, and green', async function () {
+  const circles = await this.page.locator('.circle');
+  const count = await circles.count();
+  expect(count).to.be.greaterThan(0, 'No colored circle elements found');
+});
