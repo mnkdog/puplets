@@ -6,6 +6,13 @@
     <title>Puplets - Premium Dog Collars</title>
     <link rel="icon" type="image/png" href="logo.png">
     <style>
+        @media (prefers-color-scheme: dark) {
+            link[rel="icon"] {
+                filter: invert(1);
+            }
+        }
+    </style>
+    <style>
         * {
             margin: 0;
             padding: 0;
@@ -58,6 +65,7 @@
         .logo-icon {
             width: 40px;
             height: 40px;
+            object-fit: contain;
         }
 
         .cart-button {
@@ -151,10 +159,7 @@
     <!-- Navigation -->
     <nav>
         <a href="/" class="logo-nav">
-            <svg class="logo-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20,50 Q20,30 35,25 L65,25 Q80,30 80,50 L80,70 Q80,80 70,80 L30,80 Q20,80 20,70 Z M35,40 Q35,35 40,35 Q45,35 45,40 Q45,45 40,45 Q35,45 35,40 Z M55,40 Q55,35 60,35 Q65,35 65,40 Q65,45 60,45 Q55,45 55,40 Z"
-                      stroke="#101820" stroke-width="2" fill="none"/>
-            </svg>
+            <img src="logo.png" alt="Puplets" class="logo-icon">
             Puplets
         </a>
         <a href="#" class="cart-button">
