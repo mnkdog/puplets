@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Products - Puplets</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F5F1ED;
+            color: #101820;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+
+        .cart-button {
+            background: #101820;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #5A4A42;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #5A4A42;
+            margin-bottom: 4rem;
+        }
+
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .color-swatch {
+            width: 100%;
+            height: 200px;
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+        }
+
+        .chilli { background: #D6001C; }
+        .ocean { background: #0076CF; }
+        .fern { background: #00AD50; }
+
+        .product-name {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #5A4A42;
+            margin-bottom: 1rem;
+        }
+
+        .buy-button {
+            display: inline-block;
+            background: #101820;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .buy-button:hover {
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            nav { padding: 1rem 1.5rem; }
+            .products { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo-nav">
+            <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20,50 Q20,30 35,25 L65,25 Q80,30 80,50 L80,70 Q80,80 70,80 L30,80 Q20,80 20,70 Z M35,40 Q35,35 40,35 Q45,35 45,40 Q45,45 40,45 Q35,45 35,40 Z M55,40 Q55,35 60,35 Q65,35 65,40 Q65,45 60,45 Q55,45 55,40 Z"
+                      stroke="#101820" stroke-width="2" fill="none"/>
+            </svg>
+            Puplets
+        </a>
+        <a href="https://www.etsy.com/shop/puplets/" class="cart-button">
+            <span>🛒</span>
+            Cart
+        </a>
+    </nav>
+
+    <div class="container">
+        <h1>Colours</h1>
+        <p class="subtitle">Premium waterproof dog collars in three beautiful colours</p>
+
+        <div class="products">
+            <div class="product-card">
+                <div class="color-swatch chilli"></div>
+                <h2 class="product-name">Chilli</h2>
+                <a href="https://www.etsy.com/uk/listing/4447734877/waterproof-dog-collar-with?frs=1" class="buy-button">Shop Now</a>
+            </div>
+
+            <div class="product-card">
+                <div class="color-swatch ocean"></div>
+                <h2 class="product-name">Ocean</h2>
+                <a href="https://www.etsy.com/shop/puplets/" class="buy-button">Shop Now</a>
+            </div>
+
+            <div class="product-card">
+                <div class="color-swatch fern"></div>
+                <h2 class="product-name">Fern</h2>
+                <a href="https://www.etsy.com/shop/puplets/" class="buy-button">Shop Now</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
