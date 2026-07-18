@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Puplets</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F5F1ED;
+            color: #101820;
+            line-height: 1.6;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #5A4A42;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #101820;
+        }
+
+        .cart-button {
+            background: #101820;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #5A4A42;
+            margin-bottom: 2rem;
+            line-height: 1.2;
+        }
+
+        .story {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .story p {
+            margin-bottom: 1.5rem;
+            color: #5A4A42;
+            font-size: 1.1rem;
+        }
+
+        .story p:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight {
+            font-style: italic;
+            color: #101820;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem 1.5rem;
+                flex-wrap: wrap;
+            }
+
+            .nav-links {
+                gap: 1rem;
+                font-size: 0.9rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .story {
+                padding: 2rem 1.5rem;
+            }
+
+            .story p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo-nav">
+            <img src="logo.png" alt="Puplets" class="logo-icon">
+            Puplets
+        </a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="products.html">Products</a>
+            <a href="about.html">About</a>
+            <a href="https://www.etsy.com/shop/puplets/" class="cart-button">
+                <span>🛒</span>
+                Cart
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>A Future Vet's Mission to Make Safe Wearable Art for Dogs</h1>
+
+        <div class="story">
+            <p class="highlight">It all started with a simple question: Why does pet safety have to look so boring?</p>
+
+            <p>As a lifelong animal lover about to start my journey into veterinary school, I've always wanted to be surrounded by animals. Whether I was working hard at Colchester Zoo soaking up the vibrant wildlife atmosphere, or getting stuck into the hands-on care of beloved family pets at the local dog kennels, I learned firsthand just how unique every single animal's personality is. Our dogs give us so much joy, so why are they all wearing the exact same mass-produced, purely utilitarian collars? I wanted to create something that let pets show off their distinct spirit without ever compromising on their well-being.</p>
+
+            <p>That's how the idea of interchangeable collar charms was born. But turning a sketch into a safe reality meant doing things the right way. Driven by my love for animals and a lot of determination, I threw myself into the deep end of product development at 19. I spent months researching the market, studying materials, and designing a charm system built strictly around rigorous pet safety standards.</p>
+
+            <p>I didn't take shortcuts. I ordered prototypes, tested early samples in real-world conditions, and vetted dozens of manufacturers until I found the perfect partner who shared my commitment to quality.</p>
+
+            <p>Today, every single piece we sell is a labour of love, designed to bring a little extra joy to your daily walks. Thank you for supporting a young entrepreneur, a future vet, and most importantly, a fellow dog devotee. Let's make the world a little brighter, one charm at a time!</p>
+        </div>
+    </div>
+</body>
+</html>
