@@ -87,6 +87,71 @@
             font-weight: 600;
         }
 
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #101820;
+            border-radius: 2px;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .mobile-menu.active {
+            display: block;
+        }
+
+        .mobile-menu-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background: white;
+            padding: 2rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        .mobile-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .mobile-menu-links a {
+            color: #101820;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -138,12 +203,18 @@
         @media (max-width: 768px) {
             nav {
                 padding: 1rem 1.5rem;
-                flex-wrap: wrap;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-links a:not(.cart-button) {
+                display: none;
             }
 
             .nav-links {
                 gap: 1rem;
-                font-size: 0.9rem;
             }
 
             h1 {
@@ -166,10 +237,17 @@
 </head>
 <body>
     <nav>
-        <a href="/" class="logo-nav">
-            <img src="logo.png" alt="Puplets" class="logo-icon">
-            Puplets
-        </a>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo-nav">
+                <img src="logo.png" alt="Puplets" class="logo-icon">
+                Puplets
+            </a>
+        </div>
         <div class="nav-links">
             <a href="/">Home</a>
             <a href="products.html">Products</a>
@@ -181,6 +259,18 @@
             </a>
         </div>
     </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="about.html">About</a>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
         <h1>A Future Vet's Mission to Make Safe Wearable Art for Dogs</h1>
@@ -212,6 +302,19 @@
                 countElement.style.display = 'flex';
             }
         });
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+
+        function closeMobileMenu(event) {
+            if (!event || event.target === event.currentTarget) {
+                const menu = document.getElementById('mobileMenu');
+                menu.classList.remove('active');
+            }
+        }
     </script>
 </body>
 </html>
