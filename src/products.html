@@ -215,10 +215,19 @@
         }
 
         .product-price {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #5A4A42;
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .product-price .total {
             font-size: 2rem;
             font-weight: 700;
             color: #101820;
-            margin-bottom: 2rem;
+            display: block;
+            margin-top: 0.5rem;
         }
 
         .product-options {
@@ -297,7 +306,7 @@
 
         .extra-charms-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 1rem;
             margin-top: 1rem;
         }
@@ -395,7 +404,11 @@
 
             <div class="product-info">
                 <h1>Waterproof Dog Collar with Free Charm</h1>
-                <div class="product-price">£<span id="currentPrice">17.99</span></div>
+                <div class="product-price">
+                    <div id="priceBreakdown">
+                        <span class="total">Select size to see price</span>
+                    </div>
+                </div>
 
                 <div class="product-options">
                     <div class="option-group">
@@ -492,6 +505,7 @@
             setupPriceUpdate();
             setupExtraCharms();
             updateCartCount();
+            loadEditingItem();
         });
 
         // Image gallery
@@ -578,11 +592,21 @@
             const sizeSelect = document.getElementById('size');
             const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
             const basePrice = selectedOption.dataset.price ? parseFloat(selectedOption.dataset.price) : 0;
-            const extraCharmsTotal = selectedExtraCharms.size * charmPrice;
+            const extraCharmsCount = selectedExtraCharms.size;
+            const extraCharmsTotal = extraCharmsCount * charmPrice;
             const totalPrice = basePrice + extraCharmsTotal;
 
+            const breakdownDiv = document.getElementById('priceBreakdown');
+
             if (basePrice > 0) {
-                document.getElementById('currentPrice').textContent = totalPrice.toFixed(2);
+                let breakdown = `Collar (£${basePrice.toFixed(2)})`;
+                if (extraCharmsCount > 0) {
+                    breakdown += ` + ${extraCharmsCount} charm${extraCharmsCount > 1 ? 's' : ''} (£${extraCharmsTotal.toFixed(2)})`;
+                }
+                breakdown += `<span class="total">Total £${totalPrice.toFixed(2)}, including free shipping</span>`;
+                breakdownDiv.innerHTML = breakdown;
+            } else {
+                breakdownDiv.innerHTML = '<span class="total">Select size to see price</span>';
             }
         }
 
@@ -623,7 +647,9 @@
             const color = document.getElementById('color').value;
             const size = document.getElementById('size').value;
             const charm = document.getElementById('charm').value;
-            const price = parseFloat(document.getElementById('currentPrice').textContent);
+            const sizeSelect = document.getElementById('size');
+            const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+            const basePrice = parseFloat(selectedOption.dataset.price);
 
             const cartItem = {
                 id: Date.now(),
@@ -632,13 +658,23 @@
                 size: size.toUpperCase(),
                 charm: charm,
                 extraCharms: Array.from(selectedExtraCharms),
-                price: price,
+                price: basePrice,
                 extraCharmsPrice: selectedExtraCharms.size * charmPrice,
-                total: price + (selectedExtraCharms.size * charmPrice)
+                total: basePrice + (selectedExtraCharms.size * charmPrice)
             };
 
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            cart.push(cartItem);
+
+            // Check if editing an existing item
+            const editingData = localStorage.getItem('editingItem');
+            if (editingData) {
+                const { index } = JSON.parse(editingData);
+                cart[index] = cartItem;
+                localStorage.removeItem('editingItem');
+            } else {
+                cart.push(cartItem);
+            }
+
             localStorage.setItem('cart', JSON.stringify(cart));
 
             updateCartCount();
@@ -654,6 +690,39 @@
             } else {
                 countElement.style.display = 'none';
             }
+        }
+
+        function loadEditingItem() {
+            const editingData = localStorage.getItem('editingItem');
+            if (!editingData) return;
+
+            const { item, index } = JSON.parse(editingData);
+
+            // Pre-fill form
+            document.getElementById('color').value = item.color;
+            document.getElementById('size').value = item.size.toLowerCase();
+            document.getElementById('charm').value = item.charm;
+
+            // Trigger price update
+            const event = new Event('change');
+            document.getElementById('size').dispatchEvent(event);
+
+            // Pre-select extra charms
+            setTimeout(() => {
+                item.extraCharms.forEach(charmId => {
+                    const charmDiv = document.querySelector(`[data-charm="${charmId}"]`);
+                    if (charmDiv) {
+                        selectedExtraCharms.add(charmId);
+                        charmDiv.classList.add('selected');
+                    }
+                });
+                updateTotalPrice();
+            }, 100);
+
+            // Change button text to "Update Basket"
+            const addButton = document.getElementById('addToBasket');
+            addButton.textContent = 'Update Basket';
+            addButton.disabled = false;
         }
     </script>
 </body>

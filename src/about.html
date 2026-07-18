@@ -68,6 +68,23 @@
             border-radius: 25px;
             text-decoration: none;
             font-weight: 500;
+            position: relative;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
 
         .container {
@@ -160,6 +177,7 @@
             <a href="cart.html" class="cart-button">
                 <span>🛒</span>
                 Cart
+                <span class="cart-count" id="cartCount" style="display: none;">0</span>
             </a>
         </div>
     </nav>
@@ -183,5 +201,17 @@
             <p>Today, every single piece we sell is a labour of love, designed to bring a little extra joy to your daily walks. Thank you for supporting a young entrepreneur, a future vet, and most importantly, a fellow dog devotee. Let's make the world a little brighter, one charm at a time!</p>
         </div>
     </div>
+
+    <script>
+        // Update cart count on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countElement = document.getElementById('cartCount');
+            if (cart.length > 0) {
+                countElement.textContent = cart.length;
+                countElement.style.display = 'flex';
+            }
+        });
+    </script>
 </body>
 </html>

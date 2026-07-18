@@ -72,10 +72,27 @@
             align-items: center;
             gap: 0.5rem;
             transition: transform 0.2s;
+            position: relative;
         }
 
         .cart-button:hover {
             transform: translateY(-2px);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
 
         /* Main content */
@@ -168,6 +185,7 @@
             <a href="cart.html" class="cart-button">
                 <span>🛒</span>
                 Cart
+                <span class="cart-count" id="cartCount" style="display: none;">0</span>
             </a>
         </div>
     </nav>
@@ -180,5 +198,17 @@
         <p class="tagline">Premium dog collars for your beloved companion</p>
         <a href="products.html" class="shop-button">Shop Now</a>
     </div>
+
+    <script>
+        // Update cart count on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countElement = document.getElementById('cartCount');
+            if (cart.length > 0) {
+                countElement.textContent = cart.length;
+                countElement.style.display = 'flex';
+            }
+        });
+    </script>
 </body>
 </html>

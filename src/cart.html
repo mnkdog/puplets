@@ -271,7 +271,10 @@
                     </div>
                     <div class="item-price">
                         <div class="price">£${item.total.toFixed(2)}</div>
-                        <span class="remove" onclick="removeItem(${index})">Remove</span>
+                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                            <span class="remove" onclick="editItem(${index})" style="color: #0076CF;">Edit</span>
+                            <span class="remove" onclick="removeItem(${index})">Remove</span>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -315,6 +318,17 @@
             cart.splice(index, 1);
             localStorage.setItem('cart', JSON.stringify(cart));
             renderCart();
+        }
+
+        function editItem(index) {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const item = cart[index];
+
+            // Store item for editing and its index
+            localStorage.setItem('editingItem', JSON.stringify({ item, index }));
+
+            // Redirect to products page
+            window.location.href = 'products.html';
         }
 
         function proceedToCheckout() {
