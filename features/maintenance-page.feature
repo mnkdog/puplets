@@ -1,7 +1,8 @@
-Feature: Puplets Homepage
+@skip
+Feature: Puplets Maintenance Page (Old - Not Used)
   As a visitor
-  I want to see the Puplets business card website
-  So that I can learn about Puplets and visit their Etsy store
+  I want to see a maintenance page
+  When the site is being updated
 
   Scenario: Homepage displays company name
     Given I am on the homepage
