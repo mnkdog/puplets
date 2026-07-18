@@ -100,12 +100,82 @@
             border-radius: 15px;
             background: white;
             padding: 2rem;
+            position: relative;
         }
 
         .main-image img, .main-image video {
             width: 100%;
             height: auto;
             border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .image-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(16, 24, 32, 0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: background 0.2s;
+        }
+
+        .image-nav:hover {
+            background: rgba(16, 24, 32, 0.9);
+        }
+
+        .image-nav.prev {
+            left: 1rem;
+        }
+
+        .image-nav.next {
+            right: 1rem;
+        }
+
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90vh;
+            border-radius: 10px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 3rem;
+            font-weight: 100;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .lightbox-close:hover {
+            opacity: 0.7;
         }
 
         .thumbnail-grid {
@@ -303,7 +373,9 @@
         <div class="product-layout">
             <div class="product-images">
                 <div class="main-image">
-                    <img id="mainImage" src="prod-1.jpg" alt="Waterproof Dog Collar">
+                    <button class="image-nav prev" onclick="navigateImage(-1)">‹</button>
+                    <img id="mainImage" src="prod-1.jpg" alt="Waterproof Dog Collar" onclick="openLightbox()">
+                    <button class="image-nav next" onclick="navigateImage(1)">›</button>
                 </div>
                 <div class="thumbnail-grid">
                     <div class="thumbnail active" data-src="prod-1.jpg"><img src="prod-1.jpg" alt="View 1"></div>
@@ -390,6 +462,12 @@
         </div>
     </div>
 
+    <!-- Lightbox for enlarged images -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <span class="lightbox-close">&times;</span>
+        <img id="lightboxImage" src="" alt="Enlarged view">
+    </div>
+
     <script>
         // Product data
         const prices = {
@@ -417,17 +495,49 @@
         });
 
         // Image gallery
+        let currentImageIndex = 0;
+        let imageList = [];
+
         function setupImageGallery() {
             const thumbnails = document.querySelectorAll('.thumbnail');
             const mainImage = document.getElementById('mainImage');
 
-            thumbnails.forEach(thumb => {
+            // Build image list
+            imageList = Array.from(thumbnails).map(t => t.dataset.src);
+
+            thumbnails.forEach((thumb, index) => {
                 thumb.addEventListener('click', () => {
                     thumbnails.forEach(t => t.classList.remove('active'));
                     thumb.classList.add('active');
                     mainImage.src = thumb.dataset.src;
+                    currentImageIndex = index;
                 });
             });
+        }
+
+        function navigateImage(direction) {
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            currentImageIndex = (currentImageIndex + direction + imageList.length) % imageList.length;
+
+            thumbnails.forEach(t => t.classList.remove('active'));
+            thumbnails[currentImageIndex].classList.add('active');
+
+            const mainImage = document.getElementById('mainImage');
+            mainImage.src = imageList[currentImageIndex];
+        }
+
+        function openLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImage = document.getElementById('lightboxImage');
+            const mainImage = document.getElementById('mainImage');
+
+            lightboxImage.src = mainImage.src;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
         }
 
         // Form validation

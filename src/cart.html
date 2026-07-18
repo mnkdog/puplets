@@ -264,7 +264,8 @@
                         </div>
                         ${item.extraCharms.length > 0 ? `
                             <div class="extra-charms-list">
-                                + ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)})
+                                <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
+                                ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
                             </div>
                         ` : ''}
                     </div>
