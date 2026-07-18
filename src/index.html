@@ -95,6 +95,18 @@
             font-weight: 600;
         }
 
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #5A4A42;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
         /* Main content */
         .hero {
             display: flex;
@@ -152,7 +164,15 @@
         @media (max-width: 768px) {
             h1 { font-size: 2.5rem; }
             .tagline { font-size: 1.2rem; }
-            nav { padding: 1rem 1.5rem; }
+            nav {
+                padding: 1rem 1.5rem;
+                flex-wrap: wrap;
+            }
+
+            .nav-links {
+                gap: 1rem;
+                font-size: 0.9rem;
+            }
 
             /* Adjust circles for mobile */
             .circle-red { width: 80px; height: 80px; top: 10%; left: -20px; }
@@ -179,9 +199,9 @@
             <img src="logo.png" alt="Puplets" class="logo-icon">
             Puplets
         </a>
-        <div style="display: flex; gap: 2rem; align-items: center;">
-            <a href="products.html" style="color: #5A4A42; text-decoration: none; font-weight: 500;">Products</a>
-            <a href="about.html" style="color: #5A4A42; text-decoration: none; font-weight: 500;">About</a>
+        <div class="nav-links">
+            <a href="products.html">Products</a>
+            <a href="about.html">About</a>
             <a href="cart.html" class="cart-button">
                 <span>🛒</span>
                 Cart
