@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Dog body -->
+  <path d="M 40 80 L 40 60 Q 40 50 50 50 L 70 50 L 70 45 Q 70 40 75 40 L 85 40 Q 90 40 90 45 L 90 50 L 150 50 Q 160 50 160 60 L 160 100 L 150 110 L 130 110 L 130 105 L 120 105 L 120 110 L 100 110 L 100 105 L 90 105 L 90 110 L 70 110 L 70 105 L 60 105 L 60 110 L 50 110 L 40 100 Z"/>
+
+  <!-- Collar -->
+  <rect x="70" y="55" width="80" height="8" rx="2"/>
+</svg>
