@@ -511,6 +511,12 @@
             .extra-charms-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+
+            /* Ensure touch-friendly tap targets */
+            button, select {
+                min-height: 44px;
+                padding: 0.75rem;
+            }
         }
     </style>
 </head>

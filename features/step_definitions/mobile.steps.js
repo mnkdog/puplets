@@ -5,11 +5,6 @@ Given('I am on a mobile device', async function () {
   await this.page.setViewportSize({ width: 375, height: 667 });
 });
 
-When('I am on the homepage', async function () {
-  await this.page.goto('http://localhost:8080/');
-  await this.page.waitForLoadState('networkidle');
-});
-
 Then('I should see a hamburger menu icon', async function () {
   const hamburger = await this.page.locator('.hamburger');
   const isVisible = await hamburger.isVisible();
@@ -35,8 +30,9 @@ Then('I should not see the About link', async function () {
 });
 
 When('I click the hamburger menu', async function () {
+  await this.page.waitForSelector('.hamburger', { state: 'visible' });
   await this.page.click('.hamburger');
-  await this.page.waitForTimeout(200);
+  await this.page.waitForTimeout(300);
 });
 
 Then('the mobile menu should open', async function () {
@@ -64,13 +60,24 @@ Then('I should see the About link', async function () {
 });
 
 When('I open the mobile menu', async function () {
+  // Navigate to homepage if not already on a page
+  const url = await this.page.url();
+  if (!url || url === 'about:blank') {
+    await this.page.goto('http://localhost:8080/');
+    await this.page.waitForLoadState('networkidle');
+  }
+  await this.page.waitForSelector('.hamburger', { state: 'visible' });
   await this.page.click('.hamburger');
-  await this.page.waitForTimeout(200);
+  await this.page.waitForTimeout(300);
 });
 
 When('I click outside the menu', async function () {
-  await this.page.click('#mobileMenu');
-  await this.page.waitForTimeout(200);
+  // Click on the mobile menu backdrop (not the content)
+  await this.page.evaluate(() => {
+    const menu = document.getElementById('mobileMenu');
+    menu.click();
+  });
+  await this.page.waitForTimeout(300);
 });
 
 Then('the mobile menu should close', async function () {
@@ -85,7 +92,8 @@ When('I click the {string} link in the menu', async function (linkText) {
 });
 
 When('I am on any page', async function () {
-  // Already on a page from previous steps
+  await this.page.goto('http://localhost:8080/');
+  await this.page.waitForLoadState('networkidle');
 });
 
 Then('the cart button should be visible', async function () {

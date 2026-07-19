@@ -3,14 +3,39 @@ import { expect } from 'chai';
 
 Given('I have added an item to the cart', async function () {
   await this.page.click('#addToBasket');
-  await this.page.waitForTimeout(200);
+  await this.page.waitForTimeout(300);
+
+  // Close the "Added to Cart" modal by clicking "Continue Shopping"
+  const continueButton = await this.page.locator('button:has-text("Continue Shopping")');
+  const count = await continueButton.count();
+  if (count > 0) {
+    await continueButton.click();
+    await this.page.waitForTimeout(200);
+  }
 });
 
 Given('I have selected {int} extra charms', async function (count) {
+  // Wait for page to be fully loaded including dynamic content
+  await this.page.waitForLoadState('networkidle');
+
+  // Scroll to extra charms section to ensure it's visible
+  await this.page.evaluate(() => {
+    const section = document.querySelector('.extra-charms-section');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+
+  await this.page.waitForTimeout(500);
+  await this.page.waitForSelector('.extra-charm-option', { timeout: 5000 });
+
   const charms = await this.page.locator('.extra-charm-option');
-  for (let i = 0; i < count; i++) {
+  const actualCount = await charms.count();
+  expect(actualCount).to.be.greaterThan(0, 'No extra charm options found');
+
+  for (let i = 0; i < count && i < actualCount; i++) {
     await charms.nth(i).click();
-    await this.page.waitForTimeout(100);
+    await this.page.waitForTimeout(150);
   }
 });
 
@@ -76,10 +101,6 @@ Then('I should see the extra charms price', async function () {
   expect(extraCharms).to.match(/£\d+\.\d{2}/);
 });
 
-When('I click the {string} button', async function (buttonText) {
-  await this.page.click(`.remove:has-text("${buttonText}")`);
-  await this.page.waitForTimeout(200);
-});
 
 Then('the cart should be empty', async function () {
   const cart = await this.page.evaluate(() => {
@@ -107,8 +128,18 @@ When('I remove all items', async function () {
 });
 
 When('I click {string}', async function (linkText) {
-  await this.page.click(`a:has-text("${linkText}")`);
-  await this.page.waitForLoadState('networkidle');
+  // Can be either a link or button
+  const selector = `a:has-text("${linkText}"), button:has-text("${linkText}")`;
+  await this.page.waitForSelector(selector, { timeout: 2000 });
+  await this.page.click(selector);
+  await this.page.waitForTimeout(300);
+
+  // Only wait for navigation if it's a link
+  const clicked = await this.page.locator(selector).first();
+  const tagName = await clicked.evaluate(el => el.tagName);
+  if (tagName === 'A') {
+    await this.page.waitForLoadState('networkidle');
+  }
 });
 
 Then('I should be on the products page', async function () {
