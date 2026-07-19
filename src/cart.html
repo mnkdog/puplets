@@ -320,11 +320,24 @@
     <div class="container">
         <h1>Shopping Cart</h1>
 
+        <div id="notification" style="display: none; background: #FFF3CD; border: 2px solid #FFC107; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: #856404;"></div>
+
         <div id="cartContent"></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Check if payment was cancelled
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('cancelled') === 'true') {
+                const notification = document.getElementById('notification');
+                notification.textContent = 'Payment was cancelled. Your items are still in your cart.';
+                notification.style.display = 'block';
+
+                // Remove the parameter from URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
             renderCart();
         });
 
@@ -423,9 +436,47 @@
             window.location.href = 'collar.html';
         }
 
-        function proceedToCheckout() {
-            alert('Stripe integration coming soon! For now, please visit our Etsy shop to complete your purchase.');
-            window.location.href = 'https://www.etsy.com/shop/puplets/';
+        async function proceedToCheckout() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+            if (cart.length === 0) {
+                alert('Your cart is empty');
+                return;
+            }
+
+            // Show loading state
+            const checkoutButton = document.querySelector('.checkout-button');
+            const originalText = checkoutButton.textContent;
+            checkoutButton.textContent = 'Loading...';
+            checkoutButton.disabled = true;
+
+            try {
+                // Call Stripe API to create checkout session
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        items: cart
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create checkout session');
+                }
+
+                const { url } = await response.json();
+
+                // Redirect to Stripe Checkout
+                window.location.href = url;
+
+            } catch (error) {
+                console.error('Checkout error:', error);
+                alert('Sorry, there was an error processing your checkout. Please try again.');
+                checkoutButton.textContent = originalText;
+                checkoutButton.disabled = false;
+            }
         }
 
         // Mobile menu toggle
