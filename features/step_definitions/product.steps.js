@@ -94,12 +94,7 @@ Given('I have selected a colour, size, and free charm', async function () {
   await this.page.selectOption('select[name="charm"]', { index: 1 });
 });
 
-When('I click the {string} button', async function (buttonText) {
-  // Try to find either a button element or .remove link with this text
-  const selector = `button:has-text("${buttonText}"), .remove:has-text("${buttonText}")`;
-  await this.page.click(selector);
-  await this.page.waitForTimeout(200);
-});
+// Removed duplicate - using implementation from checkout.steps.js
 
 Then('the item should be added to my cart', async function () {
   const cartItems = await this.page.evaluate(() => {

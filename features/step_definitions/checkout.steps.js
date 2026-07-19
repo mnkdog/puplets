@@ -15,7 +15,7 @@ Then('the button should not be disabled', async function () {
 
 When('I click the {string} button', async function (buttonText) {
   // For checkout button, we need to intercept the API call since we can't actually process Stripe in tests
-  if (buttonText === 'Checkout') {
+  if (buttonText === 'Checkout' || buttonText === 'Proceed to Checkout') {
     // Mock the Stripe API response
     await this.page.route('**/api/create-checkout-session', async route => {
       await route.fulfill({
@@ -29,7 +29,8 @@ When('I click the {string} button', async function (buttonText) {
     });
   }
 
-  const selector = `button:has-text("${buttonText}"), .checkout-button`;
+  // Handle different button types: button elements, links with .remove class, or other clickable elements
+  const selector = `button:has-text("${buttonText}"), .remove:has-text("${buttonText}"), a:has-text("${buttonText}"), .checkout-button:has-text("${buttonText}")`;
   await this.page.click(selector);
   await this.page.waitForTimeout(500);
 });
