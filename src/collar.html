@@ -707,6 +707,17 @@
         let currentImageIndex = 0;
         let imageList = [];
 
+        function updateMainImage(imageSrc) {
+            const mainImage = document.getElementById('mainImage');
+            mainImage.src = imageSrc;
+
+            // Update current index
+            const index = imageList.indexOf(imageSrc);
+            if (index !== -1) {
+                currentImageIndex = index;
+            }
+        }
+
         function setupImageGallery() {
             const thumbnails = document.querySelectorAll('.thumbnail');
             const mainImage = document.getElementById('mainImage');
