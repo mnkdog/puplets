@@ -2,7 +2,7 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
 
 Given('I am on a product page', async function () {
-  await this.page.goto('http://localhost:8080/products.html');
+  await this.page.goto('http://localhost:8080/collar.html');
   await this.page.waitForLoadState('networkidle');
 });
 
@@ -158,7 +158,7 @@ Then('the {string} button should show {string}', async function (buttonName, but
 
 Given('I am viewing the product page on a mobile device', async function () {
   await this.page.setViewportSize({ width: 375, height: 667 });
-  await this.page.goto('http://localhost:8080/products.html');
+  await this.page.goto('http://localhost:8080/collar.html');
   await this.page.waitForLoadState('networkidle');
 });
 

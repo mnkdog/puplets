@@ -29,7 +29,7 @@ Feature: Mobile Navigation
   Scenario: Navigating from mobile menu
     When I open the mobile menu
     And I click the "Products" link in the menu
-    Then I should be on the products page
+    Then I should be on the products catalog page
     And the mobile menu should close
 
   Scenario: Cart button visible on mobile
