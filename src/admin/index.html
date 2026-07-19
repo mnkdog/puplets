@@ -9,5 +9,35 @@
 <body>
   <!-- Include the script that builds the page and powers Decap CMS -->
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <script>
+    // Force CMS to load config from explicit path
+    window.CMS_MANUAL_INIT = true;
+
+    fetch('/admin/config.yml')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to load config: ${response.status} ${response.statusText}`);
+        }
+        return response.text();
+      })
+      .then(configYaml => {
+        // Parse YAML and init CMS
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js';
+        script.onload = () => {
+          const config = jsyaml.load(configYaml);
+          window.CMS.init({ config });
+        };
+        document.head.appendChild(script);
+      })
+      .catch(error => {
+        console.error('CMS config load error:', error);
+        document.body.innerHTML = `<div style="padding: 20px; font-family: sans-serif;">
+          <h1>Error Loading CMS</h1>
+          <p>Failed to load config.yml: ${error.message}</p>
+          <p>Config URL: <a href="/admin/config.yml">/admin/config.yml</a></p>
+        </div>`;
+      });
+  </script>
 </body>
 </html>
