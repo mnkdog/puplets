@@ -5,9 +5,168 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex" />
   <title>Puplets Admin</title>
+  <script>
+    window.CMS_MANUAL_INIT = true;
+  </script>
 </head>
 <body>
   <!-- Include the script that builds the page and powers Decap CMS -->
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <script>
+    CMS.init({
+      config: {
+        backend: {
+          name: 'test-repo'
+        },
+        media_folder: 'src/images/uploads',
+        public_folder: '/images/uploads',
+        collections: [
+          {
+            name: 'blog',
+            label: 'Blog Posts',
+            folder: 'src/blog',
+            create: true,
+            slug: '{{year}}-{{month}}-{{day}}-{{slug}}',
+            fields: [
+              { label: 'Title', name: 'title', widget: 'string' },
+              { label: 'Publish Date', name: 'date', widget: 'datetime' },
+              { label: 'Author', name: 'author', widget: 'string', default: 'Puplets Team' },
+              { label: 'Featured Image', name: 'featured_image', widget: 'image', required: false },
+              { label: 'Description', name: 'description', widget: 'text', required: false },
+              { label: 'Body', name: 'body', widget: 'markdown' },
+              { label: 'Categories', name: 'categories', widget: 'list', required: false },
+              { label: 'Tags', name: 'tags', widget: 'list', required: false },
+              { label: 'Published', name: 'published', widget: 'boolean', default: true }
+            ]
+          },
+          {
+            name: 'pages',
+            label: 'Pages',
+            folder: 'src/pages',
+            create: true,
+            slug: '{{slug}}',
+            fields: [
+              { label: 'Title', name: 'title', widget: 'string' },
+              { label: 'Description', name: 'description', widget: 'text', required: false },
+              { label: 'Featured Image', name: 'featured_image', widget: 'image', required: false },
+              { label: 'Body', name: 'body', widget: 'markdown' },
+              { label: 'Template', name: 'template', widget: 'select', options: ['page', 'full-width'], default: 'page' }
+            ]
+          },
+          {
+            name: 'about',
+            label: 'About Page',
+            files: [
+              {
+                label: 'About',
+                name: 'about',
+                file: 'src/content/about.md',
+                fields: [
+                  { label: 'Title', name: 'title', widget: 'string' },
+                  { label: 'Heading', name: 'heading', widget: 'string' },
+                  { label: 'Image', name: 'image', widget: 'image', required: false },
+                  { label: 'Content', name: 'body', widget: 'markdown' }
+                ]
+              }
+            ]
+          },
+          {
+            name: 'products-collars',
+            label: 'Products - Collars',
+            folder: 'src/products/collars',
+            create: true,
+            slug: '{{slug}}',
+            fields: [
+              { label: 'Product Name', name: 'name', widget: 'string' },
+              { label: 'Description', name: 'description', widget: 'markdown' },
+              { label: 'Base Price', name: 'base_price', widget: 'number', value_type: 'float' },
+              { label: 'Images', name: 'images', widget: 'list', field: { label: 'Image', name: 'image', widget: 'image' } },
+              {
+                label: 'Sizes',
+                name: 'sizes',
+                widget: 'list',
+                fields: [
+                  { label: 'Size', name: 'size', widget: 'string' },
+                  { label: 'Measurements (cm)', name: 'measurements_cm', widget: 'string' },
+                  { label: 'Measurements (inches)', name: 'measurements_in', widget: 'string' },
+                  { label: 'Price', name: 'price', widget: 'number', value_type: 'float' }
+                ]
+              },
+              {
+                label: 'Colors',
+                name: 'colors',
+                widget: 'list',
+                fields: [
+                  { label: 'Color Name', name: 'name', widget: 'string' },
+                  { label: 'Color Code', name: 'code', widget: 'string' }
+                ]
+              },
+              { label: 'In Stock', name: 'in_stock', widget: 'boolean', default: true }
+            ]
+          },
+          {
+            name: 'products-charms',
+            label: 'Products - Charms',
+            folder: 'src/products/charms',
+            create: true,
+            slug: '{{slug}}',
+            fields: [
+              { label: 'Charm Name', name: 'name', widget: 'string' },
+              { label: 'Description', name: 'description', widget: 'text', required: false },
+              { label: 'Price', name: 'price', widget: 'number', value_type: 'float', default: 3.99 },
+              { label: 'Image', name: 'image', widget: 'image' },
+              { label: 'In Stock', name: 'in_stock', widget: 'boolean', default: true },
+              { label: 'Order', name: 'order', widget: 'number', default: 0, hint: 'Order in which charm appears (0 = first)' }
+            ]
+          },
+          {
+            name: 'settings',
+            label: 'Site Settings',
+            files: [
+              {
+                label: 'General Settings',
+                name: 'general',
+                file: 'src/content/settings.json',
+                fields: [
+                  { label: 'Site Title', name: 'site_title', widget: 'string' },
+                  { label: 'Site Description', name: 'site_description', widget: 'text' },
+                  { label: 'Footer Text', name: 'footer_text', widget: 'text' },
+                  {
+                    label: 'Navigation',
+                    name: 'navigation',
+                    widget: 'list',
+                    fields: [
+                      { label: 'Link Text', name: 'text', widget: 'string' },
+                      { label: 'Link URL', name: 'url', widget: 'string' }
+                    ]
+                  },
+                  {
+                    label: 'Social Media',
+                    name: 'social',
+                    widget: 'object',
+                    fields: [
+                      { label: 'Instagram', name: 'instagram', widget: 'string', required: false },
+                      { label: 'Facebook', name: 'facebook', widget: 'string', required: false },
+                      { label: 'Etsy', name: 'etsy', widget: 'string', required: false }
+                    ]
+                  },
+                  {
+                    label: 'Shipping',
+                    name: 'shipping',
+                    widget: 'object',
+                    fields: [
+                      { label: 'Free Shipping', name: 'free_shipping', widget: 'boolean', default: true },
+                      { label: 'Delivery Time', name: 'delivery_time', widget: 'string', default: '3-7 business days' },
+                      { label: 'Countries', name: 'countries', widget: 'list', required: false }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    });
+  </script>
 </body>
 </html>
