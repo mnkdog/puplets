@@ -2,7 +2,7 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
 
 Then('I should see a {string} button', async function (buttonText) {
-  const button = await this.page.locator(`button:has-text("${buttonText}"), .checkout-button:has-text("${buttonText}")`);
+  const button = await this.page.locator(`button:has-text("${buttonText}"), .checkout-button:has-text("${buttonText}"), .shop-button:has-text("${buttonText}"), a:has-text("${buttonText}")`);
   const count = await button.count();
   expect(count).to.be.greaterThan(0, `Button "${buttonText}" not found`);
 });
