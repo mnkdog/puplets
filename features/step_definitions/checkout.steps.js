@@ -145,11 +145,11 @@ Given('I have {int} items in my cart', async function (count) {
 
 Then('all cart items should be included in the Stripe session', async function () {
   // This would require intercepting the API call and checking the payload
-  // For now, we just verify items exist in cart
+  // For now, we just verify items exist in cart and match expected count
   const cart = await this.page.evaluate(() => {
     return JSON.parse(localStorage.getItem('cart') || '[]');
   });
-  expect(cart.length).to.be.greaterThan(0);
+  expect(cart.length).to.be.greaterThanOrEqual(2, 'Should have at least 2 items in cart');
 });
 
 Then('the total amount should match the cart total', async function () {
@@ -201,7 +201,8 @@ Then('both product types should be in the Stripe session', async function () {
     return JSON.parse(localStorage.getItem('cart') || '[]');
   });
 
-  const hasCollar = cart.some(item => item.type === 'collar');
+  // Collar items have 'product' field, charm items have type: 'charm'
+  const hasCollar = cart.some(item => item.product || (item.type !== 'charm' && item.color));
   const hasCharm = cart.some(item => item.type === 'charm');
 
   expect(hasCollar).to.equal(true, 'Should have collar in cart');
