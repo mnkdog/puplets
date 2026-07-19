@@ -1,9 +1,10 @@
 // Stripe Checkout Session API
 // This serverless function creates a Stripe checkout session for the cart items
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   // CORS headers for local testing
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
