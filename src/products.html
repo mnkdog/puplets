@@ -588,10 +588,10 @@
         const charmPrice = 3.99;
 
         const extraCharms = [
-            'Llama', 'Bone', 'Hotdog', 'Cactus', 'Paw with hearts',
-            'Green bow', 'Pizza', 'Pink balloon dog', 'Pink bow', 'Rocket',
-            'Beach ball', 'Strawberry', 'Blue balloon dog', 'White paw', 'Smiley face',
-            'Duck', 'Football', 'Cowboy hat', 'Pink lightning', 'Leopard heart'
+            'Strawberry', 'Pink bow', 'White paw', 'Pink balloon dog', 'Pink lightning',
+            'Hotdog', 'Cactus', 'Llama', 'Pizza', 'Paw with hearts',
+            'Blue balloon dog', 'Duck', 'Cowboy hat', 'Beach ball', 'Rocket',
+            'Leopard heart', 'Green bow', 'Bone', 'Smiley face', 'Football'
         ];
 
         // Initialize
@@ -700,6 +700,11 @@
                     breakdown += ` + ${extraCharmsCount} charm${extraCharmsCount > 1 ? 's' : ''} (£${extraCharmsTotal.toFixed(2)})`;
                 }
                 breakdown += `<span class="total">Total £${totalPrice.toFixed(2)}, including free shipping</span>`;
+                breakdownDiv.innerHTML = breakdown;
+            } else if (extraCharmsCount > 0) {
+                // Show extra charms price even without collar selected
+                let breakdown = `Select collar size + ${extraCharmsCount} charm${extraCharmsCount > 1 ? 's' : ''} (£${extraCharmsTotal.toFixed(2)})`;
+                breakdown += `<span class="total">Total £${extraCharmsTotal.toFixed(2)}, including free shipping</span>`;
                 breakdownDiv.innerHTML = breakdown;
             } else {
                 breakdownDiv.innerHTML = '<span class="total">Select size to see price</span>';
