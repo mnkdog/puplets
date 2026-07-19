@@ -1,7 +1,7 @@
 {
   "site_title": "Puplets - Handcrafted Dog Collars",
   "site_description": "Customizable, handcrafted dog collars with adorable charms. Made with love by a veterinary student.",
-  "footer_text": "© 2024 Puplets. Handcrafted with love for your furry friend.",
+  "footer_text": "© 2026 Puplets. Handcrafted with love for your furry friend.",
   "navigation": [
     {
       "text": "Home",
@@ -28,6 +28,13 @@
   "shipping": {
     "free_shipping": true,
     "delivery_time": "3-7 business days",
-    "countries": ["GB", "US", "CA", "AU", "NZ", "IE"]
+    "countries": [
+      "GB",
+      "US",
+      "CA",
+      "AU",
+      "NZ",
+      "IE"
+    ]
   }
 }
