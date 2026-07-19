@@ -1,9 +1,5 @@
 {
   "buildCommand": "npm run build",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/src/$1"
-    }
-  ]
+  "cleanUrls": true,
+  "trailingSlash": false
 }
