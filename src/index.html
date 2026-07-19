@@ -72,10 +72,105 @@
             align-items: center;
             gap: 0.5rem;
             transition: transform 0.2s;
+            position: relative;
         }
 
         .cart-button:hover {
             transform: translateY(-2px);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #5A4A42;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #101820;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .mobile-menu.active {
+            display: block;
+        }
+
+        .mobile-menu-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background: white;
+            padding: 2rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        .mobile-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .mobile-menu-links a {
+            color: #101820;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 500;
         }
 
         /* Main content */
@@ -135,7 +230,21 @@
         @media (max-width: 768px) {
             h1 { font-size: 2.5rem; }
             .tagline { font-size: 1.2rem; }
-            nav { padding: 1rem 1.5rem; }
+            nav {
+                padding: 1rem 1.5rem;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-links a:not(.cart-button) {
+                display: none;
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
 
             /* Adjust circles for mobile */
             .circle-red { width: 80px; height: 80px; top: 10%; left: -20px; }
@@ -158,19 +267,39 @@
 
     <!-- Navigation -->
     <nav>
-        <a href="/" class="logo-nav">
-            <img src="logo.png" alt="Puplets" class="logo-icon">
-            Puplets
-        </a>
-        <div style="display: flex; gap: 2rem; align-items: center;">
-            <a href="products.html" style="color: #5A4A42; text-decoration: none; font-weight: 500;">Products</a>
-            <a href="about.html" style="color: #5A4A42; text-decoration: none; font-weight: 500;">About</a>
-            <a href="https://www.etsy.com/shop/puplets/" class="cart-button">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo-nav">
+                <img src="logo.png" alt="Puplets" class="logo-icon">
+                Puplets
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="products.html">Products</a>
+            <a href="about.html">About</a>
+            <a href="cart.html" class="cart-button">
                 <span>🛒</span>
                 Cart
+                <span class="cart-count" id="cartCount" style="display: none;">0</span>
             </a>
         </div>
     </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="about.html">About</a>
+            </div>
+        </div>
+    </div>
 
     <!-- Hero section -->
     <div class="hero">
@@ -180,5 +309,30 @@
         <p class="tagline">Premium dog collars for your beloved companion</p>
         <a href="products.html" class="shop-button">Shop Now</a>
     </div>
+
+    <script>
+        // Update cart count on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countElement = document.getElementById('cartCount');
+            if (cart.length > 0) {
+                countElement.textContent = cart.length;
+                countElement.style.display = 'flex';
+            }
+        });
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+
+        function closeMobileMenu(event) {
+            if (!event || event.target === event.currentTarget) {
+                const menu = document.getElementById('mobileMenu');
+                menu.classList.remove('active');
+            }
+        }
+    </script>
 </body>
 </html>

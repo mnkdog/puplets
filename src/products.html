@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Products - Puplets</title>
+    <title>Waterproof Dog Collar - Puplets</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <style>
         * {
@@ -16,6 +16,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #F5F1ED;
             color: #101820;
+            line-height: 1.6;
         }
 
         nav {
@@ -37,6 +38,18 @@
             text-decoration: none;
         }
 
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #5A4A42;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
         .cart-button {
             background: #101820;
             color: white;
@@ -44,128 +57,875 @@
             border-radius: 25px;
             text-decoration: none;
             font-weight: 500;
+            position: relative;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #101820;
+            border-radius: 2px;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .mobile-menu.active {
+            display: block;
+        }
+
+        .mobile-menu-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background: white;
+            padding: 2rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        .mobile-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .mobile-menu-links a {
+            color: #101820;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+
+        .added-to-cart-modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .added-to-cart-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            color: #101820;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .modal-content p {
+            color: #5A4A42;
+            margin-bottom: 2rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-direction: column;
+        }
+
+        .modal-buttons a,
+        .modal-buttons button {
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .modal-buttons .btn-primary {
+            background: #101820;
+            color: white;
+        }
+
+        .modal-buttons .btn-secondary {
+            background: white;
+            color: #101820;
+            border: 2px solid #101820;
+        }
+
+        .modal-buttons a:hover,
+        .modal-buttons button:hover {
+            transform: translateY(-2px);
+        }
+
+        @media (min-width: 480px) {
+            .modal-buttons {
+                flex-direction: row;
+            }
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 4rem 2rem;
+            padding: 2rem;
+        }
+
+        .product-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .product-images {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .main-image {
+            width: 100%;
+            border-radius: 15px;
+            background: white;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .main-image img, .main-image video {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .image-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(16, 24, 32, 0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: background 0.2s;
+        }
+
+        .image-nav:hover {
+            background: rgba(16, 24, 32, 0.9);
+        }
+
+        .image-nav.prev {
+            left: 1rem;
+        }
+
+        .image-nav.next {
+            right: 1rem;
+        }
+
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90vh;
+            border-radius: 10px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 3rem;
+            font-weight: 100;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .lightbox-close:hover {
+            opacity: 0.7;
+        }
+
+        .thumbnail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+
+        .thumbnail {
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .thumbnail:hover, .thumbnail.active {
+            border-color: #101820;
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+        }
+
+        .product-info {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
         }
 
         h1 {
-            font-size: 3rem;
-            color: #5A4A42;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-
-        .subtitle {
-            text-align: center;
-            font-size: 1.2rem;
-            color: #5A4A42;
-            margin-bottom: 4rem;
-        }
-
-        .products {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
-            margin-top: 3rem;
-        }
-
-        .product-card {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-
-        .product-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .color-swatch {
-            width: 100%;
-            height: 200px;
-            border-radius: 15px;
-            margin-bottom: 1.5rem;
-        }
-
-        .chilli { background: #D6001C; }
-        .ocean { background: #0076CF; }
-        .fern { background: #00AD50; }
-
-        .product-name {
             font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #5A4A42;
+        }
+
+        .product-price {
+            font-size: 1.1rem;
             font-weight: 600;
             color: #5A4A42;
-            margin-bottom: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.8;
         }
 
-        .buy-button {
-            display: inline-block;
+        .product-price .total {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #101820;
+            display: block;
+            margin-top: 0.5rem;
+        }
+
+        .product-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .option-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #5A4A42;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #E5E5E5;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            background: white;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #101820;
+        }
+
+        .size-guide {
+            font-size: 0.875rem;
+            color: #5A4A42;
+            margin-top: 0.5rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 1.25rem;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+
+        button.add-to-basket {
             background: #101820;
             color: white;
-            padding: 1rem 2rem;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 1rem;
-            transition: transform 0.2s;
         }
 
-        .buy-button:hover {
-            transform: scale(1.05);
+        button.add-to-basket:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(16, 24, 32, 0.3);
+        }
+
+        button:disabled {
+            background: #CCC;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .extra-charms-section {
+            margin-top: 3rem;
+            padding-top: 3rem;
+            border-top: 2px solid #E5E5E5;
+        }
+
+        .extra-charms-section h3 {
+            margin-bottom: 1rem;
+            color: #5A4A42;
+        }
+
+        .extra-charms-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .extra-charm-option {
+            border: 2px solid #E5E5E5;
+            border-radius: 10px;
+            padding: 0.75rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .extra-charm-option:hover {
+            border-color: #101820;
+        }
+
+        .extra-charm-option.selected {
+            border-color: #101820;
+            background: #F5F1ED;
+        }
+
+        .extra-charm-option .charm-name {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .extra-charm-option .charm-price {
+            font-size: 0.75rem;
+            color: #5A4A42;
+            margin-top: 0.25rem;
         }
 
         @media (max-width: 768px) {
-            h1 { font-size: 2rem; }
-            nav { padding: 1rem 1.5rem; }
-            .products { grid-template-columns: 1fr; }
+            nav {
+                padding: 1rem 1.5rem;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-links a:not(.cart-button) {
+                display: none;
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
+
+            .product-layout {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .thumbnail-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .extra-charms-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 <body>
     <nav>
-        <a href="/" class="logo-nav">
-            <img src="logo.png" alt="Puplets" style="width: 40px; height: 40px; object-fit: contain;">
-            Puplets
-        </a>
-        <div style="display: flex; gap: 2rem; align-items: center;">
-            <a href="/" style="color: #5A4A42; text-decoration: none; font-weight: 500;">Home</a>
-            <a href="about.html" style="color: #5A4A42; text-decoration: none; font-weight: 500;">About</a>
-            <a href="https://www.etsy.com/shop/puplets/" class="cart-button">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo-nav">
+                <img src="logo.png" alt="Puplets" style="width: 40px; height: 40px;">
+                Puplets
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="products.html">Products</a>
+            <a href="about.html">About</a>
+            <a href="cart.html" class="cart-button">
                 <span>🛒</span>
                 Cart
+                <span class="cart-count" style="display: none;">0</span>
             </a>
         </div>
     </nav>
 
-    <div class="container">
-        <h1>Colours</h1>
-        <p class="subtitle">Premium waterproof dog collars in three beautiful colours</p>
-
-        <div class="products">
-            <div class="product-card">
-                <div class="color-swatch chilli"></div>
-                <h2 class="product-name">Chilli</h2>
-                <a href="https://www.etsy.com/uk/listing/4447734877/waterproof-dog-collar-with?frs=1" class="buy-button">Shop Now</a>
-            </div>
-
-            <div class="product-card">
-                <div class="color-swatch ocean"></div>
-                <h2 class="product-name">Ocean</h2>
-                <a href="https://www.etsy.com/shop/puplets/" class="buy-button">Shop Now</a>
-            </div>
-
-            <div class="product-card">
-                <div class="color-swatch fern"></div>
-                <h2 class="product-name">Fern</h2>
-                <a href="https://www.etsy.com/shop/puplets/" class="buy-button">Shop Now</a>
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="about.html">About</a>
             </div>
         </div>
     </div>
+
+    <!-- Added to Cart Modal -->
+    <div class="added-to-cart-modal" id="addedModal">
+        <div class="modal-content">
+            <h3>✓ Added to Cart!</h3>
+            <p>Your item has been added to your shopping cart.</p>
+            <div class="modal-buttons">
+                <a href="cart.html" class="btn-primary">Go to Cart & Checkout</a>
+                <button onclick="closeAddedModal()" class="btn-secondary">Continue Shopping</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="product-layout">
+            <div class="product-images">
+                <div class="main-image">
+                    <button class="image-nav prev" onclick="navigateImage(-1)">‹</button>
+                    <img id="mainImage" src="prod-1.jpg" alt="Waterproof Dog Collar" onclick="openLightbox()">
+                    <button class="image-nav next" onclick="navigateImage(1)">›</button>
+                </div>
+                <div class="thumbnail-grid">
+                    <div class="thumbnail active" data-src="prod-1.jpg"><img src="prod-1.jpg" alt="View 1"></div>
+                    <div class="thumbnail" data-src="prod-3.jpg"><img src="prod-3.jpg" alt="View 2"></div>
+                    <div class="thumbnail" data-src="prod-4.jpg"><img src="prod-4.jpg" alt="View 3"></div>
+                    <div class="thumbnail" data-src="prod-5.jpg"><img src="prod-5.jpg" alt="View 4"></div>
+                    <div class="thumbnail" data-src="prod-6.jpg"><img src="prod-6.jpg" alt="View 5"></div>
+                    <div class="thumbnail" data-src="prod-7.jpg"><img src="prod-7.jpg" alt="View 6"></div>
+                    <div class="thumbnail" data-src="prod-8.jpg"><img src="prod-8.jpg" alt="View 7"></div>
+                    <div class="thumbnail" data-src="prod-9-charms.jpg"><img src="prod-9-charms.jpg" alt="Charms"></div>
+                    <div class="thumbnail" data-src="prod-10-colours.jpg"><img src="prod-10-colours.jpg" alt="Colours"></div>
+                    <div class="thumbnail" data-src="prod-11-sizes.jpg"><img src="prod-11-sizes.jpg" alt="Sizes"></div>
+                    <div class="thumbnail" data-src="prod-15.jpg"><img src="prod-15.jpg" alt="Detail"></div>
+                    <div class="thumbnail" data-src="prod-17-safety.jpg"><img src="prod-17-safety.jpg" alt="Safety"></div>
+                </div>
+            </div>
+
+            <div class="product-info">
+                <h1>Waterproof Dog Collar with Free Charm</h1>
+                <div class="product-price">
+                    <div id="priceBreakdown">
+                        <span class="total">Select size to see price</span>
+                    </div>
+                </div>
+
+                <div class="product-options">
+                    <div class="option-group">
+                        <label for="color">Colour</label>
+                        <select name="color" id="color" required>
+                            <option value="">Select a colour</option>
+                            <option value="chilli">Chilli (Red)</option>
+                            <option value="ocean">Ocean (Blue)</option>
+                            <option value="fern">Fern (Green)</option>
+                        </select>
+                    </div>
+
+                    <div class="option-group">
+                        <label for="size">Size</label>
+                        <select name="size" id="size" required>
+                            <option value="">Select a size</option>
+                            <option value="xs" data-price="17.99">XS - 21-27 cm (8 5/16 - 10 5/8 in)</option>
+                            <option value="s" data-price="20.99">S - 26-32 cm (10 3/16 - 12 5/8 in)</option>
+                            <option value="m" data-price="23.99">M - 31-37 cm (12 3/16 - 14 5/8 in)</option>
+                        </select>
+                        <div class="size-guide">
+                            Measure around your dog's neck where the collar would naturally sit
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <label for="charm">Free Charm (Included)</label>
+                        <select name="charm" id="charm" required>
+                            <option value="">Select your free charm</option>
+                            <option value="llama">Llama</option>
+                            <option value="bone">Bone</option>
+                            <option value="hotdog">Hotdog</option>
+                            <option value="cactus">Cactus</option>
+                            <option value="paw-hearts">Paw with hearts</option>
+                            <option value="green-bow">Green bow</option>
+                            <option value="pizza">Pizza</option>
+                            <option value="pink-balloon-dog">Pink balloon dog</option>
+                            <option value="pink-bow">Pink bow</option>
+                            <option value="rocket">Rocket</option>
+                            <option value="beach-ball">Beach ball</option>
+                            <option value="strawberry">Strawberry</option>
+                            <option value="blue-balloon-dog">Blue balloon dog</option>
+                            <option value="white-paw">White paw</option>
+                            <option value="smiley-face">Smiley face</option>
+                            <option value="duck">Duck</option>
+                            <option value="football">Football</option>
+                            <option value="cowboy-hat">Cowboy hat</option>
+                            <option value="pink-lightning">Pink lightning</option>
+                            <option value="leopard-heart">Leopard heart</option>
+                        </select>
+                    </div>
+
+                    <button class="add-to-basket" id="addToBasket" disabled>Add to Basket</button>
+                </div>
+
+                <div class="extra-charms-section">
+                    <h3>Add Extra Charms (£3.99 each)</h3>
+                    <p style="color: #5A4A42; margin-bottom: 1rem;">Customize your collar with additional charms</p>
+                    <div class="extra-charms-grid" id="extraCharmsGrid">
+                        <!-- Extra charms will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox for enlarged images -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <span class="lightbox-close">&times;</span>
+        <img id="lightboxImage" src="" alt="Enlarged view">
+    </div>
+
+    <script>
+        // Product data
+        const prices = {
+            xs: 17.99,
+            s: 20.99,
+            m: 23.99
+        };
+
+        const charmPrice = 3.99;
+
+        const extraCharms = [
+            'Strawberry', 'Pink bow', 'White paw', 'Pink balloon dog', 'Pink lightning',
+            'Hotdog', 'Cactus', 'Llama', 'Pizza', 'Paw with hearts',
+            'Blue balloon dog', 'Duck', 'Cowboy hat', 'Beach ball', 'Rocket',
+            'Leopard heart', 'Green bow', 'Bone', 'Smiley face', 'Football'
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupImageGallery();
+            setupFormValidation();
+            setupPriceUpdate();
+            setupExtraCharms();
+            updateCartCount();
+            loadEditingItem();
+        });
+
+        // Image gallery
+        let currentImageIndex = 0;
+        let imageList = [];
+
+        function setupImageGallery() {
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            const mainImage = document.getElementById('mainImage');
+
+            // Build image list
+            imageList = Array.from(thumbnails).map(t => t.dataset.src);
+
+            thumbnails.forEach((thumb, index) => {
+                thumb.addEventListener('click', () => {
+                    thumbnails.forEach(t => t.classList.remove('active'));
+                    thumb.classList.add('active');
+                    mainImage.src = thumb.dataset.src;
+                    currentImageIndex = index;
+                });
+            });
+        }
+
+        function navigateImage(direction) {
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            currentImageIndex = (currentImageIndex + direction + imageList.length) % imageList.length;
+
+            thumbnails.forEach(t => t.classList.remove('active'));
+            thumbnails[currentImageIndex].classList.add('active');
+
+            const mainImage = document.getElementById('mainImage');
+            mainImage.src = imageList[currentImageIndex];
+        }
+
+        function openLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImage = document.getElementById('lightboxImage');
+            const mainImage = document.getElementById('mainImage');
+
+            lightboxImage.src = mainImage.src;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+        }
+
+        // Form validation
+        function setupFormValidation() {
+            const colorSelect = document.getElementById('color');
+            const sizeSelect = document.getElementById('size');
+            const charmSelect = document.getElementById('charm');
+            const addButton = document.getElementById('addToBasket');
+
+            function validateForm() {
+                const isValid = colorSelect.value && sizeSelect.value && charmSelect.value;
+                addButton.disabled = !isValid;
+            }
+
+            colorSelect.addEventListener('change', validateForm);
+            sizeSelect.addEventListener('change', validateForm);
+            charmSelect.addEventListener('change', validateForm);
+
+            addButton.addEventListener('click', addToCart);
+        }
+
+        // Dynamic pricing
+        function setupPriceUpdate() {
+            const sizeSelect = document.getElementById('size');
+
+            sizeSelect.addEventListener('change', () => {
+                updateTotalPrice();
+            });
+        }
+
+        function updateTotalPrice() {
+            const sizeSelect = document.getElementById('size');
+            const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+            const basePrice = selectedOption.dataset.price ? parseFloat(selectedOption.dataset.price) : 0;
+            const extraCharmsCount = selectedExtraCharms.size;
+            const extraCharmsTotal = extraCharmsCount * charmPrice;
+            const totalPrice = basePrice + extraCharmsTotal;
+
+            const breakdownDiv = document.getElementById('priceBreakdown');
+
+            if (basePrice > 0) {
+                let breakdown = `Collar (£${basePrice.toFixed(2)})`;
+                if (extraCharmsCount > 0) {
+                    breakdown += ` + ${extraCharmsCount} charm${extraCharmsCount > 1 ? 's' : ''} (£${extraCharmsTotal.toFixed(2)})`;
+                }
+                breakdown += `<span class="total">Total £${totalPrice.toFixed(2)}, including free shipping</span>`;
+                breakdownDiv.innerHTML = breakdown;
+            } else {
+                breakdownDiv.innerHTML = '<span class="total">Select size to see price</span>';
+            }
+        }
+
+        // Extra charms
+        const selectedExtraCharms = new Set();
+
+        function setupExtraCharms() {
+            const grid = document.getElementById('extraCharmsGrid');
+
+            extraCharms.forEach((charm, index) => {
+                const charmDiv = document.createElement('div');
+                charmDiv.className = 'extra-charm-option';
+                charmDiv.dataset.charm = charm.toLowerCase().replace(/\s+/g, '-');
+                charmDiv.innerHTML = `
+                    <div class="charm-icon">✨</div>
+                    <div class="charm-name">${charm}</div>
+                    <div class="charm-price">+£${charmPrice.toFixed(2)}</div>
+                `;
+
+                charmDiv.addEventListener('click', () => {
+                    const charmId = charmDiv.dataset.charm;
+                    if (selectedExtraCharms.has(charmId)) {
+                        selectedExtraCharms.delete(charmId);
+                        charmDiv.classList.remove('selected');
+                    } else {
+                        selectedExtraCharms.add(charmId);
+                        charmDiv.classList.add('selected');
+                    }
+                    updateTotalPrice();
+                });
+
+                grid.appendChild(charmDiv);
+            });
+        }
+
+        // Cart functionality
+        function addToCart() {
+            const color = document.getElementById('color').value;
+            const size = document.getElementById('size').value;
+            const charm = document.getElementById('charm').value;
+            const sizeSelect = document.getElementById('size');
+            const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+            const basePrice = parseFloat(selectedOption.dataset.price);
+
+            const cartItem = {
+                id: Date.now(),
+                product: 'Waterproof Dog Collar',
+                color: color,
+                size: size.toUpperCase(),
+                charm: charm,
+                extraCharms: Array.from(selectedExtraCharms),
+                price: basePrice,
+                extraCharmsPrice: selectedExtraCharms.size * charmPrice,
+                total: basePrice + (selectedExtraCharms.size * charmPrice)
+            };
+
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+            // Check if editing an existing item
+            const editingData = localStorage.getItem('editingItem');
+            if (editingData) {
+                const { index } = JSON.parse(editingData);
+                cart[index] = cartItem;
+                localStorage.removeItem('editingItem');
+            } else {
+                cart.push(cartItem);
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+
+            updateCartCount();
+            showAddedModal();
+        }
+
+        function showAddedModal() {
+            const modal = document.getElementById('addedModal');
+            modal.classList.add('active');
+        }
+
+        function closeAddedModal() {
+            const modal = document.getElementById('addedModal');
+            modal.classList.remove('active');
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countElement = document.querySelector('.cart-count');
+            if (cart.length > 0) {
+                countElement.textContent = cart.length;
+                countElement.style.display = 'flex';
+            } else {
+                countElement.style.display = 'none';
+            }
+        }
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+
+        function closeMobileMenu(event) {
+            if (!event || event.target === event.currentTarget) {
+                const menu = document.getElementById('mobileMenu');
+                menu.classList.remove('active');
+            }
+        }
+
+        function loadEditingItem() {
+            const editingData = localStorage.getItem('editingItem');
+            if (!editingData) return;
+
+            const { item, index } = JSON.parse(editingData);
+
+            // Pre-fill form
+            document.getElementById('color').value = item.color;
+            document.getElementById('size').value = item.size.toLowerCase();
+            document.getElementById('charm').value = item.charm;
+
+            // Trigger price update
+            const event = new Event('change');
+            document.getElementById('size').dispatchEvent(event);
+
+            // Pre-select extra charms
+            setTimeout(() => {
+                item.extraCharms.forEach(charmId => {
+                    const charmDiv = document.querySelector(`[data-charm="${charmId}"]`);
+                    if (charmDiv) {
+                        selectedExtraCharms.add(charmId);
+                        charmDiv.classList.add('selected');
+                    }
+                });
+                updateTotalPrice();
+            }, 100);
+
+            // Change button text to "Update Basket"
+            const addButton = document.getElementById('addToBasket');
+            addButton.textContent = 'Update Basket';
+            addButton.disabled = false;
+        }
+    </script>
 </body>
 </html>

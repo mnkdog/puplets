@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - Puplets</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F5F1ED;
+            color: #101820;
+            line-height: 1.6;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #5A4A42;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #101820;
+            border-radius: 2px;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .mobile-menu.active {
+            display: block;
+        }
+
+        .mobile-menu-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background: white;
+            padding: 2rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        .mobile-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .mobile-menu-links a {
+            color: #101820;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #5A4A42;
+        }
+
+        .empty-cart {
+            background: white;
+            padding: 3rem;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .empty-cart p {
+            font-size: 1.2rem;
+            color: #5A4A42;
+            margin-bottom: 2rem;
+        }
+
+        .empty-cart a {
+            display: inline-block;
+            background: #101820;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .cart-items {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .cart-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid #E5E5E5;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-details h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #101820;
+        }
+
+        .item-specs {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .spec {
+            background: #F5F1ED;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            color: #5A4A42;
+        }
+
+        .extra-charms-list {
+            font-size: 0.875rem;
+            color: #5A4A42;
+            margin-top: 0.5rem;
+        }
+
+        .item-price {
+            text-align: right;
+        }
+
+        .item-price .price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #101820;
+        }
+
+        .item-price .remove {
+            display: block;
+            margin-top: 0.5rem;
+            color: #D6001C;
+            cursor: pointer;
+            font-size: 0.875rem;
+            text-decoration: underline;
+        }
+
+        .cart-summary {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+        }
+
+        .summary-row.total {
+            border-top: 2px solid #E5E5E5;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .checkout-button {
+            width: 100%;
+            padding: 1.25rem;
+            background: #101820;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .checkout-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(16, 24, 32, 0.3);
+        }
+
+        .stripe-info {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #5A4A42;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem 1.5rem;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-links a:not(.cart-button) {
+                display: none;
+            }
+
+            .cart-item {
+                grid-template-columns: 1fr;
+            }
+
+            .item-price {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo-nav">
+                <img src="logo.png" alt="Puplets" style="width: 40px; height: 40px;">
+                Puplets
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="products.html">Products</a>
+            <a href="about.html">About</a>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="about.html">About</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Shopping Cart</h1>
+
+        <div id="cartContent"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCart();
+        });
+
+        function renderCart() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const container = document.getElementById('cartContent');
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-cart">
+                        <p>Your cart is empty</p>
+                        <a href="products.html">Continue Shopping</a>
+                    </div>
+                `;
+                return;
+            }
+
+            const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
+            const total = subtotal; // Free shipping
+
+            const itemsHTML = cart.map((item, index) => `
+                <div class="cart-item">
+                    <div class="item-details">
+                        <h3>${item.product}</h3>
+                        <div class="item-specs">
+                            <span class="spec">Colour: ${capitalizeFirst(item.color)}</span>
+                            <span class="spec">Size: ${item.size}</span>
+                            <span class="spec">Free Charm: ${capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>
+                        </div>
+                        ${item.extraCharms.length > 0 ? `
+                            <div class="extra-charms-list">
+                                <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
+                                ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="item-price">
+                        <div class="price">£${item.total.toFixed(2)}</div>
+                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                            <span class="remove" onclick="editItem(${index})" style="color: #0076CF;">Edit</span>
+                            <span class="remove" onclick="removeItem(${index})">Remove</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="cart-items">
+                    ${itemsHTML}
+                </div>
+
+                <div class="cart-summary">
+                    <div class="summary-row">
+                        <span>Subtotal</span>
+                        <span>£${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Shipping</span>
+                        <span>FREE</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total</span>
+                        <span>£${total.toFixed(2)}</span>
+                    </div>
+
+                    <button class="checkout-button" onclick="proceedToCheckout()">
+                        Proceed to Checkout
+                    </button>
+
+                    <div class="stripe-info">
+                        🔒 Secure payment powered by Stripe
+                    </div>
+                </div>
+            `;
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function removeItem(index) {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cart.splice(index, 1);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            renderCart();
+        }
+
+        function editItem(index) {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const item = cart[index];
+
+            // Store item for editing and its index
+            localStorage.setItem('editingItem', JSON.stringify({ item, index }));
+
+            // Redirect to products page
+            window.location.href = 'products.html';
+        }
+
+        function proceedToCheckout() {
+            alert('Stripe integration coming soon! For now, please visit our Etsy shop to complete your purchase.');
+            window.location.href = 'https://www.etsy.com/shop/puplets/';
+        }
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+
+        function closeMobileMenu(event) {
+            if (!event || event.target === event.currentTarget) {
+                const menu = document.getElementById('mobileMenu');
+                menu.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>
