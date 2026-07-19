@@ -1,13 +1,13 @@
+# Test backend - no authentication required
+# Switch to github backend once OAuth is configured
 backend:
-  name: github
-  repo: mnkdog/puplets # Replace with your GitHub username/repo
-  branch: main
-  base_url: https://api.netlify.com # For GitHub OAuth
-  auth_endpoint: auth
+  name: test-repo
 
-# Local backend for development (optional)
-# Uncomment to test locally without GitHub
-# local_backend: true
+# For production with GitHub (requires OAuth setup):
+# backend:
+#   name: github
+#   repo: mnkdog/puplets
+#   branch: main
 
 media_folder: "src/images/uploads" # Where uploaded images will be stored
 public_folder: "/images/uploads" # Public path to images
