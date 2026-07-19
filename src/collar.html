@@ -761,7 +761,33 @@
                 addButton.disabled = !isValid;
             }
 
-            colorSelect.addEventListener('change', validateForm);
+            // Color to image mapping
+            const colorImageMap = {
+                'chilli': 'prod-1.jpg',  // Red collar - UPDATE THIS
+                'ocean': 'prod-3.jpg',   // Blue collar - UPDATE THIS
+                'fern': 'prod-4.jpg'     // Green collar - UPDATE THIS
+            };
+
+            colorSelect.addEventListener('change', function() {
+                validateForm();
+
+                // Auto-switch to color's image
+                const selectedColor = this.value;
+                if (selectedColor && colorImageMap[selectedColor]) {
+                    const targetImage = colorImageMap[selectedColor];
+                    updateMainImage(targetImage);
+
+                    // Update active thumbnail
+                    document.querySelectorAll('.thumbnail').forEach(thumb => {
+                        if (thumb.dataset.src === targetImage) {
+                            thumb.classList.add('active');
+                        } else {
+                            thumb.classList.remove('active');
+                        }
+                    });
+                }
+            });
+
             sizeSelect.addEventListener('change', validateForm);
             charmSelect.addEventListener('change', validateForm);
 
