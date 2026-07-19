@@ -701,11 +701,6 @@
                 }
                 breakdown += `<span class="total">Total £${totalPrice.toFixed(2)}, including free shipping</span>`;
                 breakdownDiv.innerHTML = breakdown;
-            } else if (extraCharmsCount > 0) {
-                // Show extra charms price even without collar selected
-                let breakdown = `Select collar size + ${extraCharmsCount} charm${extraCharmsCount > 1 ? 's' : ''} (£${extraCharmsTotal.toFixed(2)})`;
-                breakdown += `<span class="total">Total £${extraCharmsTotal.toFixed(2)}, including free shipping</span>`;
-                breakdownDiv.innerHTML = breakdown;
             } else {
                 breakdownDiv.innerHTML = '<span class="total">Select size to see price</span>';
             }
