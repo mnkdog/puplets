@@ -446,6 +446,10 @@
                         Proceed to Checkout
                     </button>
 
+                    <button class="checkout-button" onclick="clearCart()" style="background: white; color: #5A4A42; border: 2px solid #E5E5E5; margin-top: 1rem;">
+                        Clear Cart
+                    </button>
+
                     <div class="stripe-info">
                         🔒 Secure payment powered by Stripe
                     </div>
@@ -472,6 +476,13 @@
             cart.splice(index, 1);
             localStorage.setItem('cart', JSON.stringify(cart));
             renderCart();
+        }
+
+        function clearCart() {
+            if (confirm('Are you sure you want to clear your entire cart?')) {
+                localStorage.setItem('cart', '[]');
+                renderCart();
+            }
         }
 
         function editItem(index) {
