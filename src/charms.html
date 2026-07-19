@@ -231,7 +231,7 @@
 <body>
     <nav>
         <a href="/" class="logo-nav">
-            <img src="logo.svg" alt="Puplets Logo" class="logo-icon">
+            <img src="logo.png" alt="Puplets Logo" class="logo-icon">
             Puplets
         </a>
         <div class="nav-links">
@@ -407,20 +407,30 @@
             if (!charmValue) return;
             
             const charmName = charms.find(c => c.toLowerCase().replace(/\s+/g, '-') === charmValue);
-            
+
             // Add to cart
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            
-            for (let i = 0; i < quantity; i++) {
+
+            // Check if this charm is already in cart
+            const existingIndex = cart.findIndex(item =>
+                item.type === 'charm' && item.charm === charmValue
+            );
+
+            if (existingIndex >= 0) {
+                // Increase quantity of existing charm
+                cart[existingIndex].quantity = (cart[existingIndex].quantity || 1) + quantity;
+            } else {
+                // Add new charm with quantity
                 cart.push({
                     type: 'charm',
                     charm: charmValue,
                     charmName: charmName,
                     price: charmPrice,
-                    timestamp: Date.now() + i
+                    quantity: quantity,
+                    timestamp: Date.now()
                 });
             }
-            
+
             localStorage.setItem('cart', JSON.stringify(cart));
             updateCartCount();
             showAddedModal();

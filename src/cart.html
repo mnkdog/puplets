@@ -360,8 +360,11 @@
 
                 const subtotal = cart.reduce((sum, item) => {
                     // Handle both collar and charm items
-                    const itemPrice = item.total || item.price || 0;
-                    return sum + itemPrice;
+                    if (item.type === 'charm') {
+                        const quantity = item.quantity || 1;
+                        return sum + (item.price * quantity);
+                    }
+                    return sum + (item.total || item.price || 0);
                 }, 0);
                 const total = subtotal; // Free shipping
 
@@ -371,16 +374,19 @@
 
                     if (isCharm) {
                         // Render charm item
+                        const quantity = item.quantity || 1;
+                        const itemTotal = (item.price || 0) * quantity;
                         return `
                             <div class="cart-item">
                                 <div class="item-details">
-                                    <h3>Individual Charm</h3>
+                                    <h3>Individual Charm${quantity > 1 ? ` (×${quantity})` : ''}</h3>
                                     <div class="item-specs">
                                         <span class="spec">Design: ${capitalizeFirst((item.charmName || item.charm || 'Unknown').replace(/-/g, ' '))}</span>
+                                        ${quantity > 1 ? `<span class="spec">£${(item.price || 0).toFixed(2)} each</span>` : ''}
                                     </div>
                                 </div>
                                 <div class="item-price">
-                                    <div class="price">£${(item.price || 0).toFixed(2)}</div>
+                                    <div class="price">£${itemTotal.toFixed(2)}</div>
                                     <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
                                         <span class="remove" onclick="removeItem(${index})">Remove</span>
                                     </div>
