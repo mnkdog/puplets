@@ -344,32 +344,33 @@
         });
 
         function renderCart() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const container = document.getElementById('cartContent');
+            try {
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                const container = document.getElementById('cartContent');
 
-            if (cart.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-cart">
-                        <p>Your cart is empty</p>
-                        <a href="products.html">Continue Shopping</a>
-                    </div>
-                `;
-                return;
-            }
-
-            const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-            const total = subtotal; // Free shipping
-
-            const itemsHTML = cart.map((item, index) => `
-                <div class="cart-item">
-                    <div class="item-details">
-                        <h3>${item.product}</h3>
-                        <div class="item-specs">
-                            <span class="spec">Colour: ${capitalizeFirst(item.color)}</span>
-                            <span class="spec">Size: ${item.size}</span>
-                            <span class="spec">Free Charm: ${capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>
+                if (!cart || cart.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-cart">
+                            <p>Your cart is empty</p>
+                            <a href="products.html">Continue Shopping</a>
                         </div>
-                        ${item.extraCharms.length > 0 ? `
+                    `;
+                    return;
+                }
+
+                const subtotal = cart.reduce((sum, item) => sum + (item.total || 0), 0);
+                const total = subtotal; // Free shipping
+
+                const itemsHTML = cart.map((item, index) => `
+                    <div class="cart-item">
+                        <div class="item-details">
+                            <h3>${item.product || 'Product'}</h3>
+                            <div class="item-specs">
+                                <span class="spec">Colour: ${capitalizeFirst(item.color || 'unknown')}</span>
+                                <span class="spec">Size: ${item.size || 'N/A'}</span>
+                                ${item.charm ? `<span class="spec">Free Charm: ${capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>` : ''}
+                            </div>
+                            ${item.extraCharms && item.extraCharms.length > 0 ? `
                             <div class="extra-charms-list">
                                 <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
                                 ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
@@ -414,6 +415,16 @@
                     </div>
                 </div>
             `;
+            } catch (error) {
+                console.error('Error rendering cart:', error);
+                const container = document.getElementById('cartContent');
+                container.innerHTML = `
+                    <div class="empty-cart">
+                        <p>There was an error loading your cart</p>
+                        <button onclick="localStorage.removeItem('cart'); location.reload();" style="background: #101820; color: white; padding: 1rem 2rem; border: none; border-radius: 25px; cursor: pointer; font-weight: 600;">Clear Cart & Reload</button>
+                    </div>
+                `;
+            }
         }
 
         function capitalizeFirst(str) {
