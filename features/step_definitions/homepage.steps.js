@@ -65,7 +65,7 @@ Given('I am on the about page', async function () {
 });
 
 Given('I am on the products page', async function () {
-  await this.page.goto('http://localhost:8080/products.html');
+  await this.page.goto('http://localhost:8080/collar.html');
   await this.page.waitForLoadState('networkidle');
 });
 

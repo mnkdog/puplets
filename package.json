@@ -11,8 +11,9 @@
     "test:bdd": "cucumber-js",
     "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
-    "build": "echo 'Static site - no build needed'",
-    "deploy": "echo 'Deployment handled by GitHub Actions'"
+    "build": "node scripts/build-blog.js",
+    "build:blog": "node scripts/build-blog.js",
+    "deploy": "npm run build && echo 'Deployment handled by GitHub Actions'"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "stripe": "^17.5.0"
+  },
   "devDependencies": {
     "@cucumber/cucumber": "^12.2.0",
     "@cucumber/pretty-formatter": "^2.4.1",

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Individual Charms - Puplets</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F5F1ED;
+            color: #101820;
+            line-height: 1.6;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+
+        .logo-icon { width: 40px; height: 40px; object-fit: contain; }
+
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-links a { color: #101820; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: #D6001C; }
+
+        .cart-button {
+            background: #101820;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 0.5rem; }
+        .hamburger span { width: 25px; height: 3px; background: #101820; border-radius: 2px; }
+
+        .mobile-menu { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.5); z-index: 999; }
+        .mobile-menu.active { display: flex; }
+        .mobile-menu-content { background: white; width: 80%; max-width: 300px; height: 100%; padding: 2rem; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        .mobile-menu-close { background: none; border: none; font-size: 2rem; cursor: pointer; margin-bottom: 2rem; }
+        .mobile-menu-links { display: flex; flex-direction: column; gap: 1.5rem; }
+        .mobile-menu-links a { color: #101820; text-decoration: none; font-weight: 500; font-size: 1.125rem; }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        
+        .product-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            margin-top: 2rem;
+        }
+
+        .gallery-section { position: sticky; top: 2rem; height: fit-content; }
+        .main-image-container { position: relative; margin-bottom: 1rem; }
+        
+        #mainImage {
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+
+        .thumbnail-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+        }
+
+        .thumbnail {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .thumbnail:hover, .thumbnail.active { border-color: #101820; }
+
+        .product-details h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .product-description { color: #5A4A42; margin-bottom: 2rem; line-height: 1.8; }
+
+        .product-options { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
+        
+        label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #5A4A42; }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #E5E5E5;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            background: white;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+        }
+
+        select:focus, input:focus { outline: none; border-color: #101820; }
+
+        .price-section { margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #E5E5E5; }
+        .price-display { font-size: 2rem; font-weight: 700; color: #101820; margin-bottom: 0.5rem; }
+        .price-breakdown { color: #5A4A42; font-size: 0.875rem; }
+
+        button {
+            width: 100%;
+            padding: 1.25rem;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+
+        button.add-to-basket {
+            background: #101820;
+            color: white;
+        }
+
+        button.add-to-basket:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(16, 24, 32, 0.3);
+        }
+
+        button:disabled {
+            background: #CCC;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .added-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .added-modal.active { display: flex; }
+
+        .added-modal-content {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .added-modal h2 { color: #00AD50; margin-bottom: 1rem; }
+
+        .added-modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .added-modal-buttons button {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-cart { background: #101820; color: white; }
+        .btn-continue { background: #E5E5E5; color: #101820; }
+
+        @media (max-width: 768px) {
+            nav { padding: 1rem 1.5rem; }
+            .hamburger { display: flex; }
+            .nav-links a:not(.cart-button) { display: none; }
+            .nav-links { gap: 1rem; }
+            
+            .product-layout { grid-template-columns: 1fr; gap: 2rem; }
+            .gallery-section { position: relative; top: 0; }
+            #mainImage { height: 300px; }
+            .thumbnail-grid { grid-template-columns: repeat(3, 1fr); }
+            
+            select, input, button { min-height: 44px; padding: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo-nav">
+            <img src="logo.png" alt="Puplets Logo" class="logo-icon">
+            Puplets
+        </a>
+        <div class="nav-links">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span><span></span><span></span>
+            </button>
+            <a href="/">Home</a>
+            <a href="products.html">Products</a>
+                <a href="blog.html">Blog</a>
+            <a href="blog.html">Blog</a>
+            <a href="about.html">About</a>
+            <a href="cart.html" class="cart-button">
+                🛒 Cart
+                <span class="cart-count" id="cartCount">0</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="blog.html">Blog</a>
+            <a href="blog.html">Blog</a>
+                <a href="about.html">About</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="product-layout">
+            <div class="gallery-section">
+                <div class="main-image-container">
+                    <img id="mainImage" src="prod-9-charms.jpg" alt="Charm">
+                </div>
+                <div class="thumbnail-grid" id="thumbnailGrid"></div>
+            </div>
+
+            <div class="product-details">
+                <h1>Individual Charms</h1>
+                <p class="product-description">
+                    Add extra personality to your dog's collar! Choose from our collection of 20 adorable charms. 
+                    Each charm is carefully crafted and securely attaches to any Puplets collar.
+                    Perfect for updating your pup's look or replacing a lost charm.
+                </p>
+
+                <div class="product-options">
+                    <div class="option-group">
+                        <label for="charm">Choose Your Charm:</label>
+                        <select name="charm" id="charm" required>
+                            <option value="">Select a charm</option>
+                        </select>
+                    </div>
+
+                    <div class="option-group">
+                        <label for="quantity">Quantity:</label>
+                        <select name="quantity" id="quantity">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+
+                    <div class="price-section">
+                        <div class="price-display" id="priceDisplay">£3.99</div>
+                        <div class="price-breakdown" id="priceBreakdown">
+                            Select charm to add to basket
+                        </div>
+                    </div>
+
+                    <button class="add-to-basket" id="addToBasket" disabled>Add to Basket</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="added-modal" id="addedModal">
+        <div class="added-modal-content">
+            <h2>✓ Added to Cart!</h2>
+            <p>Your charms have been added to your basket.</p>
+            <div class="added-modal-buttons">
+                <button class="btn-cart" onclick="window.location.href='cart.html'">Go to Cart & Checkout</button>
+                <button class="btn-continue" onclick="closeAddedModal()">Continue Shopping</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const charmPrice = 3.99;
+        
+        const charms = [
+            'Strawberry', 'Pink bow', 'White paw', 'Pink balloon dog', 'Pink lightning',
+            'Hotdog', 'Cactus', 'Llama', 'Pizza', 'Paw with hearts',
+            'Blue balloon dog', 'Duck', 'Cowboy hat', 'Beach ball', 'Rocket',
+            'Leopard heart', 'Green bow', 'Bone', 'Smiley face', 'Football'
+        ];
+
+        // Populate charm selector
+        const charmSelect = document.getElementById('charm');
+        charms.forEach((charm, index) => {
+            const option = document.createElement('option');
+            option.value = charm.toLowerCase().replace(/\s+/g, '-');
+            option.textContent = charm;
+            option.dataset.index = index;
+            charmSelect.appendChild(option);
+        });
+
+        // Create thumbnails
+        const thumbnailGrid = document.getElementById('thumbnailGrid');
+        charms.forEach((charm, index) => {
+            const thumb = document.createElement('div');
+            thumb.className = 'charm-option';
+            thumb.innerHTML = `<img src="prod-9-charms.jpg" alt="${charm}" class="thumbnail" data-charm="${charm.toLowerCase().replace(/\s+/g, '-')}" data-index="${index}">`;
+            thumb.querySelector('img').addEventListener('click', function() {
+                document.getElementById('charm').value = this.dataset.charm;
+                updateSelection();
+            });
+            thumbnailGrid.appendChild(thumb);
+        });
+
+        function updateSelection() {
+            const charmValue = document.getElementById('charm').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const addButton = document.getElementById('addToBasket');
+            
+            // Enable/disable button
+            addButton.disabled = !charmValue;
+            
+            // Update price
+            updatePrice();
+            
+            // Highlight selected thumbnail
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            if (charmValue) {
+                const selected = document.querySelector(`.thumbnail[data-charm="${charmValue}"]`);
+                if (selected) selected.classList.add('active');
+            }
+        }
+
+        function updatePrice() {
+            const charmValue = document.getElementById('charm').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const total = quantity * charmPrice;
+            
+            document.getElementById('priceDisplay').textContent = `£${total.toFixed(2)}`;
+            
+            if (charmValue) {
+                const charmName = charms.find(c => c.toLowerCase().replace(/\s+/g, '-') === charmValue);
+                let breakdown = `${charmName} × ${quantity} (£${charmPrice.toFixed(2)} each)`;
+                breakdown += `<br><span style="font-weight: 600;">Total £${total.toFixed(2)}, including free shipping</span>`;
+                document.getElementById('priceBreakdown').innerHTML = breakdown;
+            } else {
+                document.getElementById('priceBreakdown').innerHTML = 'Select charm to add to basket';
+            }
+        }
+
+        document.getElementById('charm').addEventListener('change', updateSelection);
+        document.getElementById('quantity').addEventListener('change', updatePrice);
+
+        document.getElementById('addToBasket').addEventListener('click', function() {
+            const charmValue = document.getElementById('charm').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
+            
+            if (!charmValue) return;
+            
+            const charmName = charms.find(c => c.toLowerCase().replace(/\s+/g, '-') === charmValue);
+
+            // Add to cart
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+            // Check if this charm is already in cart
+            const existingIndex = cart.findIndex(item =>
+                item.type === 'charm' && item.charm === charmValue
+            );
+
+            if (existingIndex >= 0) {
+                // Increase quantity of existing charm
+                cart[existingIndex].quantity = (cart[existingIndex].quantity || 1) + quantity;
+            } else {
+                // Add new charm with quantity
+                cart.push({
+                    type: 'charm',
+                    charm: charmValue,
+                    charmName: charmName,
+                    price: charmPrice,
+                    quantity: quantity,
+                    timestamp: Date.now()
+                });
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            showAddedModal();
+        });
+
+        function showAddedModal() {
+            document.getElementById('addedModal').classList.add('active');
+        }
+
+        function closeAddedModal() {
+            document.getElementById('addedModal').classList.remove('active');
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const cartCount = document.getElementById('cartCount');
+            if (cartCount) {
+                cartCount.textContent = cart.length;
+                cartCount.style.display = cart.length > 0 ? 'flex' : 'none';
+            }
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        }
+
+        function closeMobileMenu(event) {
+            if (!event || event.target === event.currentTarget) {
+                document.getElementById('mobileMenu').classList.remove('active');
+            }
+        }
+
+        updateCartCount();
+        updatePrice();
+    </script>
+</body>
+</html>

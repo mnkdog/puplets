@@ -301,6 +301,7 @@
         <div class="nav-links">
             <a href="/">Home</a>
             <a href="products.html">Products</a>
+            <a href="blog.html">Blog</a>
             <a href="about.html">About</a>
         </div>
     </nav>
@@ -312,6 +313,7 @@
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
+                <a href="blog.html">Blog</a>
                 <a href="about.html">About</a>
             </div>
         </div>
@@ -320,56 +322,106 @@
     <div class="container">
         <h1>Shopping Cart</h1>
 
+        <div id="notification" style="display: none; background: #FFF3CD; border: 2px solid #FFC107; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: #856404;"></div>
+
         <div id="cartContent"></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Check if payment was cancelled
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('cancelled') === 'true') {
+                const notification = document.getElementById('notification');
+                notification.textContent = 'Payment was cancelled. Your items are still in your cart.';
+                notification.style.display = 'block';
+
+                // Remove the parameter from URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
             renderCart();
         });
 
         function renderCart() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const container = document.getElementById('cartContent');
+            try {
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                const container = document.getElementById('cartContent');
 
-            if (cart.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-cart">
-                        <p>Your cart is empty</p>
-                        <a href="products.html">Continue Shopping</a>
-                    </div>
-                `;
-                return;
-            }
-
-            const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-            const total = subtotal; // Free shipping
-
-            const itemsHTML = cart.map((item, index) => `
-                <div class="cart-item">
-                    <div class="item-details">
-                        <h3>${item.product}</h3>
-                        <div class="item-specs">
-                            <span class="spec">Colour: ${capitalizeFirst(item.color)}</span>
-                            <span class="spec">Size: ${item.size}</span>
-                            <span class="spec">Free Charm: ${capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>
+                if (!cart || cart.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-cart">
+                            <p>Your cart is empty</p>
+                            <a href="products.html">Continue Shopping</a>
                         </div>
-                        ${item.extraCharms.length > 0 ? `
-                            <div class="extra-charms-list">
-                                <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
-                                ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
+                    `;
+                    return;
+                }
+
+                const subtotal = cart.reduce((sum, item) => {
+                    // Handle both collar and charm items
+                    if (item.type === 'charm') {
+                        const quantity = item.quantity || 1;
+                        return sum + (item.price * quantity);
+                    }
+                    return sum + (item.total || item.price || 0);
+                }, 0);
+                const total = subtotal; // Free shipping
+
+                const itemsHTML = cart.map((item, index) => {
+                    // Check if this is a charm or collar item
+                    const isCharm = item.type === 'charm';
+
+                    if (isCharm) {
+                        // Render charm item
+                        const quantity = item.quantity || 1;
+                        const itemTotal = (item.price || 0) * quantity;
+                        return `
+                            <div class="cart-item">
+                                <div class="item-details">
+                                    <h3>Individual Charm${quantity > 1 ? ` (×${quantity})` : ''}</h3>
+                                    <div class="item-specs">
+                                        <span class="spec">Design: ${capitalizeFirst((item.charmName || item.charm || 'Unknown').replace(/-/g, ' '))}</span>
+                                        ${quantity > 1 ? `<span class="spec">£${(item.price || 0).toFixed(2)} each</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="item-price">
+                                    <div class="price">£${itemTotal.toFixed(2)}</div>
+                                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                                        <span class="remove" onclick="removeItem(${index})">Remove</span>
+                                    </div>
+                                </div>
                             </div>
-                        ` : ''}
-                    </div>
-                    <div class="item-price">
-                        <div class="price">£${item.total.toFixed(2)}</div>
-                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                            <span class="remove" onclick="editItem(${index})" style="color: #0076CF;">Edit</span>
-                            <span class="remove" onclick="removeItem(${index})">Remove</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                        `;
+                    } else {
+                        // Render collar item
+                        return `
+                            <div class="cart-item">
+                                <div class="item-details">
+                                    <h3>${item.product || 'Dog Collar'}</h3>
+                                    <div class="item-specs">
+                                        <span class="spec">Colour: ${capitalizeFirst(item.color || 'unknown')}</span>
+                                        <span class="spec">Size: ${item.size || 'N/A'}</span>
+                                        ${item.charm ? `<span class="spec">Free Charm: ${capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>` : ''}
+                                    </div>
+                                    ${item.extraCharms && item.extraCharms.length > 0 ? `
+                                        <div class="extra-charms-list">
+                                            <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
+                                            ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="item-price">
+                                    <div class="price">£${(item.total || 0).toFixed(2)}</div>
+                                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                                        <span class="remove" onclick="editItem(${index})" style="color: #0076CF;">Edit</span>
+                                        <span class="remove" onclick="removeItem(${index})">Remove</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }).join('');
 
             container.innerHTML = `
                 <div class="cart-items">
@@ -394,11 +446,25 @@
                         Proceed to Checkout
                     </button>
 
+                    <button class="checkout-button" onclick="clearCart()" style="background: white; color: #5A4A42; border: 2px solid #E5E5E5; margin-top: 1rem;">
+                        Clear Cart
+                    </button>
+
                     <div class="stripe-info">
                         🔒 Secure payment powered by Stripe
                     </div>
                 </div>
             `;
+            } catch (error) {
+                console.error('Error rendering cart:', error);
+                const container = document.getElementById('cartContent');
+                container.innerHTML = `
+                    <div class="empty-cart">
+                        <p>There was an error loading your cart</p>
+                        <button onclick="localStorage.removeItem('cart'); location.reload();" style="background: #101820; color: white; padding: 1rem 2rem; border: none; border-radius: 25px; cursor: pointer; font-weight: 600;">Clear Cart & Reload</button>
+                    </div>
+                `;
+            }
         }
 
         function capitalizeFirst(str) {
@@ -412,6 +478,13 @@
             renderCart();
         }
 
+        function clearCart() {
+            if (confirm('Are you sure you want to clear your entire cart?')) {
+                localStorage.setItem('cart', '[]');
+                renderCart();
+            }
+        }
+
         function editItem(index) {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             const item = cart[index];
@@ -420,12 +493,50 @@
             localStorage.setItem('editingItem', JSON.stringify({ item, index }));
 
             // Redirect to products page
-            window.location.href = 'products.html';
+            window.location.href = 'collar.html';
         }
 
-        function proceedToCheckout() {
-            alert('Stripe integration coming soon! For now, please visit our Etsy shop to complete your purchase.');
-            window.location.href = 'https://www.etsy.com/shop/puplets/';
+        async function proceedToCheckout() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+            if (cart.length === 0) {
+                alert('Your cart is empty');
+                return;
+            }
+
+            // Show loading state
+            const checkoutButton = document.querySelector('.checkout-button');
+            const originalText = checkoutButton.textContent;
+            checkoutButton.textContent = 'Loading...';
+            checkoutButton.disabled = true;
+
+            try {
+                // Call Stripe API to create checkout session
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        items: cart
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create checkout session');
+                }
+
+                const { url } = await response.json();
+
+                // Redirect to Stripe Checkout
+                window.location.href = url;
+
+            } catch (error) {
+                console.error('Checkout error:', error);
+                alert('Sorry, there was an error processing your checkout. Please try again.');
+                checkoutButton.textContent = originalText;
+                checkoutButton.disabled = false;
+            }
         }
 
         // Mobile menu toggle
