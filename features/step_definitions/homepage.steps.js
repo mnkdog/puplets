@@ -64,6 +64,16 @@ Given('I am on the about page', async function () {
   await this.page.goto('http://localhost:8080/about.html');
 });
 
+Given('I am on the products page', async function () {
+  await this.page.goto('http://localhost:8080/products.html');
+  await this.page.waitForLoadState('networkidle');
+});
+
+Given('I am on the cart page', async function () {
+  await this.page.goto('http://localhost:8080/cart.html');
+  await this.page.waitForLoadState('networkidle');
+});
+
 Then('I should see the heading {string}', async function (headingText) {
   const heading = await this.page.locator(`h1:has-text("${headingText}")`);
   const count = await heading.count();

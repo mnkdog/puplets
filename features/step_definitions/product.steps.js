@@ -2,7 +2,8 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
 
 Given('I am on a product page', async function () {
-  await this.page.goto('http://localhost:8080/product.html');
+  await this.page.goto('http://localhost:8080/products.html');
+  await this.page.waitForLoadState('networkidle');
 });
 
 When('I view the purchasing options', async function () {
@@ -10,9 +11,17 @@ When('I view the purchasing options', async function () {
 });
 
 Then('I should see a colour selection with {int} options', async function (count) {
-  const colorOptions = await this.page.locator('select[name="color"] option, .color-selector .color-option');
-  const actualCount = await colorOptions.count();
-  expect(actualCount).to.equal(count);
+  const colorOptions = await this.page.locator('select[name="color"] option');
+  const allOptions = await colorOptions.all();
+  // Filter out empty placeholder option
+  const validOptions = [];
+  for (const option of allOptions) {
+    const value = await option.getAttribute('value');
+    if (value && value !== '') {
+      validOptions.push(option);
+    }
+  }
+  expect(validOptions.length).to.equal(count);
 });
 
 Then('I should see a size selection with XS, S, and M options', async function () {
@@ -86,7 +95,9 @@ Given('I have selected a colour, size, and free charm', async function () {
 });
 
 When('I click the {string} button', async function (buttonText) {
-  await this.page.click(`button:has-text("${buttonText}")`);
+  // Try to find either a button element or .remove link with this text
+  const selector = `button:has-text("${buttonText}"), .remove:has-text("${buttonText}")`;
+  await this.page.click(selector);
   await this.page.waitForTimeout(200);
 });
 
@@ -147,7 +158,8 @@ Then('the {string} button should show {string}', async function (buttonName, but
 
 Given('I am viewing the product page on a mobile device', async function () {
   await this.page.setViewportSize({ width: 375, height: 667 });
-  await this.page.goto('http://localhost:8080/product.html');
+  await this.page.goto('http://localhost:8080/products.html');
+  await this.page.waitForLoadState('networkidle');
 });
 
 Then('all selectors should be stacked vertically', async function () {

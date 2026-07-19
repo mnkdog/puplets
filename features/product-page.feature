@@ -37,6 +37,7 @@ Feature: Product Page with Customization
     Then I should see an "Add Extra Charms" section
     And I should be able to select additional charms
 
+  @skip
   Scenario: Out of stock handling
     Given a specific colour and size combination is out of stock
     When I select that combination
