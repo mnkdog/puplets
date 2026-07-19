@@ -358,34 +358,64 @@
                     return;
                 }
 
-                const subtotal = cart.reduce((sum, item) => sum + (item.total || 0), 0);
+                const subtotal = cart.reduce((sum, item) => {
+                    // Handle both collar and charm items
+                    const itemPrice = item.total || item.price || 0;
+                    return sum + itemPrice;
+                }, 0);
                 const total = subtotal; // Free shipping
 
-                const itemsHTML = cart.map((item, index) => `
-                    <div class="cart-item">
-                        <div class="item-details">
-                            <h3>${item.product || 'Product'}</h3>
-                            <div class="item-specs">
-                                <span class="spec">Colour: ${capitalizeFirst(item.color || 'unknown')}</span>
-                                <span class="spec">Size: ${item.size || 'N/A'}</span>
-                                ${item.charm ? `<span class="spec">Free Charm: ${capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>` : ''}
+                const itemsHTML = cart.map((item, index) => {
+                    // Check if this is a charm or collar item
+                    const isCharm = item.type === 'charm';
+
+                    if (isCharm) {
+                        // Render charm item
+                        return `
+                            <div class="cart-item">
+                                <div class="item-details">
+                                    <h3>Individual Charm</h3>
+                                    <div class="item-specs">
+                                        <span class="spec">Design: ${capitalizeFirst((item.charmName || item.charm || 'Unknown').replace(/-/g, ' '))}</span>
+                                    </div>
+                                </div>
+                                <div class="item-price">
+                                    <div class="price">£${(item.price || 0).toFixed(2)}</div>
+                                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                                        <span class="remove" onclick="removeItem(${index})">Remove</span>
+                                    </div>
+                                </div>
                             </div>
-                            ${item.extraCharms && item.extraCharms.length > 0 ? `
-                            <div class="extra-charms-list">
-                                <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
-                                ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
+                        `;
+                    } else {
+                        // Render collar item
+                        return `
+                            <div class="cart-item">
+                                <div class="item-details">
+                                    <h3>${item.product || 'Dog Collar'}</h3>
+                                    <div class="item-specs">
+                                        <span class="spec">Colour: ${capitalizeFirst(item.color || 'unknown')}</span>
+                                        <span class="spec">Size: ${item.size || 'N/A'}</span>
+                                        ${item.charm ? `<span class="spec">Free Charm: ${capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>` : ''}
+                                    </div>
+                                    ${item.extraCharms && item.extraCharms.length > 0 ? `
+                                        <div class="extra-charms-list">
+                                            <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
+                                            ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="item-price">
+                                    <div class="price">£${(item.total || 0).toFixed(2)}</div>
+                                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                                        <span class="remove" onclick="editItem(${index})" style="color: #0076CF;">Edit</span>
+                                        <span class="remove" onclick="removeItem(${index})">Remove</span>
+                                    </div>
+                                </div>
                             </div>
-                        ` : ''}
-                    </div>
-                    <div class="item-price">
-                        <div class="price">£${item.total.toFixed(2)}</div>
-                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                            <span class="remove" onclick="editItem(${index})" style="color: #0076CF;">Edit</span>
-                            <span class="remove" onclick="removeItem(${index})">Remove</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                        `;
+                    }
+                }).join('');
 
             container.innerHTML = `
                 <div class="cart-items">
