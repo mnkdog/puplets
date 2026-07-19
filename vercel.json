@@ -2,12 +2,8 @@
   "buildCommand": "npm run build",
   "rewrites": [
     {
-      "source": "/(.*\\.(html|css|js|jpg|png|svg|json|ico))",
+      "source": "/(.*)",
       "destination": "/src/$1"
-    },
-    {
-      "source": "/",
-      "destination": "/src/index.html"
     }
   ]
 }
