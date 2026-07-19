@@ -1,5 +1,4 @@
 {
   "buildCommand": "npm run build",
-  "cleanUrls": true,
-  "trailingSlash": false
+  "outputDirectory": "src"
 }
