@@ -672,15 +672,9 @@
         // Dynamic pricing
         function setupPriceUpdate() {
             const sizeSelect = document.getElementById('size');
-            const priceDisplay = document.getElementById('currentPrice');
 
             sizeSelect.addEventListener('change', () => {
-                const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
-                const price = selectedOption.dataset.price;
-                if (price) {
-                    priceDisplay.textContent = price;
-                    updateTotalPrice();
-                }
+                updateTotalPrice();
             });
         }
 
