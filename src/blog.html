@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - Puplets</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F5F1ED;
+            color: #101820;
+            line-height: 1.6;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+
+        .logo-icon { width: 40px; height: 40px; object-fit: contain; }
+
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-links a { color: #101820; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: #D6001C; }
+
+        .cart-button {
+            background: #101820;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 0.5rem; }
+        .hamburger span { width: 25px; height: 3px; background: #101820; border-radius: 2px; }
+
+        .mobile-menu { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.5); z-index: 999; }
+        .mobile-menu.active { display: flex; }
+        .mobile-menu-content { background: white; width: 80%; max-width: 300px; height: 100%; padding: 2rem; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        .mobile-menu-close { background: none; border: none; font-size: 2rem; cursor: pointer; margin-bottom: 2rem; }
+        .mobile-menu-links { display: flex; flex-direction: column; gap: 1.5rem; }
+        .mobile-menu-links a { color: #101820; text-decoration: none; font-weight: 500; font-size: 1.125rem; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 4rem 2rem; }
+
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; text-align: center; }
+
+        .subtitle {
+            text-align: center;
+            color: #5A4A42;
+            margin-bottom: 3rem;
+            font-size: 1.125rem;
+        }
+
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .blog-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .blog-card:hover { transform: translateY(-5px); }
+
+        .blog-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .blog-card-content { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+
+        .blog-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #5A4A42;
+            margin-bottom: 0.75rem;
+        }
+
+        .blog-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #101820;
+        }
+
+        .blog-card p {
+            color: #5A4A42;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            flex: 1;
+        }
+
+        .read-more {
+            color: #D6001C;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #5A4A42;
+        }
+
+        .empty-state h2 { margin-bottom: 1rem; }
+
+        @media (max-width: 768px) {
+            nav { padding: 1rem 1.5rem; }
+            .hamburger { display: flex; }
+            .nav-links a:not(.cart-button) { display: none; }
+            .nav-links { gap: 1rem; }
+            h1 { font-size: 2rem; }
+            .blog-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo-nav">
+            <img src="logo.svg" alt="Puplets Logo" class="logo-icon">
+            Puplets
+        </a>
+        <div class="nav-links">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span><span></span><span></span>
+            </button>
+            <a href="/">Home</a>
+            <a href="products.html">Products</a>
+            <a href="blog.html">Blog</a>
+            <a href="about.html">About</a>
+            <a href="cart.html" class="cart-button">
+                🛒 Cart
+                <span class="cart-count" id="cartCount">0</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="blog.html">Blog</a>
+                <a href="about.html">About</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Puplets Blog</h1>
+        <p class="subtitle">News, tips, and stories from the Puplets family</p>
+
+        <div id="blogPosts" class="blog-grid"></div>
+    </div>
+
+    <script>
+        async function loadBlogPosts() {
+            try {
+                // Fetch blog posts from the blog directory
+                const response = await fetch('/blog-index.json');
+
+                if (!response.ok) {
+                    showEmptyState();
+                    return;
+                }
+
+                const posts = await response.json();
+
+                if (posts.length === 0) {
+                    showEmptyState();
+                    return;
+                }
+
+                renderBlogPosts(posts);
+            } catch (error) {
+                console.error('Error loading blog posts:', error);
+                showEmptyState();
+            }
+        }
+
+        function renderBlogPosts(posts) {
+            const container = document.getElementById('blogPosts');
+
+            const sortedPosts = posts
+                .filter(post => post.published !== false)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            container.innerHTML = sortedPosts.map(post => `
+                <a href="/blog/${post.slug}.html" class="blog-card">
+                    ${post.featured_image ? `<img src="${post.featured_image}" alt="${post.title}">` : ''}
+                    <div class="blog-card-content">
+                        <div class="blog-meta">
+                            <span>📅 ${formatDate(post.date)}</span>
+                            ${post.author ? `<span>✍️ ${post.author}</span>` : ''}
+                        </div>
+                        <h2>${post.title}</h2>
+                        <p>${post.description || excerpt(post.body)}</p>
+                        <span class="read-more">Read more →</span>
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        function showEmptyState() {
+            document.getElementById('blogPosts').innerHTML = `
+                <div class="empty-state">
+                    <h2>Coming Soon!</h2>
+                    <p>We're working on some great content. Check back soon for updates, tips, and stories about our handcrafted collars!</p>
+                </div>
+            `;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function excerpt(text, length = 150) {
+            if (!text) return '';
+            const clean = text.replace(/[#*_`]/g, '').substring(0, length);
+            return clean + (text.length > length ? '...' : '');
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const cartCount = document.getElementById('cartCount');
+            if (cartCount) {
+                cartCount.textContent = cart.length;
+                cartCount.style.display = cart.length > 0 ? 'flex' : 'none';
+            }
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        }
+
+        function closeMobileMenu(event) {
+            if (!event || event.target === event.currentTarget) {
+                document.getElementById('mobileMenu').classList.remove('active');
+            }
+        }
+
+        updateCartCount();
+        loadBlogPosts();
+    </script>
+</body>
+</html>
