@@ -190,10 +190,20 @@
             transform: translateY(-5px);
         }
 
+        .product-card > a {
+            display: block;
+            cursor: pointer;
+        }
+
         .product-card img {
             width: 100%;
             height: 300px;
             object-fit: cover;
+            transition: transform 0.2s;
+        }
+
+        .product-card > a:hover img {
+            transform: scale(1.02);
         }
 
         .product-card-content {
@@ -302,7 +312,9 @@
 
         <div class="products-grid">
             <div class="product-card">
-                <img src="prod-1.jpg" alt="Customizable Dog Collars">
+                <a href="collar.html">
+                    <img src="prod-1.jpg" alt="Customizable Dog Collars">
+                </a>
                 <div class="product-card-content">
                     <h2>Customizable Dog Collars</h2>
                     <p>Create a unique collar for your pup with your choice of colour, size, and charms. Each collar comes with one free charm!</p>
@@ -312,7 +324,9 @@
             </div>
 
             <div class="product-card">
-                <img src="prod-9-charms.jpg" alt="Individual Charms">
+                <a href="charms.html">
+                    <img src="prod-9-charms.jpg" alt="Individual Charms">
+                </a>
                 <div class="product-card-content">
                     <h2>Individual Charms</h2>
                     <p>Add extra personality to your dog's collar with our adorable charms. Choose from 20 unique designs!</p>
