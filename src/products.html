@@ -193,8 +193,10 @@
         .product-card > a {
             display: block;
             cursor: pointer;
-            background: none;
+            background: transparent;
             text-decoration: none;
+            border-radius: 15px 15px 0 0;
+            overflow: hidden;
         }
 
         .product-card img {
@@ -202,6 +204,7 @@
             height: 300px;
             object-fit: cover;
             transition: transform 0.2s;
+            display: block;
         }
 
         .product-card > a:hover img {
