@@ -344,6 +344,27 @@
             object-fit: cover;
         }
 
+        .thumbnail video {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+        }
+
+        .video-thumb {
+            position: relative;
+        }
+
+        .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
         .product-info {
             background: white;
             padding: 2rem;
@@ -583,6 +604,7 @@
                 </div>
                 <div class="thumbnail-grid">
                     <div class="thumbnail active" data-src="prod-1.jpg"><img src="prod-1.jpg" alt="View 1"></div>
+                    <div class="thumbnail video-thumb" data-src="prod-2.mp4" data-type="video"><video src="prod-2.mp4" muted></video><span class="play-icon">▶</span></div>
                     <div class="thumbnail" data-src="prod-3.jpg"><img src="prod-3.jpg" alt="View 2"></div>
                     <div class="thumbnail" data-src="prod-4.jpg"><img src="prod-4.jpg" alt="View 3"></div>
                     <div class="thumbnail" data-src="prod-5.jpg"><img src="prod-5.jpg" alt="View 4"></div>
@@ -711,9 +733,34 @@
         let currentImageIndex = 0;
         let imageList = [];
 
-        function updateMainImage(imageSrc) {
+        function updateMainImage(imageSrc, isVideo = false) {
+            const container = document.querySelector('.main-image');
             const mainImage = document.getElementById('mainImage');
-            mainImage.src = imageSrc;
+
+            if (isVideo) {
+                // Replace img with video
+                const video = document.createElement('video');
+                video.id = 'mainImage';
+                video.src = imageSrc;
+                video.controls = true;
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.style.width = '100%';
+                video.style.borderRadius = '15px';
+                video.onclick = () => openLightbox();
+                mainImage.replaceWith(video);
+            } else if (mainImage.tagName === 'VIDEO') {
+                // Replace video with img
+                const img = document.createElement('img');
+                img.id = 'mainImage';
+                img.src = imageSrc;
+                img.alt = 'Waterproof Dog Collar';
+                img.onclick = () => openLightbox();
+                mainImage.replaceWith(img);
+            } else {
+                mainImage.src = imageSrc;
+            }
 
             // Update current index
             const index = imageList.indexOf(imageSrc);
@@ -724,7 +771,6 @@
 
         function setupImageGallery() {
             const thumbnails = document.querySelectorAll('.thumbnail');
-            const mainImage = document.getElementById('mainImage');
 
             // Build image list
             imageList = Array.from(thumbnails).map(t => t.dataset.src);
@@ -733,7 +779,9 @@
                 thumb.addEventListener('click', () => {
                     thumbnails.forEach(t => t.classList.remove('active'));
                     thumb.classList.add('active');
-                    mainImage.src = thumb.dataset.src;
+
+                    const isVideo = thumb.dataset.type === 'video';
+                    updateMainImage(thumb.dataset.src, isVideo);
                     currentImageIndex = index;
                 });
             });
@@ -746,8 +794,9 @@
             thumbnails.forEach(t => t.classList.remove('active'));
             thumbnails[currentImageIndex].classList.add('active');
 
-            const mainImage = document.getElementById('mainImage');
-            mainImage.src = imageList[currentImageIndex];
+            const currentThumb = thumbnails[currentImageIndex];
+            const isVideo = currentThumb.dataset.type === 'video';
+            updateMainImage(imageList[currentImageIndex], isVideo);
         }
 
         function openLightbox() {
