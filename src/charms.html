@@ -328,13 +328,37 @@
 
     <script>
         const charmPrice = 3.99;
-        
+
         const charms = [
             'Strawberry', 'Pink bow', 'White paw', 'Pink balloon dog', 'Pink lightning',
             'Hotdog', 'Cactus', 'Llama', 'Pizza', 'Paw with hearts',
             'Blue balloon dog', 'Duck', 'Cowboy hat', 'Beach ball', 'Rocket',
             'Leopard heart', 'Green bow', 'Bone', 'Smiley face', 'Football'
         ];
+
+        // Inventory data
+        let inventory = { collars: [], charms: [] };
+
+        // Load inventory
+        async function loadInventory() {
+            try {
+                const response = await fetch('/content/inventory.json');
+                if (response.ok) {
+                    inventory = await response.json();
+                }
+            } catch (error) {
+                console.error('Failed to load inventory:', error);
+            }
+        }
+
+        // Check stock for charm
+        function checkCharmStock(charmName) {
+            const charm = inventory.charms.find(c => c.name === charmName);
+            return charm ? charm.quantity : 0;
+        }
+
+        // Initialize inventory
+        loadInventory();
 
         // Populate charm selector
         const charmSelect = document.getElementById('charm');
@@ -363,13 +387,38 @@
             const charmValue = document.getElementById('charm').value;
             const quantity = parseInt(document.getElementById('quantity').value);
             const addButton = document.getElementById('addToBasket');
-            
-            // Enable/disable button
-            addButton.disabled = !charmValue;
-            
+            const stockMessage = document.getElementById('stockMessage') || createStockMessage();
+
+            function createStockMessage() {
+                const msg = document.createElement('div');
+                msg.id = 'stockMessage';
+                msg.style.cssText = 'color: #D6001C; font-weight: 600; margin-top: 1rem;';
+                addButton.parentElement.appendChild(msg);
+                return msg;
+            }
+
+            let isInStock = true;
+            let message = '';
+
+            if (charmValue) {
+                const charmName = charms.find(c => c.toLowerCase().replace(/\s+/g, '-') === charmValue);
+                const stock = checkCharmStock(charmName);
+
+                if (stock === 0) {
+                    isInStock = false;
+                    message = 'Out of Stock';
+                } else if (stock < quantity) {
+                    isInStock = false;
+                    message = `Only ${stock} available`;
+                }
+            }
+
+            stockMessage.textContent = message;
+            addButton.disabled = !charmValue || !isInStock;
+
             // Update price
             updatePrice();
-            
+
             // Highlight selected thumbnail
             document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
             if (charmValue) {

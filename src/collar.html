@@ -716,8 +716,40 @@
             'Leopard heart', 'Green bow', 'Bone', 'Smiley face', 'Football'
         ];
 
+        // Inventory data
+        let inventory = { collars: [], charms: [] };
+
+        // Load inventory
+        async function loadInventory() {
+            try {
+                const response = await fetch('/content/inventory.json');
+                if (response.ok) {
+                    inventory = await response.json();
+                }
+            } catch (error) {
+                console.error('Failed to load inventory:', error);
+            }
+        }
+
+        // Check stock for collar variant
+        function checkCollarStock(color, size) {
+            const variant = inventory.collars.find(v =>
+                v.color === color && v.size === size
+            );
+            return variant ? variant.quantity : 0;
+        }
+
+        // Check stock for charm
+        function checkCharmStock(charmName) {
+            const charm = inventory.charms.find(c =>
+                c.name === charmName
+            );
+            return charm ? charm.quantity : 0;
+        }
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadInventory();
             setupImageGallery();
             setupFormValidation();
             setupPriceUpdate();
@@ -820,10 +852,42 @@
             const sizeSelect = document.getElementById('size');
             const charmSelect = document.getElementById('charm');
             const addButton = document.getElementById('addToBasket');
+            const stockMessage = document.getElementById('stockMessage') || createStockMessage();
+
+            function createStockMessage() {
+                const msg = document.createElement('div');
+                msg.id = 'stockMessage';
+                msg.style.cssText = 'color: #D6001C; font-weight: 600; margin-top: 1rem;';
+                addButton.parentElement.appendChild(msg);
+                return msg;
+            }
 
             function validateForm() {
-                const isValid = colorSelect.value && sizeSelect.value && charmSelect.value;
-                addButton.disabled = !isValid;
+                const hasSelection = colorSelect.value && sizeSelect.value && charmSelect.value;
+                let isInStock = true;
+                let message = '';
+
+                if (hasSelection) {
+                    // Check collar stock
+                    const collarStock = checkCollarStock(colorSelect.value, sizeSelect.value);
+                    if (collarStock === 0) {
+                        isInStock = false;
+                        message = 'Out of Stock - This color/size combination is currently unavailable';
+                    }
+
+                    // Check charm stock
+                    if (isInStock && charmSelect.value) {
+                        const charmText = charmSelect.options[charmSelect.selectedIndex].text;
+                        const charmStock = checkCharmStock(charmText);
+                        if (charmStock === 0) {
+                            isInStock = false;
+                            message = `Out of Stock - The ${charmText} charm is out of stock`;
+                        }
+                    }
+                }
+
+                stockMessage.textContent = message;
+                addButton.disabled = !hasSelection || !isInStock;
             }
 
             // Color to image mapping
