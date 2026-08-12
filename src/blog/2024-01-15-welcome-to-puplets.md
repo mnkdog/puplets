@@ -1,9 +1,10 @@
 ---
 title: Welcome to Puplets!
-date: 2024-01-15T10:00:00.000Z
+date: 2026-07-20T08:12:00.000+01:00
 author: Puplets Team
 featured_image: /prod-1.jpg
-description: Introducing Puplets - handcrafted, customizable dog collars made with love by a veterinary student.
+description: Introducing Puplets - handcrafted, customizable dog collars made
+  with love by a veterinary student.
 categories: News, About Us
 tags: welcome, introduction, story
 published: true

@@ -11,12 +11,16 @@
 </head>
 <body>
   <!-- Include the script that builds the page and powers Decap CMS -->
-  <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   <script>
     CMS.init({
       config: {
         backend: {
-          name: 'test-repo'
+          name: 'github',
+          repo: 'mnkdog/puplets',
+          branch: 'main',
+          base_url: 'https://puplets1.vercel.app',
+          auth_endpoint: '/api/auth'
         },
         media_folder: 'src/images/uploads',
         public_folder: '/images/uploads',
@@ -187,6 +191,38 @@
                           { label: 'In Stock', name: 'inStock', widget: 'boolean', default: true }
                         ]
                       }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            name: 'inventory',
+            label: 'Inventory',
+            files: [
+              {
+                label: 'Stock Levels',
+                name: 'stock',
+                file: 'src/content/inventory.json',
+                fields: [
+                  {
+                    label: 'Collar Variants',
+                    name: 'collars',
+                    widget: 'list',
+                    fields: [
+                      { label: 'Color', name: 'color', widget: 'select', options: ['chilli', 'ocean', 'fern'] },
+                      { label: 'Size', name: 'size', widget: 'select', options: ['XS', 'S', 'M'] },
+                      { label: 'Quantity', name: 'quantity', widget: 'number', value_type: 'int', min: 0 }
+                    ]
+                  },
+                  {
+                    label: 'Charms',
+                    name: 'charms',
+                    widget: 'list',
+                    fields: [
+                      { label: 'Charm Name', name: 'name', widget: 'string' },
+                      { label: 'Quantity', name: 'quantity', widget: 'number', value_type: 'int', min: 0 }
                     ]
                   }
                 ]

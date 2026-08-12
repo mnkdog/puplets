@@ -24,11 +24,7 @@ Then('the link text should contain {string} or {string}', async function (text1,
   expect(containsEither, `Link text "${linkText}" does not contain "${text1}" or "${text2}"`).to.equal(true);
 });
 
-Then('I should see a {string} button', async function (buttonText) {
-  const button = await this.page.locator(`text=${buttonText}`);
-  const count = await button.count();
-  expect(count).to.be.greaterThan(0, `Button with text "${buttonText}" not found`);
-});
+// Removed duplicate - using implementation from checkout.steps.js
 
 Then('I should see navigation with {string} link', async function (linkText) {
   const navLink = await this.page.locator(`nav a:has-text("${linkText}")`);
