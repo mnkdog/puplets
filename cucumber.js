@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   default: {
     requireModule: ['@babel/register'],
     require: ['features/**/*.js'],
