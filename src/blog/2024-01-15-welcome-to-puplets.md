@@ -9,14 +9,13 @@ categories: News, About Us
 tags: welcome, introduction, story
 published: true
 ---
-
 ## Hello from Puplets!
 
 We're thrilled to launch Puplets - where every collar tells a story and celebrates your dog's unique personality.
 
 ### Our Mission
 
-As a veterinary student at the University of Bristol who works part-time at Colchester Zoo, I've always been passionate about animal welfare and creativity. Puplets was born from this love, combining quality craftsmanship with playful design.
+As a veterinary student who worked part-time at Colchester Zoo and dog kennels, I've always been passionate about animal welfare and creativity. Puplets was born from this love, combining quality craftsmanship with playful design.
 
 ### What Makes Puplets Special?
 
@@ -31,10 +30,11 @@ As a veterinary student at the University of Bristol who works part-time at Colc
 ### Coming Soon
 
 Stay tuned for:
-- Care tips for your Puplets collar
-- Customer spotlight features
-- Behind-the-scenes of collar making
-- New charm reveals
+
+* Care tips for your Puplets collar
+* Customer spotlight features
+* Behind-the-scenes of collar making
+* New charm reveals
 
 Thank you for being part of the Puplets family!
 
