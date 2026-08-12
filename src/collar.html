@@ -734,7 +734,7 @@
         // Check stock for collar variant
         function checkCollarStock(color, size) {
             const variant = inventory.collars.find(v =>
-                v.color === color && v.size === size
+                v.color === color && v.size.toUpperCase() === size.toUpperCase()
             );
             return variant ? variant.quantity : 0;
         }
