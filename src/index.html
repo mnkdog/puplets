@@ -281,7 +281,7 @@
         <div class="nav-links">
             <a href="products.html">Products</a>
             <a href="blog.html">Blog</a>
-            <a href="about.html">About</a>
+            <a href="about.html" id="aboutLinkDesktop">About</a>
             <a href="cart.html" class="cart-button">
                 <span>🛒</span>
                 Cart
@@ -298,7 +298,7 @@
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
                 <a href="blog.html">Blog</a>
-                <a href="about.html">About</a>
+                <a href="about.html" id="aboutLinkMobile">About</a>
             </div>
         </div>
     </div>
@@ -313,15 +313,43 @@
     </div>
 
     <script>
-        // Update cart count on page load
-        document.addEventListener('DOMContentLoaded', () => {
+        // Update cart count and About page visibility on page load
+        document.addEventListener('DOMContentLoaded', async () => {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             const countElement = document.getElementById('cartCount');
             if (cart.length > 0) {
                 countElement.textContent = cart.length;
                 countElement.style.display = 'flex';
             }
+
+            // Check if About page is published
+            await checkAboutPageVisibility();
         });
+
+        async function checkAboutPageVisibility() {
+            try {
+                const response = await fetch('/content/about.md');
+                if (response.ok) {
+                    const content = await response.text();
+                    // Extract frontmatter
+                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+                    if (frontmatterMatch) {
+                        const frontmatter = frontmatterMatch[1];
+                        // Check if published is false
+                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
+                        if (publishedMatch && publishedMatch[1] === 'false') {
+                            // Hide About links
+                            const desktopLink = document.getElementById('aboutLinkDesktop');
+                            const mobileLink = document.getElementById('aboutLinkMobile');
+                            if (desktopLink) desktopLink.style.display = 'none';
+                            if (mobileLink) mobileLink.style.display = 'none';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load about page status:', error);
+            }
+        }
 
         // Mobile menu toggle
         function toggleMobileMenu() {

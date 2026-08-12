@@ -234,6 +234,7 @@
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
 </head>
 <body>
     <nav>
@@ -252,7 +253,7 @@
             <a href="/">Home</a>
             <a href="products.html">Products</a>
             <a href="blog.html">Blog</a>
-            <a href="about.html">About</a>
+            <a href="about.html" id="aboutLinkDesktop">About</a>
             <a href="cart.html" class="cart-button">
                 <span>🛒</span>
                 Cart
@@ -269,41 +270,102 @@
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
                 <a href="blog.html">Blog</a>
-                <a href="about.html">About</a>
+                <a href="about.html" id="aboutLinkMobile">About</a>
             </div>
         </div>
     </div>
 
-    <div class="container">
-        <h1>A Future Vet's Mission to Make Safe Wearable Art for Dogs</h1>
-
-        <div class="story">
-            <div class="photo-section">
-                <img src="about-photo.jpg" alt="Puplets Founder" style="max-width: 400px;">
-            </div>
-
-            <p class="highlight">It all started with a simple question: Why does pet safety have to look so boring?</p>
-
-            <p>As a lifelong animal lover about to start my journey into veterinary school, I've always wanted to be surrounded by animals. Whether I was working hard at Colchester Zoo soaking up the vibrant wildlife atmosphere, or getting stuck into the hands-on care of beloved family pets at the local dog kennels, I learned firsthand just how unique every single animal's personality is. Our dogs give us so much joy, so why are they all wearing the exact same mass-produced, purely utilitarian collars? I wanted to create something that let pets show off their distinct spirit without ever compromising on their well-being.</p>
-
-            <p>That's how the idea of interchangeable collar charms was born. But turning a sketch into a safe reality meant doing things the right way. Driven by my love for animals and a lot of determination, I threw myself into the deep end of product development at 19. I spent months researching the market, studying materials, and designing a charm system built strictly around rigorous pet safety standards.</p>
-
-            <p>I didn't take shortcuts. I ordered prototypes, tested early samples in real-world conditions, and vetted dozens of manufacturers until I found the perfect partner who shared my commitment to quality.</p>
-
-            <p>Today, every single piece we sell is a labour of love, designed to bring a little extra joy to your daily walks. Thank you for supporting a young entrepreneur, a future vet, and most importantly, a fellow dog devotee. Let's make the world a little brighter, one charm at a time!</p>
-        </div>
+    <div class="container" id="aboutContent">
+        <p style="text-align: center; color: #999;">Loading...</p>
     </div>
 
     <script>
-        // Update cart count on page load
-        document.addEventListener('DOMContentLoaded', () => {
+        // Update cart count and load About content on page load
+        document.addEventListener('DOMContentLoaded', async () => {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             const countElement = document.getElementById('cartCount');
             if (cart.length > 0) {
                 countElement.textContent = cart.length;
                 countElement.style.display = 'flex';
             }
+
+            // Load and render About content from CMS
+            await loadAndRenderAboutContent();
         });
+
+        async function loadAndRenderAboutContent() {
+            try {
+                const response = await fetch('/content/about.md');
+                if (!response.ok) {
+                    throw new Error('Failed to load about content');
+                }
+
+                const content = await response.text();
+
+                // Extract frontmatter and body
+                const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/);
+                if (!frontmatterMatch) {
+                    throw new Error('Invalid about.md format');
+                }
+
+                const frontmatter = frontmatterMatch[1];
+                const markdownBody = frontmatterMatch[2];
+
+                // Parse frontmatter fields
+                const published = frontmatter.match(/published:\s*(true|false)/)?.[1] === 'true';
+                const title = frontmatter.match(/title:\s*(.+)/)?.[1]?.trim() || 'About Puplets';
+                const heading = frontmatter.match(/heading:\s*(.+)/)?.[1]?.trim() || '';
+                const image = frontmatter.match(/image:\s*(.+)/)?.[1]?.trim() || '';
+
+                // Check if published
+                if (!published) {
+                    // Redirect to home page if not published
+                    window.location.href = '/';
+                    return;
+                }
+
+                // Hide About links in navigation if not published
+                if (!published) {
+                    const desktopLink = document.getElementById('aboutLinkDesktop');
+                    const mobileLink = document.getElementById('aboutLinkMobile');
+                    if (desktopLink) desktopLink.style.display = 'none';
+                    if (mobileLink) mobileLink.style.display = 'none';
+                }
+
+                // Update page title
+                document.title = `${title} - Puplets`;
+
+                // Render content
+                const container = document.getElementById('aboutContent');
+                let html = '';
+
+                // Add heading if exists
+                if (heading) {
+                    html += `<h1>${escapeHtml(heading)}</h1>`;
+                }
+
+                // Add image if exists
+                if (image) {
+                    html += `<div class="photo-section"><img src="${escapeHtml(image)}" alt="${escapeHtml(title)}"></div>`;
+                }
+
+                // Parse and add markdown content
+                html += `<div class="story">${marked.parse(markdownBody)}</div>`;
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Failed to load about content:', error);
+                const container = document.getElementById('aboutContent');
+                container.innerHTML = '<p style="text-align: center; color: #999;">Failed to load content. Please try again later.</p>';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         // Mobile menu toggle
         function toggleMobileMenu() {
