@@ -1,5 +1,5 @@
 ---
-published: true
+published: false
 title: About Puplets
 heading: A Future Vet's Mission
 image: ""
