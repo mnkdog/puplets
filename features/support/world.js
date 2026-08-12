@@ -13,6 +13,8 @@ class CustomWorld extends World {
     this.browser = await chromium.launch();
     this.context = await this.browser.newContext();
     this.page = await this.context.newPage();
+    // Set longer timeout for CI environment (default is 30s, but step timeout is 10s now)
+    this.page.setDefaultTimeout(8000);
   }
 
   async closeBrowser() {
