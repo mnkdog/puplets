@@ -1,8 +1,8 @@
 module.exports = {
   default: {
-    require: ['features/step_definitions/**/*.js', 'features/support/**/*.js'],
-    format: ['progress', '@cucumber/pretty-formatter'],
-    publishQuiet: true,
-    tags: 'not @skip',
+    requireModule: ['@babel/register'],
+    require: ['features/**/*.js'],
+    format: ['progress'],
+    timeout: 10000  // Increase step timeout from 5s to 10s for CI
   }
 };
