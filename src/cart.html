@@ -302,7 +302,7 @@
             <a href="/">Home</a>
             <a href="products.html">Products</a>
             <a href="blog.html">Blog</a>
-            <a href="about.html">About</a>
+            <a href="about.html" id="aboutLinkDesktop">About</a>
         </div>
     </nav>
 
@@ -314,7 +314,7 @@
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
                 <a href="blog.html">Blog</a>
-                <a href="about.html">About</a>
+                <a href="about.html" id="aboutLinkMobile">About</a>
             </div>
         </div>
     </div>
@@ -328,7 +328,7 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Check if payment was cancelled
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('cancelled') === 'true') {
@@ -341,7 +341,33 @@
             }
 
             renderCart();
+            await checkAboutPageVisibility();
         });
+
+        async function checkAboutPageVisibility() {
+            try {
+                const response = await fetch('/content/about.md');
+                if (response.ok) {
+                    const content = await response.text();
+                    // Extract frontmatter
+                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+                    if (frontmatterMatch) {
+                        const frontmatter = frontmatterMatch[1];
+                        // Check if published is false
+                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
+                        if (publishedMatch && publishedMatch[1] === 'false') {
+                            // Hide About links
+                            const desktopLink = document.getElementById('aboutLinkDesktop');
+                            const mobileLink = document.getElementById('aboutLinkMobile');
+                            if (desktopLink) desktopLink.style.display = 'none';
+                            if (mobileLink) mobileLink.style.display = 'none';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load about page status:', error);
+            }
+        }
 
         function renderCart() {
             try {
