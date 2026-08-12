@@ -2,7 +2,7 @@
 published: true
 title: About Puplets
 heading: A Future Vet's Mission
-image: /logo.svg
+image: ""
 ---
 ## Our Story
 
