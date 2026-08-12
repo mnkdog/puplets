@@ -29,5 +29,19 @@
     "free_shipping": true,
     "delivery_time": "3-7 business days",
     "countries": ["GB", "US", "CA", "AU", "NZ", "IE"]
+  },
+  "products": {
+    "collar": {
+      "name": "Waterproof Dog Collar",
+      "basePrice": 17.99,
+      "description": "Create a unique collar for your pup with your choice of colour, size, and charms. Each collar comes with one free charm!",
+      "inStock": true
+    },
+    "charms": {
+      "name": "Individual Charms",
+      "price": 3.99,
+      "description": "Add extra personality to your dog's collar with our adorable charms. Choose from 20 unique designs!",
+      "inStock": true
+    }
   }
 }
