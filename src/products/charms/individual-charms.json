@@ -1,0 +1,36 @@
+{
+  "name": "Individual Charms",
+  "slug": "charms",
+  "description": "Add extra personality to your dog's collar with our adorable charms. Choose from 20 unique designs!",
+  "price": 3.99,
+  "image": "prod-9-charms.jpg",
+  "charms": [
+    { "name": "White paw", "image": "charm-white-paw.jpg", "order": 0 },
+    { "name": "Black paw", "image": "charm-black-paw.jpg", "order": 1 },
+    { "name": "Bone", "image": "charm-bone.jpg", "order": 2 },
+    { "name": "Heart", "image": "charm-heart.jpg", "order": 3 },
+    { "name": "Star", "image": "charm-star.jpg", "order": 4 },
+    { "name": "Rainbow", "image": "charm-rainbow.jpg", "order": 5 },
+    { "name": "Donut", "image": "charm-donut.jpg", "order": 6 },
+    { "name": "Pizza slice", "image": "charm-pizza.jpg", "order": 7 },
+    { "name": "Taco", "image": "charm-taco.jpg", "order": 8 },
+    { "name": "Avocado", "image": "charm-avocado.jpg", "order": 9 },
+    { "name": "Strawberry", "image": "charm-strawberry.jpg", "order": 10 },
+    { "name": "Watermelon", "image": "charm-watermelon.jpg", "order": 11 },
+    { "name": "Crown", "image": "charm-crown.jpg", "order": 12 },
+    { "name": "Diamond", "image": "charm-diamond.jpg", "order": 13 },
+    { "name": "Butterfly", "image": "charm-butterfly.jpg", "order": 14 },
+    { "name": "Bee", "image": "charm-bee.jpg", "order": 15 },
+    { "name": "Ghost", "image": "charm-ghost.jpg", "order": 16 },
+    { "name": "Lightning bolt", "image": "charm-lightning.jpg", "order": 17 },
+    { "name": "Sun", "image": "charm-sun.jpg", "order": 18 },
+    { "name": "Moon", "image": "charm-moon.jpg", "order": 19 }
+  ],
+  "features": [
+    "Durable enamel coating",
+    "Secure attachment",
+    "Mix and match designs",
+    "Weather resistant"
+  ],
+  "in_stock": true
+}

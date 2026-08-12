@@ -163,6 +163,35 @@
                       { label: 'Delivery Time', name: 'delivery_time', widget: 'string', default: '3-7 business days' },
                       { label: 'Countries', name: 'countries', widget: 'list', required: false }
                     ]
+                  },
+                  {
+                    label: 'Products',
+                    name: 'products',
+                    widget: 'object',
+                    fields: [
+                      {
+                        label: 'Collar',
+                        name: 'collar',
+                        widget: 'object',
+                        fields: [
+                          { label: 'Name', name: 'name', widget: 'string', default: 'Waterproof Dog Collar' },
+                          { label: 'Base Price', name: 'basePrice', widget: 'number', value_type: 'float', default: 17.99 },
+                          { label: 'Description', name: 'description', widget: 'text' },
+                          { label: 'In Stock', name: 'inStock', widget: 'boolean', default: true }
+                        ]
+                      },
+                      {
+                        label: 'Charms',
+                        name: 'charms',
+                        widget: 'object',
+                        fields: [
+                          { label: 'Name', name: 'name', widget: 'string', default: 'Individual Charms' },
+                          { label: 'Price', name: 'price', widget: 'number', value_type: 'float', default: 3.99 },
+                          { label: 'Description', name: 'description', widget: 'text' },
+                          { label: 'In Stock', name: 'inStock', widget: 'boolean', default: true }
+                        ]
+                      }
+                    ]
                   }
                 ]
               }
