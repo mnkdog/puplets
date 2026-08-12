@@ -196,6 +196,38 @@
                 ]
               }
             ]
+          },
+          {
+            name: 'inventory',
+            label: 'Inventory',
+            files: [
+              {
+                label: 'Stock Levels',
+                name: 'stock',
+                file: 'src/content/inventory.json',
+                fields: [
+                  {
+                    label: 'Collar Variants',
+                    name: 'collars',
+                    widget: 'list',
+                    fields: [
+                      { label: 'Color', name: 'color', widget: 'select', options: ['chilli', 'ocean', 'fern'] },
+                      { label: 'Size', name: 'size', widget: 'select', options: ['XS', 'S', 'M'] },
+                      { label: 'Quantity', name: 'quantity', widget: 'number', value_type: 'int', min: 0 }
+                    ]
+                  },
+                  {
+                    label: 'Charms',
+                    name: 'charms',
+                    widget: 'list',
+                    fields: [
+                      { label: 'Charm Name', name: 'name', widget: 'string' },
+                      { label: 'Quantity', name: 'quantity', widget: 'number', value_type: 'int', min: 0 }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
