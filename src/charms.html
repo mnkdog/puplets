@@ -426,7 +426,10 @@
             let isInStock = true;
             let message = '';
 
-            if (charmValue) {
+            // Only check inventory if it has been loaded
+            const inventoryLoaded = inventory.charms.length > 0;
+
+            if (charmValue && inventoryLoaded) {
                 const charmName = charms.find(c => c.toLowerCase().replace(/\s+/g, '-') === charmValue);
                 const stock = checkCharmStock(charmName);
 
