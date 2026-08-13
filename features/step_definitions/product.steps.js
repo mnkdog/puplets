@@ -207,7 +207,7 @@ Then('the variant selector should show {string}', async function (text) {
 });
 
 Then('the {string} button should show {string}', async function (buttonName, buttonText) {
-  const button = await this.page.locator('button');
+  const button = await this.page.locator(`button:has-text("${buttonName}")`);
   const text = await button.textContent();
   expect(text).to.include(buttonText);
 });
