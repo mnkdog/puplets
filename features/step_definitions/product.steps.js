@@ -4,11 +4,20 @@ import { expect } from 'chai';
 Given('I am on a product page', async function () {
   await this.page.goto('http://localhost:8080/collar.html');
   await this.page.waitForLoadState('networkidle');
-  // Wait for page to be fully initialized (color dropdown should have options)
+  // Wait for page to be fully initialized and inventory loaded
   await this.page.waitForFunction(() => {
     const colorSelect = document.querySelector('select[name="color"]');
-    return colorSelect && colorSelect.options.length > 1;
+    // Check if color dropdown has options (sign of initialization)
+    if (!colorSelect || colorSelect.options.length <= 1) return false;
+
+    // Try to access inventory through a global check
+    // The setupFormValidation should have run if DOM is ready
+    const addButton = document.getElementById('addToBasket');
+    return addButton !== null;
   }, { timeout: 5000 });
+
+  // Give extra time for inventory to load
+  await this.page.waitForTimeout(500);
 });
 
 When('I view the purchasing options', async function () {
@@ -99,7 +108,7 @@ Then('the {string} button should be enabled', async function (buttonText) {
       charmValue: charmSelect ? charmSelect.value : 'not found',
       buttonDisabled: addButton ? addButton.disabled : 'not found',
       buttonExists: !!addButton,
-      inventoryLoaded: window.inventory ? (window.inventory.collars.length > 0) : false
+      inventoryLoaded: window.__inventory ? (window.__inventory.collars.length > 0 && window.__inventory.charms.length > 0) : false
     };
   });
 

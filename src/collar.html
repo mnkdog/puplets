@@ -725,6 +725,8 @@
                 const response = await fetch('/content/inventory.json');
                 if (response.ok) {
                     inventory = await response.json();
+                    // Expose inventory to window for debugging/testing
+                    window.__inventory = inventory;
                 }
             } catch (error) {
                 console.error('Failed to load inventory:', error);
