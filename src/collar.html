@@ -919,6 +919,13 @@
 
                 stockMessage.textContent = message;
                 addButton.disabled = !hasSelection || !isInStock;
+
+                // Update button text based on stock status
+                if (!isInStock && hasSelection) {
+                    addButton.textContent = 'Out of Stock';
+                } else {
+                    addButton.textContent = 'Add to Basket';
+                }
             }
 
             function populateSizeOptions(color) {
