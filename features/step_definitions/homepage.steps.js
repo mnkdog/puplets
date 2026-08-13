@@ -1,7 +1,5 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
-import fs from 'fs';
-import path from 'path';
 
 Given('I am on the homepage', async function () {
   await this.page.goto('http://localhost:8080');
@@ -59,11 +57,8 @@ Then('I should be on the about page', async function () {
 });
 
 Given('the about page is published', async function () {
-  // Ensure about.md has published: true for testing
-  const aboutPath = path.join(process.cwd(), 'src/content/about.md');
-  const content = fs.readFileSync(aboutPath, 'utf-8');
-  const updatedContent = content.replace(/published:\s*(true|false)/, 'published: true');
-  fs.writeFileSync(aboutPath, updatedContent);
+  // Dave Farley approach: Set test state, mock handles the rest
+  this.aboutPagePublished = true;
 });
 
 Given('I am on the about page', async function () {
