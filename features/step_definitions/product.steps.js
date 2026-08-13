@@ -64,7 +64,8 @@ When('I have not selected all required options', async function () {
 });
 
 Then('the {string} button should be disabled', async function (buttonText) {
-  const button = await this.page.locator(`button:has-text("${buttonText}")`);
+  // Use ID since button text may change (e.g., "Out of Stock")
+  const button = await this.page.locator('#addToBasket');
   const isDisabled = await button.isDisabled();
   expect(isDisabled).to.equal(true);
 });
