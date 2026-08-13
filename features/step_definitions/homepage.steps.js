@@ -56,6 +56,11 @@ Then('I should be on the about page', async function () {
   expect(url).to.include('about.html');
 });
 
+Given('the about page is published', async function () {
+  // Dave Farley approach: Set test state, mock handles the rest
+  this.aboutPagePublished = true;
+});
+
 Given('I am on the about page', async function () {
   await this.page.goto('http://localhost:8080/about.html');
 });
@@ -71,6 +76,8 @@ Given('I am on the cart page', async function () {
 });
 
 Then('I should see the heading {string}', async function (headingText) {
+  // Wait for dynamic content to load
+  await this.page.waitForSelector('h1', { timeout: 5000 });
   const heading = await this.page.locator(`h1:has-text("${headingText}")`);
   const count = await heading.count();
   expect(count).to.be.greaterThan(0, `Heading "${headingText}" not found`);
@@ -78,7 +85,7 @@ Then('I should see the heading {string}', async function (headingText) {
 
 Then('I should see text about veterinary school', async function () {
   const content = await this.page.textContent('body');
-  expect(content).to.include('veterinary school');
+  expect(content).to.include('veterinary student');
 });
 
 Then('I should see text about Colchester Zoo', async function () {

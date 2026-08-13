@@ -725,6 +725,8 @@
                 const response = await fetch('/content/inventory.json');
                 if (response.ok) {
                     inventory = await response.json();
+                    // Expose inventory to window for debugging/testing
+                    window.__inventory = inventory;
                 }
             } catch (error) {
                 console.error('Failed to load inventory:', error);
@@ -890,22 +892,25 @@
 
             function validateForm() {
                 const hasSelection = colorSelect.value && sizeSelect.value && charmSelect.value;
+                const hasCollarSelection = colorSelect.value && sizeSelect.value;
                 let isInStock = true;
                 let message = '';
 
                 // Only check inventory if it has been loaded
                 const inventoryLoaded = inventory.collars.length > 0 && inventory.charms.length > 0;
 
-                if (hasSelection && inventoryLoaded) {
-                    // Check collar stock
-                    const collarStock = checkCollarStock(colorSelect.value, sizeSelect.value);
-                    if (collarStock === 0) {
-                        isInStock = false;
-                        message = 'Out of Stock - This color/size combination is currently unavailable';
+                if (inventoryLoaded) {
+                    // Check collar stock if color and size are selected
+                    if (hasCollarSelection) {
+                        const collarStock = checkCollarStock(colorSelect.value, sizeSelect.value);
+                        if (collarStock === 0) {
+                            isInStock = false;
+                            message = 'Out of Stock - This color/size combination is currently unavailable';
+                        }
                     }
 
-                    // Check charm stock
-                    if (isInStock && charmSelect.value) {
+                    // Check charm stock if all selections made
+                    if (hasSelection && isInStock && charmSelect.value) {
                         const charmText = charmSelect.options[charmSelect.selectedIndex].text;
                         const charmStock = checkCharmStock(charmText);
                         if (charmStock === 0) {
@@ -917,6 +922,61 @@
 
                 stockMessage.textContent = message;
                 addButton.disabled = !hasSelection || !isInStock;
+
+                // Update button text based on stock status
+                // Preserve "Update Basket" text if in edit mode
+                const isEditMode = addButton.textContent === 'Update Basket';
+                if (!isEditMode) {
+                    // Show "Out of Stock" if currently selected items are out of stock,
+                    // even if not all selections are made
+                    if (!isInStock && (colorSelect.value || sizeSelect.value)) {
+                        addButton.textContent = 'Out of Stock';
+                    } else {
+                        addButton.textContent = 'Add to Basket';
+                    }
+                }
+            }
+
+            function populateSizeOptions(color) {
+                // Save currently selected size if any
+                const previousSize = sizeSelect.value;
+
+                sizeSelect.innerHTML = '<option value="">Select a size</option>';
+
+                if (!color) {
+                    return;
+                }
+
+                // Get all sizes for the selected color from inventory
+                const sizesForColor = inventory.collars
+                    .filter(item => item.color === color)
+                    .map(item => ({ size: item.size, quantity: item.quantity }));
+
+                // Define size order and prices
+                const sizeData = [
+                    { size: 'XS', price: 20.00 },
+                    { size: 'S', price: 25.00 },
+                    { size: 'M', price: 30.00 }
+                ];
+
+                // Add options in order
+                sizeData.forEach(({ size, price }) => {
+                    const stockInfo = sizesForColor.find(s => s.size === size);
+                    if (stockInfo) {
+                        const option = document.createElement('option');
+                        option.value = size;
+                        option.textContent = `${size} - £${price.toFixed(2)}`;
+                        option.dataset.price = price;
+                        sizeSelect.appendChild(option);
+                    }
+                });
+
+                // Restore previous size selection if it's still available
+                if (previousSize && Array.from(sizeSelect.options).some(opt => opt.value === previousSize)) {
+                    sizeSelect.value = previousSize;
+                    // Trigger validation if we restored a selection
+                    validateForm();
+                }
             }
 
             // Color to image mapping
@@ -927,10 +987,14 @@
             };
 
             colorSelect.addEventListener('change', function() {
+                const selectedColor = this.value;
+
+                // Populate size dropdown based on selected color
+                populateSizeOptions(selectedColor);
+
                 validateForm();
 
                 // Auto-switch to color's image
-                const selectedColor = this.value;
                 if (selectedColor && colorImageMap[selectedColor]) {
                     const targetImage = colorImageMap[selectedColor];
                     updateMainImage(targetImage);
@@ -950,6 +1014,11 @@
             charmSelect.addEventListener('change', validateForm);
 
             addButton.addEventListener('click', addToCart);
+
+            // Initial population of sizes if a color is already selected
+            if (colorSelect.value) {
+                populateSizeOptions(colorSelect.value);
+            }
         }
 
         // Dynamic pricing

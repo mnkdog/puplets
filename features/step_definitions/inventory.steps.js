@@ -1,11 +1,10 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
-import fs from 'fs';
-import path from 'path';
 
 Given('the inventory system is initialized', async function () {
-  // Create test inventory data
-  const inventoryData = {
+  // Dave Farley approach: Set specific test inventory for this scenario
+  // Mock handles the rest - no file writes
+  this.testInventory = {
     collars: [
       { color: 'chilli', size: 'XS', quantity: 1000 },
       { color: 'chilli', size: 'S', quantity: 1000 },
@@ -40,10 +39,6 @@ Given('the inventory system is initialized', async function () {
       { name: 'Moon', quantity: 200 }
     ]
   };
-
-  // Write inventory file for testing
-  const inventoryPath = path.join(process.cwd(), 'src/content/inventory.json');
-  fs.writeFileSync(inventoryPath, JSON.stringify(inventoryData, null, 2));
 });
 
 Given('I am on the collar product page', async function () {
@@ -52,13 +47,32 @@ Given('I am on the collar product page', async function () {
 });
 
 Given('the {string} collar variant has {int} in stock', async function (variant, quantity) {
-  // Stock is already set in inventory initialization
-  // This step is for clarity in the test
+  // Parse variant (e.g., "ocean/S" -> color: ocean, size: S)
+  const [color, size] = variant.split('/');
+
+  // Update test inventory for this specific variant
+  const collarIndex = this.testInventory.collars.findIndex(
+    c => c.color === color && c.size === size
+  );
+
+  if (collarIndex >= 0) {
+    this.testInventory.collars[collarIndex].quantity = quantity;
+  } else {
+    this.testInventory.collars.push({ color, size, quantity });
+  }
 });
 
 Given('the {string} charm has {int} in stock', async function (charmName, quantity) {
-  // Stock is already set in inventory initialization
-  // This step is for clarity in the test
+  // Update test inventory for this specific charm
+  const charmIndex = this.testInventory.charms.findIndex(
+    c => c.name === charmName
+  );
+
+  if (charmIndex >= 0) {
+    this.testInventory.charms[charmIndex].quantity = quantity;
+  } else {
+    this.testInventory.charms.push({ name: charmName, quantity });
+  }
 });
 
 When('I select color {string}', async function (color) {

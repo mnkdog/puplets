@@ -474,7 +474,10 @@
         }
 
         document.getElementById('charm').addEventListener('change', updateSelection);
-        document.getElementById('quantity').addEventListener('change', updatePrice);
+        document.getElementById('quantity').addEventListener('change', () => {
+            updateSelection();
+            updatePrice();
+        });
 
         document.getElementById('addToBasket').addEventListener('click', function() {
             const charmValue = document.getElementById('charm').value;

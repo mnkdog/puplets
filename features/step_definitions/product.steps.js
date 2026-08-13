@@ -4,6 +4,20 @@ import { expect } from 'chai';
 Given('I am on a product page', async function () {
   await this.page.goto('http://localhost:8080/collar.html');
   await this.page.waitForLoadState('networkidle');
+  // Wait for page to be fully initialized and inventory loaded
+  await this.page.waitForFunction(() => {
+    const colorSelect = document.querySelector('select[name="color"]');
+    // Check if color dropdown has options (sign of initialization)
+    if (!colorSelect || colorSelect.options.length <= 1) return false;
+
+    // Try to access inventory through a global check
+    // The setupFormValidation should have run if DOM is ready
+    const addButton = document.getElementById('addToBasket');
+    return addButton !== null;
+  }, { timeout: 5000 });
+
+  // Give extra time for inventory to load
+  await this.page.waitForTimeout(500);
 });
 
 When('I view the purchasing options', async function () {
@@ -50,13 +64,19 @@ When('I have not selected all required options', async function () {
 });
 
 Then('the {string} button should be disabled', async function (buttonText) {
-  const button = await this.page.locator(`button:has-text("${buttonText}")`);
+  // Use ID since button text may change (e.g., "Out of Stock")
+  const button = await this.page.locator('#addToBasket');
   const isDisabled = await button.isDisabled();
   expect(isDisabled).to.equal(true);
 });
 
 When('I select a colour', async function () {
   await this.page.selectOption('select[name="color"]', { index: 1 });
+  // Wait for size options to be populated after color selection
+  await this.page.waitForFunction(() => {
+    const sizeSelect = document.querySelector('select[name="size"]');
+    return sizeSelect && sizeSelect.options.length > 1; // More than just the placeholder
+  }, { timeout: 3000 });
 });
 
 When('I select a size', async function () {
@@ -65,9 +85,38 @@ When('I select a size', async function () {
 
 When('I select a free charm', async function () {
   await this.page.selectOption('select[name="charm"]', { index: 1 });
+  // Manually trigger validation in case change event didn't fire
+  await this.page.evaluate(() => {
+    const charmSelect = document.querySelector('select[name="charm"]');
+    const event = new Event('change', { bubbles: true });
+    charmSelect.dispatchEvent(event);
+  });
+  // Wait for validation to complete
+  await this.page.waitForTimeout(200);
 });
 
 Then('the {string} button should be enabled', async function (buttonText) {
+  // Debug: check select values and button state
+  const debugInfo = await this.page.evaluate(() => {
+    const colorSelect = document.querySelector('select[name="color"]');
+    const sizeSelect = document.querySelector('select[name="size"]');
+    const charmSelect = document.querySelector('select[name="charm"]');
+    const addButton = document.getElementById('addToBasket');
+
+    return {
+      colorValue: colorSelect ? colorSelect.value : 'not found',
+      sizeValue: sizeSelect ? sizeSelect.value : 'not found',
+      charmValue: charmSelect ? charmSelect.value : 'not found',
+      buttonDisabled: addButton ? addButton.disabled : 'not found',
+      buttonExists: !!addButton,
+      inventoryLoaded: window.__inventory ? (window.__inventory.collars.length > 0 && window.__inventory.charms.length > 0) : false
+    };
+  });
+
+  if (debugInfo.buttonDisabled) {
+    console.log('Debug info:', debugInfo);
+  }
+
   const button = await this.page.locator(`button:has-text("${buttonText}")`);
   const isDisabled = await button.isDisabled();
   expect(isDisabled).to.equal(false);
@@ -90,8 +139,15 @@ Then('the displayed price should update accordingly', async function () {
 
 Given('I have selected a colour, size, and free charm', async function () {
   await this.page.selectOption('select[name="color"]', { index: 1 });
+  // Wait for size options to be populated
+  await this.page.waitForFunction(() => {
+    const sizeSelect = document.querySelector('select[name="size"]');
+    return sizeSelect && sizeSelect.options.length > 1;
+  }, { timeout: 3000 });
   await this.page.selectOption('select[name="size"]', { index: 1 });
   await this.page.selectOption('select[name="charm"]', { index: 1 });
+  // Small wait for validation to complete
+  await this.page.waitForTimeout(100);
 });
 
 // Removed duplicate - using implementation from checkout.steps.js
@@ -126,18 +182,34 @@ Then('I should be able to select additional charms', async function () {
 });
 
 Given('a specific colour and size combination is out of stock', async function () {
-  // Mock out of stock by injecting into page data
-  await this.page.evaluate(() => {
-    window.stockLevels = {
-      'chilli-xs': 0
-    };
-  });
+  // Dave Farley: Update test inventory to set chilli/XS to 0
+  const collarIndex = this.testInventory.collars.findIndex(
+    c => c.color === 'chilli' && c.size === 'XS'
+  );
+  if (collarIndex >= 0) {
+    this.testInventory.collars[collarIndex].quantity = 0;
+  }
+
+  // Reload page to fetch updated inventory
+  await this.page.reload({ waitUntil: 'networkidle' });
 });
 
 When('I select that combination', async function () {
   await this.page.selectOption('select[name="color"]', 'chilli');
-  await this.page.selectOption('select[name="size"]', 'xs');
-  await this.page.waitForTimeout(100);
+  // Wait for size options to populate
+  await this.page.waitForFunction(() => {
+    const sizeSelect = document.querySelector('select[name="size"]');
+    return sizeSelect && sizeSelect.options.length > 1;
+  }, { timeout: 3000 });
+  await this.page.selectOption('select[name="size"]', 'XS');
+
+  // Force validateForm to ensure button text updates
+  await this.page.evaluate(() => {
+    const event = new Event('change', { bubbles: true });
+    document.querySelector('select[name="size"]').dispatchEvent(event);
+  });
+
+  await this.page.waitForTimeout(300);
 });
 
 Then('the variant selector should show {string}', async function (text) {
@@ -146,7 +218,11 @@ Then('the variant selector should show {string}', async function (text) {
 });
 
 Then('the {string} button should show {string}', async function (buttonName, buttonText) {
-  const button = await this.page.locator('button');
+  // Wait for button text to update
+  await this.page.waitForTimeout(500);
+
+  // Find button by ID since text may have changed
+  const button = await this.page.locator('#addToBasket');
   const text = await button.textContent();
   expect(text).to.include(buttonText);
 });

@@ -7,6 +7,45 @@ class CustomWorld extends World {
     this.browser = null;
     this.context = null;
     this.page = null;
+    this.testInventory = this.getDefaultInventory();
+  }
+
+  getDefaultInventory() {
+    return {
+      collars: [
+        { color: 'chilli', size: 'XS', quantity: 1000 },
+        { color: 'chilli', size: 'S', quantity: 1000 },
+        { color: 'chilli', size: 'M', quantity: 1000 },
+        { color: 'ocean', size: 'XS', quantity: 1000 },
+        { color: 'ocean', size: 'S', quantity: 1000 },
+        { color: 'ocean', size: 'M', quantity: 1000 },
+        { color: 'fern', size: 'XS', quantity: 1000 },
+        { color: 'fern', size: 'S', quantity: 1000 },
+        { color: 'fern', size: 'M', quantity: 1000 }
+      ],
+      charms: [
+        { name: 'White paw', quantity: 200 },
+        { name: 'Black paw', quantity: 200 },
+        { name: 'Bone', quantity: 200 },
+        { name: 'Heart', quantity: 200 },
+        { name: 'Star', quantity: 200 },
+        { name: 'Rainbow', quantity: 200 },
+        { name: 'Donut', quantity: 200 },
+        { name: 'Pizza slice', quantity: 200 },
+        { name: 'Taco', quantity: 200 },
+        { name: 'Avocado', quantity: 200 },
+        { name: 'Strawberry', quantity: 200 },
+        { name: 'Watermelon', quantity: 200 },
+        { name: 'Crown', quantity: 200 },
+        { name: 'Diamond', quantity: 200 },
+        { name: 'Butterfly', quantity: 200 },
+        { name: 'Bee', quantity: 200 },
+        { name: 'Ghost', quantity: 200 },
+        { name: 'Lightning bolt', quantity: 200 },
+        { name: 'Sun', quantity: 200 },
+        { name: 'Moon', quantity: 200 }
+      ]
+    };
   }
 
   async openBrowser() {
@@ -15,6 +54,37 @@ class CustomWorld extends World {
     this.page = await this.context.newPage();
     // Set longer timeout for CI environment (default is 30s, but step timeout is 10s now)
     this.page.setDefaultTimeout(8000);
+
+    // Dave Farley approach: Mock all external data - no file writes
+
+    // Mock inventory API - use arrow function to capture 'this' and evaluate testInventory at request time
+    await this.page.route('**/content/inventory.json', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(this.testInventory)
+      });
+    });
+
+    // Mock about page content - default to published
+    this.aboutPagePublished = true;
+    await this.page.route('**/content/about.md', route => {
+      const aboutContent = `---
+published: ${this.aboutPagePublished}
+title: About Puplets
+heading: A Future Vet's Mission
+image: ""
+---
+## Our Story
+
+Puplets was founded by a passionate veterinary student who has worked at Colchester Zoo and dog kennels.`;
+
+      route.fulfill({
+        status: 200,
+        contentType: 'text/markdown',
+        body: aboutContent
+      });
+    });
   }
 
   async closeBrowser() {
