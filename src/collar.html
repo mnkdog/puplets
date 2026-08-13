@@ -920,9 +920,15 @@
             }
 
             function populateSizeOptions(color) {
+                // Save currently selected size if any
+                const previousSize = sizeSelect.value;
+
                 sizeSelect.innerHTML = '<option value="">Select a size</option>';
 
-                if (!color) return;
+                if (!color) {
+                    validateForm();
+                    return;
+                }
 
                 // Get all sizes for the selected color from inventory
                 const sizesForColor = inventory.collars
@@ -947,6 +953,14 @@
                         sizeSelect.appendChild(option);
                     }
                 });
+
+                // Restore previous size selection if it's still available
+                if (previousSize && Array.from(sizeSelect.options).some(opt => opt.value === previousSize)) {
+                    sizeSelect.value = previousSize;
+                }
+
+                // Trigger validation after populating
+                validateForm();
             }
 
             // Color to image mapping
