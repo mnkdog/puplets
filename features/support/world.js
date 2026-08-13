@@ -57,8 +57,8 @@ class CustomWorld extends World {
 
     // Dave Farley approach: Mock all external data - no file writes
 
-    // Mock inventory API
-    await this.page.route('**/content/inventory.json', route => {
+    // Mock inventory API - use arrow function to capture 'this' and evaluate testInventory at request time
+    await this.page.route('**/content/inventory.json', (route) => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',

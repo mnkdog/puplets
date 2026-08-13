@@ -188,6 +188,9 @@ Given('a specific colour and size combination is out of stock', async function (
   if (collarIndex >= 0) {
     this.testInventory.collars[collarIndex].quantity = 0;
   }
+
+  // Reload page to fetch updated inventory
+  await this.page.reload({ waitUntil: 'networkidle' });
 });
 
 When('I select that combination', async function () {
