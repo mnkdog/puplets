@@ -181,18 +181,24 @@ Then('I should be able to select additional charms', async function () {
 });
 
 Given('a specific colour and size combination is out of stock', async function () {
-  // Mock out of stock by injecting into page data
-  await this.page.evaluate(() => {
-    window.stockLevels = {
-      'chilli-xs': 0
-    };
-  });
+  // Dave Farley: Update test inventory to set chilli/XS to 0
+  const collarIndex = this.testInventory.collars.findIndex(
+    c => c.color === 'chilli' && c.size === 'XS'
+  );
+  if (collarIndex >= 0) {
+    this.testInventory.collars[collarIndex].quantity = 0;
+  }
 });
 
 When('I select that combination', async function () {
   await this.page.selectOption('select[name="color"]', 'chilli');
-  await this.page.selectOption('select[name="size"]', 'xs');
-  await this.page.waitForTimeout(100);
+  // Wait for size options to populate
+  await this.page.waitForFunction(() => {
+    const sizeSelect = document.querySelector('select[name="size"]');
+    return sizeSelect && sizeSelect.options.length > 1;
+  }, { timeout: 3000 });
+  await this.page.selectOption('select[name="size"]', 'XS');
+  await this.page.waitForTimeout(200);
 });
 
 Then('the variant selector should show {string}', async function (text) {
