@@ -201,7 +201,14 @@ When('I select that combination', async function () {
     return sizeSelect && sizeSelect.options.length > 1;
   }, { timeout: 3000 });
   await this.page.selectOption('select[name="size"]', 'XS');
-  await this.page.waitForTimeout(200);
+
+  // Force validateForm to ensure button text updates
+  await this.page.evaluate(() => {
+    const event = new Event('change', { bubbles: true });
+    document.querySelector('select[name="size"]').dispatchEvent(event);
+  });
+
+  await this.page.waitForTimeout(300);
 });
 
 Then('the variant selector should show {string}', async function (text) {
@@ -210,7 +217,11 @@ Then('the variant selector should show {string}', async function (text) {
 });
 
 Then('the {string} button should show {string}', async function (buttonName, buttonText) {
-  const button = await this.page.locator(`button:has-text("${buttonName}")`);
+  // Wait for button text to update
+  await this.page.waitForTimeout(500);
+
+  // Find button by ID since text may have changed
+  const button = await this.page.locator('#addToBasket');
   const text = await button.textContent();
   expect(text).to.include(buttonText);
 });

@@ -892,22 +892,25 @@
 
             function validateForm() {
                 const hasSelection = colorSelect.value && sizeSelect.value && charmSelect.value;
+                const hasCollarSelection = colorSelect.value && sizeSelect.value;
                 let isInStock = true;
                 let message = '';
 
                 // Only check inventory if it has been loaded
                 const inventoryLoaded = inventory.collars.length > 0 && inventory.charms.length > 0;
 
-                if (hasSelection && inventoryLoaded) {
-                    // Check collar stock
-                    const collarStock = checkCollarStock(colorSelect.value, sizeSelect.value);
-                    if (collarStock === 0) {
-                        isInStock = false;
-                        message = 'Out of Stock - This color/size combination is currently unavailable';
+                if (inventoryLoaded) {
+                    // Check collar stock if color and size are selected
+                    if (hasCollarSelection) {
+                        const collarStock = checkCollarStock(colorSelect.value, sizeSelect.value);
+                        if (collarStock === 0) {
+                            isInStock = false;
+                            message = 'Out of Stock - This color/size combination is currently unavailable';
+                        }
                     }
 
-                    // Check charm stock
-                    if (isInStock && charmSelect.value) {
+                    // Check charm stock if all selections made
+                    if (hasSelection && isInStock && charmSelect.value) {
                         const charmText = charmSelect.options[charmSelect.selectedIndex].text;
                         const charmStock = checkCharmStock(charmText);
                         if (charmStock === 0) {
