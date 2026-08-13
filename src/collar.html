@@ -885,6 +885,8 @@
             function createStockMessage() {
                 const msg = document.createElement('div');
                 msg.id = 'stockMessage';
+                msg.setAttribute('role', 'status');
+                msg.setAttribute('aria-live', 'polite');
                 msg.style.cssText = 'color: #D6001C; font-weight: 600; margin-top: 1rem;';
                 addButton.parentElement.appendChild(msg);
                 return msg;
@@ -1062,22 +1064,35 @@
                 const charmDiv = document.createElement('div');
                 charmDiv.className = 'extra-charm-option';
                 charmDiv.dataset.charm = charm.toLowerCase().replace(/\s+/g, '-');
+                charmDiv.setAttribute('tabindex', '0');
+                charmDiv.setAttribute('role', 'checkbox');
+                charmDiv.setAttribute('aria-checked', 'false');
                 charmDiv.innerHTML = `
                     <div class="charm-icon">✨</div>
                     <div class="charm-name">${charm}</div>
                     <div class="charm-price">+£${charmPrice.toFixed(2)}</div>
                 `;
 
-                charmDiv.addEventListener('click', () => {
+                const toggleCharm = () => {
                     const charmId = charmDiv.dataset.charm;
                     if (selectedExtraCharms.has(charmId)) {
                         selectedExtraCharms.delete(charmId);
                         charmDiv.classList.remove('selected');
+                        charmDiv.setAttribute('aria-checked', 'false');
                     } else {
                         selectedExtraCharms.add(charmId);
                         charmDiv.classList.add('selected');
+                        charmDiv.setAttribute('aria-checked', 'true');
                     }
                     updateTotalPrice();
+                };
+
+                charmDiv.addEventListener('click', toggleCharm);
+                charmDiv.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleCharm();
+                    }
                 });
 
                 grid.appendChild(charmDiv);
