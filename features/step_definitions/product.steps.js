@@ -70,9 +70,32 @@ When('I select a size', async function () {
 
 When('I select a free charm', async function () {
   await this.page.selectOption('select[name="charm"]', { index: 1 });
+  // Wait for validation to complete
+  await this.page.waitForTimeout(200);
 });
 
 Then('the {string} button should be enabled', async function (buttonText) {
+  // Debug: check select values and button state
+  const debugInfo = await this.page.evaluate(() => {
+    const colorSelect = document.querySelector('select[name="color"]');
+    const sizeSelect = document.querySelector('select[name="size"]');
+    const charmSelect = document.querySelector('select[name="charm"]');
+    const addButton = document.getElementById('addToBasket');
+
+    return {
+      colorValue: colorSelect ? colorSelect.value : 'not found',
+      sizeValue: sizeSelect ? sizeSelect.value : 'not found',
+      charmValue: charmSelect ? charmSelect.value : 'not found',
+      buttonDisabled: addButton ? addButton.disabled : 'not found',
+      buttonExists: !!addButton,
+      inventoryLoaded: window.inventory ? (window.inventory.collars.length > 0) : false
+    };
+  });
+
+  if (debugInfo.buttonDisabled) {
+    console.log('Debug info:', debugInfo);
+  }
+
   const button = await this.page.locator(`button:has-text("${buttonText}")`);
   const isDisabled = await button.isDisabled();
   expect(isDisabled).to.equal(false);
