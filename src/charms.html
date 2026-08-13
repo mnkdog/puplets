@@ -235,7 +235,7 @@
             Puplets
         </a>
         <div class="nav-links">
-            <button class="hamburger" onclick="toggleMobileMenu()">
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
                 <span></span><span></span><span></span>
             </button>
             <a href="/">Home</a>
@@ -251,7 +251,7 @@
 
     <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
         <div class="mobile-menu-content" onclick="event.stopPropagation()">
-            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu">&times;</button>
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>

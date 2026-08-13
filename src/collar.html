@@ -544,7 +544,7 @@
 <body>
     <nav>
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <button class="hamburger" onclick="toggleMobileMenu()">
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -570,7 +570,7 @@
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
         <div class="mobile-menu-content" onclick="event.stopPropagation()">
-            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu">&times;</button>
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
@@ -596,9 +596,9 @@
         <div class="product-layout">
             <div class="product-images">
                 <div class="main-image">
-                    <button class="image-nav prev" onclick="navigateImage(-1)">‹</button>
+                    <button class="image-nav prev" onclick="navigateImage(-1)" aria-label="Previous image">‹</button>
                     <img id="mainImage" src="prod-1.jpg" alt="Waterproof Dog Collar" onclick="openLightbox()">
-                    <button class="image-nav next" onclick="navigateImage(1)">›</button>
+                    <button class="image-nav next" onclick="navigateImage(1)" aria-label="Next image">›</button>
                 </div>
                 <div class="thumbnail-grid">
                     <div class="thumbnail active" data-src="prod-1.jpg"><img src="prod-1.jpg" alt="View 1"></div>
@@ -695,7 +695,7 @@
 
     <!-- Lightbox for enlarged images -->
     <div id="lightbox" class="lightbox" onclick="closeLightbox()">
-        <span class="lightbox-close">&times;</span>
+        <span class="lightbox-close" aria-label="Close image">&times;</span>
         <img id="lightboxImage" src="" alt="Enlarged view">
     </div>
 
