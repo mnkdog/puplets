@@ -350,7 +350,10 @@
                 }
 
                 // Parse and add markdown content
-                html += `<div class="story">${marked.parse(markdownBody)}</div>`;
+                const parsedContent = typeof marked !== 'undefined' && marked.parse
+                    ? marked.parse(markdownBody)
+                    : parseMarkdownFallback(markdownBody);
+                html += `<div class="story">${parsedContent}</div>`;
 
                 container.innerHTML = html;
 
@@ -359,6 +362,39 @@
                 const container = document.getElementById('aboutContent');
                 container.innerHTML = '<p style="text-align: center; color: #999;">Failed to load content. Please try again later.</p>';
             }
+        }
+
+        function parseMarkdownFallback(markdown) {
+            let html = markdown;
+
+            // Headers (## and ###)
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+
+            // Bold
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+            // Italic
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            // Links
+            html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+
+            // Lists - convert markdown lists to HTML
+            html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+            // Paragraphs - wrap non-tag lines in <p>
+            const lines = html.split('\n');
+            const processed = lines.map(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return '';
+                if (trimmed.startsWith('<')) return line;
+                if (trimmed.match(/^<\/(h[1-6]|ul|li)>$/)) return line;
+                return `<p>${line}</p>`;
+            });
+
+            return processed.join('\n');
         }
 
         function escapeHtml(text) {
