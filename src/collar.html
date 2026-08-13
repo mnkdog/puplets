@@ -921,7 +921,9 @@
                 addButton.disabled = !hasSelection || !isInStock;
 
                 // Update button text based on stock status
-                if (!isInStock && hasSelection) {
+                // Show "Out of Stock" if currently selected items are out of stock,
+                // even if not all selections are made
+                if (!isInStock && (colorSelect.value || sizeSelect.value)) {
                     addButton.textContent = 'Out of Stock';
                 } else {
                     addButton.textContent = 'Add to Basket';
