@@ -4,6 +4,11 @@ import { expect } from 'chai';
 Given('I am on a product page', async function () {
   await this.page.goto('http://localhost:8080/collar.html');
   await this.page.waitForLoadState('networkidle');
+  // Wait for page to be fully initialized (color dropdown should have options)
+  await this.page.waitForFunction(() => {
+    const colorSelect = document.querySelector('select[name="color"]');
+    return colorSelect && colorSelect.options.length > 1;
+  }, { timeout: 5000 });
 });
 
 When('I view the purchasing options', async function () {
@@ -70,6 +75,12 @@ When('I select a size', async function () {
 
 When('I select a free charm', async function () {
   await this.page.selectOption('select[name="charm"]', { index: 1 });
+  // Manually trigger validation in case change event didn't fire
+  await this.page.evaluate(() => {
+    const charmSelect = document.querySelector('select[name="charm"]');
+    const event = new Event('change', { bubbles: true });
+    charmSelect.dispatchEvent(event);
+  });
   // Wait for validation to complete
   await this.page.waitForTimeout(200);
 });
