@@ -919,6 +919,36 @@
                 addButton.disabled = !hasSelection || !isInStock;
             }
 
+            function populateSizeOptions(color) {
+                sizeSelect.innerHTML = '<option value="">Select a size</option>';
+
+                if (!color) return;
+
+                // Get all sizes for the selected color from inventory
+                const sizesForColor = inventory.collars
+                    .filter(item => item.color === color)
+                    .map(item => ({ size: item.size, quantity: item.quantity }));
+
+                // Define size order and prices
+                const sizeData = [
+                    { size: 'XS', price: 20.00 },
+                    { size: 'S', price: 25.00 },
+                    { size: 'M', price: 30.00 }
+                ];
+
+                // Add options in order
+                sizeData.forEach(({ size, price }) => {
+                    const stockInfo = sizesForColor.find(s => s.size === size);
+                    if (stockInfo) {
+                        const option = document.createElement('option');
+                        option.value = size;
+                        option.textContent = `${size} - £${price.toFixed(2)}`;
+                        option.dataset.price = price;
+                        sizeSelect.appendChild(option);
+                    }
+                });
+            }
+
             // Color to image mapping
             const colorImageMap = {
                 'chilli': 'prod-4.jpg',  // Red collar
@@ -927,10 +957,14 @@
             };
 
             colorSelect.addEventListener('change', function() {
+                const selectedColor = this.value;
+
+                // Populate size dropdown based on selected color
+                populateSizeOptions(selectedColor);
+
                 validateForm();
 
                 // Auto-switch to color's image
-                const selectedColor = this.value;
                 if (selectedColor && colorImageMap[selectedColor]) {
                     const targetImage = colorImageMap[selectedColor];
                     updateMainImage(targetImage);
@@ -950,6 +984,11 @@
             charmSelect.addEventListener('change', validateForm);
 
             addButton.addEventListener('click', addToCart);
+
+            // Initial population of sizes if a color is already selected
+            if (colorSelect.value) {
+                populateSizeOptions(colorSelect.value);
+            }
         }
 
         // Dynamic pricing
