@@ -1,35 +1,131 @@
 {
   "collars": [
-    { "color": "chilli", "size": "XS", "quantity": 1000 },
-    { "color": "chilli", "size": "S", "quantity": 1000 },
-    { "color": "chilli", "size": "M", "quantity": 1000 },
-    { "color": "ocean", "size": "XS", "quantity": 1000 },
-    { "color": "ocean", "size": "S", "quantity": 1000 },
-    { "color": "ocean", "size": "M", "quantity": 1000 },
-    { "color": "fern", "size": "XS", "quantity": 1000 },
-    { "color": "fern", "size": "S", "quantity": 1000 },
-    { "color": "fern", "size": "M", "quantity": 1000 }
+    {
+      "color": "chilli",
+      "size": "XS",
+      "quantity": 1000
+    },
+    {
+      "color": "chilli",
+      "size": "S",
+      "quantity": 1000
+    },
+    {
+      "color": "chilli",
+      "size": "M",
+      "quantity": 0
+    },
+    {
+      "color": "ocean",
+      "size": "XS",
+      "quantity": 1000
+    },
+    {
+      "color": "ocean",
+      "size": "S",
+      "quantity": 10
+    },
+    {
+      "color": "ocean",
+      "size": "M",
+      "quantity": 1000
+    },
+    {
+      "color": "fern",
+      "size": "XS",
+      "quantity": 1000
+    },
+    {
+      "color": "fern",
+      "size": "S",
+      "quantity": 1000
+    },
+    {
+      "color": "fern",
+      "size": "M",
+      "quantity": 1000
+    }
   ],
   "charms": [
-    { "name": "White paw", "quantity": 200 },
-    { "name": "Black paw", "quantity": 200 },
-    { "name": "Bone", "quantity": 200 },
-    { "name": "Heart", "quantity": 200 },
-    { "name": "Star", "quantity": 200 },
-    { "name": "Rainbow", "quantity": 200 },
-    { "name": "Donut", "quantity": 200 },
-    { "name": "Pizza slice", "quantity": 200 },
-    { "name": "Taco", "quantity": 200 },
-    { "name": "Avocado", "quantity": 200 },
-    { "name": "Strawberry", "quantity": 200 },
-    { "name": "Watermelon", "quantity": 200 },
-    { "name": "Crown", "quantity": 200 },
-    { "name": "Diamond", "quantity": 200 },
-    { "name": "Butterfly", "quantity": 200 },
-    { "name": "Bee", "quantity": 200 },
-    { "name": "Ghost", "quantity": 200 },
-    { "name": "Lightning bolt", "quantity": 200 },
-    { "name": "Sun", "quantity": 200 },
-    { "name": "Moon", "quantity": 200 }
+    {
+      "name": "White paw",
+      "quantity": 200
+    },
+    {
+      "name": "Black paw",
+      "quantity": 200
+    },
+    {
+      "name": "Bone",
+      "quantity": 50
+    },
+    {
+      "name": "Heart",
+      "quantity": 200
+    },
+    {
+      "name": "Star",
+      "quantity": 5
+    },
+    {
+      "name": "Rainbow",
+      "quantity": 200
+    },
+    {
+      "name": "Donut",
+      "quantity": 200
+    },
+    {
+      "name": "Pizza slice",
+      "quantity": 200
+    },
+    {
+      "name": "Taco",
+      "quantity": 200
+    },
+    {
+      "name": "Avocado",
+      "quantity": 200
+    },
+    {
+      "name": "Strawberry",
+      "quantity": 200
+    },
+    {
+      "name": "Watermelon",
+      "quantity": 200
+    },
+    {
+      "name": "Crown",
+      "quantity": 200
+    },
+    {
+      "name": "Diamond",
+      "quantity": 200
+    },
+    {
+      "name": "Butterfly",
+      "quantity": 200
+    },
+    {
+      "name": "Bee",
+      "quantity": 200
+    },
+    {
+      "name": "Ghost",
+      "quantity": 200
+    },
+    {
+      "name": "Lightning bolt",
+      "quantity": 200
+    },
+    {
+      "name": "Sun",
+      "quantity": 200
+    },
+    {
+      "name": "Moon",
+      "quantity": 200
+    }
   ]
 }
