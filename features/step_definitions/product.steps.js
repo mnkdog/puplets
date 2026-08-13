@@ -57,6 +57,11 @@ Then('the {string} button should be disabled', async function (buttonText) {
 
 When('I select a colour', async function () {
   await this.page.selectOption('select[name="color"]', { index: 1 });
+  // Wait for size options to be populated after color selection
+  await this.page.waitForFunction(() => {
+    const sizeSelect = document.querySelector('select[name="size"]');
+    return sizeSelect && sizeSelect.options.length > 1; // More than just the placeholder
+  }, { timeout: 3000 });
 });
 
 When('I select a size', async function () {
@@ -90,8 +95,15 @@ Then('the displayed price should update accordingly', async function () {
 
 Given('I have selected a colour, size, and free charm', async function () {
   await this.page.selectOption('select[name="color"]', { index: 1 });
+  // Wait for size options to be populated
+  await this.page.waitForFunction(() => {
+    const sizeSelect = document.querySelector('select[name="size"]');
+    return sizeSelect && sizeSelect.options.length > 1;
+  }, { timeout: 3000 });
   await this.page.selectOption('select[name="size"]', { index: 1 });
   await this.page.selectOption('select[name="charm"]', { index: 1 });
+  // Small wait for validation to complete
+  await this.page.waitForTimeout(100);
 });
 
 // Removed duplicate - using implementation from checkout.steps.js

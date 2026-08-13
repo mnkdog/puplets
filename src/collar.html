@@ -926,7 +926,6 @@
                 sizeSelect.innerHTML = '<option value="">Select a size</option>';
 
                 if (!color) {
-                    validateForm();
                     return;
                 }
 
@@ -957,10 +956,9 @@
                 // Restore previous size selection if it's still available
                 if (previousSize && Array.from(sizeSelect.options).some(opt => opt.value === previousSize)) {
                     sizeSelect.value = previousSize;
+                    // Trigger validation if we restored a selection
+                    validateForm();
                 }
-
-                // Trigger validation after populating
-                validateForm();
             }
 
             // Color to image mapping
