@@ -2,28 +2,29 @@
 published: false
 title: About Puplets
 heading: A Future Vet's Mission
-image: /logo.svg
+image: ""
 ---
-
 ## Our Story
 
-Puplets was founded by a passionate veterinary student at the University of Bristol who works part-time at Colchester Zoo. Combining a love for animals with creativity, every Puplets collar is handcrafted with care and attention to detail.
+Puplets was founded by a passionate veterinary student who has worked at Colchester Zoo and dog kennels. Combining a love for animals with creativity, every Puplets collar is handcrafted with care and attention to detail.
 
 ## What Makes Us Different
 
 Each collar is customizable with your choice of:
-- **Vibrant Colors**: Choose from Chilli Red, Ocean Blue, and Fern Green
-- **Perfect Fit**: Available in XS, S, and M sizes with detailed measurements
-- **Free Charm**: Every collar comes with one adorable charm of your choice
-- **Extra Charms**: Add up to 20 different charm designs to personalize your pup's look
+
+* **Vibrant Colors**: Choose from Chilli Red, Ocean Blue, and Fern Green
+* **Perfect Fit**: Available in XS, S, and M sizes with detailed measurements
+* **Free Charm**: Every collar comes with one adorable charm of your choice
+* **Extra Charms**: Add up to 20 different charm designs to personalize your pup's look
 
 ## Quality & Care
 
 All our collars are made from durable, high-quality materials that are:
-- Comfortable for daily wear
-- Easy to clean
-- Built to last
-- Safely designed with secure charm attachments
+
+* Comfortable for daily wear
+* Easy to clean
+* Built to last
+* Safely designed with secure charm attachments
 
 ## Free Shipping
 
