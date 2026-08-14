@@ -10,7 +10,7 @@ Feature: Inventory Management
     Given I am on the collar product page
     And the "ocean/S" collar variant has 10 in stock
     When I select color "ocean"
-    And I select size "S"
+    And I select size "s"
     And I select charm "Bone"
     Then the add to basket button should be enabled
 
@@ -18,7 +18,7 @@ Feature: Inventory Management
     Given I am on the collar product page
     And the "chilli/M" collar variant has 0 in stock
     When I select color "chilli"
-    And I select size "M"
+    And I select size "m"
     And I select charm "Heart"
     Then the add to basket button should be disabled
     And I should see "Out of Stock" message
@@ -28,7 +28,7 @@ Feature: Inventory Management
     And the "ocean/S" collar variant has 10 in stock
     And the "White paw" charm has 0 in stock
     When I select color "ocean"
-    And I select size "S"
+    And I select size "s"
     And I select charm "White paw"
     Then the add to basket button should be disabled
     And I should see "charm is out of stock" message

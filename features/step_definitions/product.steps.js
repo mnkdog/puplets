@@ -182,9 +182,9 @@ Then('I should be able to select additional charms', async function () {
 });
 
 Given('a specific colour and size combination is out of stock', async function () {
-  // Dave Farley: Update test inventory to set chilli/XS to 0
+  // Dave Farley: Update test inventory to set chilli/xs to 0
   const collarIndex = this.testInventory.collars.findIndex(
-    c => c.color === 'chilli' && c.size === 'XS'
+    c => c.color === 'chilli' && c.size === 'xs'
   );
   if (collarIndex >= 0) {
     this.testInventory.collars[collarIndex].quantity = 0;
@@ -201,7 +201,7 @@ When('I select that combination', async function () {
     const sizeSelect = document.querySelector('select[name="size"]');
     return sizeSelect && sizeSelect.options.length > 1;
   }, { timeout: 3000 });
-  await this.page.selectOption('select[name="size"]', 'XS');
+  await this.page.selectOption('select[name="size"]', 'xs');
 
   // Force validateForm to ensure button text updates
   await this.page.evaluate(() => {
