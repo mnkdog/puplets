@@ -4,6 +4,18 @@
 import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// AUTHORITATIVE PRICE CATALOG - Server-side only
+// Client-supplied prices are NEVER trusted
+const PRICE_CATALOG = {
+  collar: {
+    xs: 17.99,
+    s: 20.99,
+    m: 23.99
+  },
+  charm: 3.99,
+  extraCharm: 3.99
+};
+
 export default async (req, res) => {
   // CORS headers for local testing
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -28,14 +40,22 @@ export default async (req, res) => {
     }
 
     // Convert cart items to Stripe line items
+    // SECURITY: Validate and resolve prices server-side, NEVER trust client
     const lineItems = items.map(item => {
       let productName = '';
       let unitAmount = 0;
 
       if (item.type === 'collar') {
-        // Collar item
+        // Validate size and lookup server-side price
+        const size = (item.size || '').toLowerCase();
+        const validPrice = PRICE_CATALOG.collar[size];
+
+        if (!validPrice) {
+          throw new Error(`Invalid collar size: ${item.size}`);
+        }
+
         productName = `Puplets Dog Collar - ${item.colorName || item.color} (${item.sizeName || item.size})`;
-        unitAmount = Math.round(item.price * 100); // Convert to cents
+        unitAmount = Math.round(validPrice * 100); // Server-validated price only
 
         // Add charm info to description
         const charmInfo = item.charm ? ` with ${item.charmName || item.charm} charm` : '';
@@ -45,13 +65,25 @@ export default async (req, res) => {
 
         productName += charmInfo + extraCharmsInfo;
       } else if (item.type === 'charm') {
-        // Individual charm item
+        // Use server-side charm price
         productName = `Puplets Charm - ${item.charmName || item.charm}`;
-        unitAmount = Math.round(item.price * 100); // Convert to cents (£3.99 -> 399)
+        const quantity = item.quantity || 1;
+        unitAmount = Math.round(PRICE_CATALOG.charm * 100); // Server price only
+
+        return {
+          price_data: {
+            currency: 'gbp',
+            product_data: {
+              name: productName,
+              images: ['https://puplets.vercel.app/prod-1.jpg'],
+            },
+            unit_amount: unitAmount,
+          },
+          quantity: quantity, // Charms can have quantity > 1
+        };
       } else {
-        // Fallback for unknown item types
-        productName = item.name || 'Puplets Product';
-        unitAmount = Math.round((item.price || 0) * 100);
+        // Reject unknown item types (fail-secure)
+        throw new Error(`Invalid item type: ${item.type}`);
       }
 
       return {
@@ -59,7 +91,7 @@ export default async (req, res) => {
           currency: 'gbp',
           product_data: {
             name: productName,
-            images: ['https://puplets.vercel.app/prod-1.jpg'], // Update with actual product images
+            images: ['https://puplets.vercel.app/prod-1.jpg'],
           },
           unit_amount: unitAmount,
         },
