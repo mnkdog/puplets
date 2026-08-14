@@ -32,7 +32,8 @@ Then('I should not see the About link', async function () {
 When('I click the hamburger menu', async function () {
   await this.page.waitForSelector('.hamburger', { state: 'visible' });
   await this.page.click('.hamburger');
-  await this.page.waitForTimeout(300);
+  // Wait for mobile menu to open
+  await this.page.waitForSelector('#mobileMenu.active', { state: 'visible', timeout: 3000 });
 });
 
 Then('the mobile menu should open', async function () {
@@ -68,7 +69,8 @@ When('I open the mobile menu', async function () {
   }
   await this.page.waitForSelector('.hamburger', { state: 'visible' });
   await this.page.click('.hamburger');
-  await this.page.waitForTimeout(300);
+  // Wait for mobile menu to open
+  await this.page.waitForSelector('#mobileMenu.active', { state: 'visible', timeout: 3000 });
 });
 
 When('I click outside the menu', async function () {
@@ -77,7 +79,11 @@ When('I click outside the menu', async function () {
     const menu = document.getElementById('mobileMenu');
     menu.click();
   });
-  await this.page.waitForTimeout(300);
+  // Wait for mobile menu to close
+  await this.page.waitForFunction(() => {
+    const menu = document.getElementById('mobileMenu');
+    return !menu || !menu.classList.contains('active');
+  }, { timeout: 3000 });
 });
 
 Then('the mobile menu should close', async function () {

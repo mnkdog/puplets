@@ -37,7 +37,11 @@ When('I click the {string} button', async function (buttonText) {
   // Handle different button types: button elements, links with .remove class, or other clickable elements
   const selector = `button:has-text("${buttonText}"), .remove:has-text("${buttonText}"), a:has-text("${buttonText}"), .checkout-button:has-text("${buttonText}")`;
   await this.page.click(selector);
-  await this.page.waitForTimeout(500);
+  // Wait for navigation or modal to appear
+  await Promise.race([
+    this.page.waitForLoadState('networkidle', { timeout: 3000 }),
+    this.page.waitForSelector('#notification', { state: 'visible', timeout: 3000 })
+  ]).catch(() => {});
 });
 
 Then('a Stripe checkout session should be created', async function () {
@@ -64,8 +68,7 @@ Given('I have completed checkout with Stripe', async function () {
 });
 
 When('the payment is successful', async function () {
-  // Payment already successful in the Given step
-  await this.page.waitForTimeout(200);
+  // Payment already successful in the Given step - no wait needed
 });
 
 Then('I should be redirected to the success page', async function () {
@@ -88,7 +91,8 @@ Then('my cart should be empty', async function () {
 Given('I have started checkout with Stripe', async function () {
   // Mock starting checkout
   await this.page.click('.checkout-button');
-  await this.page.waitForTimeout(200);
+  // Wait for checkout to initiate
+  await this.page.waitForLoadState('networkidle', { timeout: 3000 });
 });
 
 When('I cancel the payment', async function () {
@@ -132,14 +136,14 @@ Given('I have {int} items in my cart', async function (count) {
       await this.page.selectOption('#size', { index: 1 });
       await this.page.selectOption('#charm', { index: 1 });
       await this.page.click('#addToBasket');
-      await this.page.waitForTimeout(200);
 
-      // Close modal
+      // Wait for and close modal
       const continueButton = await this.page.locator('button:has-text("Continue Shopping")');
+      await continueButton.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
       const modalCount = await continueButton.count();
       if (modalCount > 0) {
         await continueButton.click();
-        await this.page.waitForTimeout(200);
+        await continueButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
       }
     }
   }
@@ -174,14 +178,14 @@ Given('I have a collar in my cart', async function () {
   await this.page.selectOption('#size', { index: 1 });
   await this.page.selectOption('#charm', { index: 1 });
   await this.page.click('#addToBasket');
-  await this.page.waitForTimeout(200);
 
-  // Close modal
+  // Wait for and close modal
   const continueButton = await this.page.locator('button:has-text("Continue Shopping")');
+  await continueButton.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
   const count = await continueButton.count();
   if (count > 0) {
     await continueButton.click();
-    await this.page.waitForTimeout(200);
+    await continueButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
   }
 });
 
@@ -190,14 +194,14 @@ Given('I have {int} individual charms in my cart', async function (count) {
   await this.page.selectOption('#charm', { index: 1 });
   await this.page.selectOption('#quantity', count.toString());
   await this.page.click('#addToBasket');
-  await this.page.waitForTimeout(200);
 
-  // Close modal
+  // Wait for and close modal
   const continueButton = await this.page.locator('button:has-text("Continue Shopping")');
+  await continueButton.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
   const modalCount = await continueButton.count();
   if (modalCount > 0) {
     await continueButton.click();
-    await this.page.waitForTimeout(200);
+    await continueButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
   }
 
   await this.page.goto('http://localhost:8080/cart.html');

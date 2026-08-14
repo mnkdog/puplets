@@ -15,9 +15,14 @@ Then('I should see thumbnail images', async function () {
 
 When('I click on a thumbnail image', async function () {
   const thumbnail = await this.page.locator('.thumbnail').nth(1);
-  this.selectedThumbnailSrc = await thumbnail.getAttribute('data-src');
+  this.selectedThumbnailSrc = await thumbnail.getAttribute('data-src') || await thumbnail.getAttribute('src');
+  const currentSrc = await this.page.getAttribute('#mainImage', 'src');
   await thumbnail.click();
-  await this.page.waitForTimeout(100);
+  // Wait for main image src to change
+  await this.page.waitForFunction((oldSrc) => {
+    const mainImage = document.getElementById('mainImage');
+    return mainImage && mainImage.src !== oldSrc;
+  }, currentSrc, { timeout: 5000 });
 });
 
 Then('the main image should change to that thumbnail', async function () {
@@ -32,8 +37,13 @@ Then('the clicked thumbnail should be highlighted', async function () {
 });
 
 When('I click the next arrow', async function () {
+  const currentSrc = await this.page.getAttribute('#mainImage', 'src');
   await this.page.click('.image-nav.next');
-  await this.page.waitForTimeout(100);
+  // Wait for image to change
+  await this.page.waitForFunction((oldSrc) => {
+    const mainImage = document.getElementById('mainImage');
+    return mainImage && mainImage.src !== oldSrc;
+  }, currentSrc, { timeout: 2000 });
 });
 
 Then('the main image should change to the next image', async function () {
@@ -43,8 +53,13 @@ Then('the main image should change to the next image', async function () {
 });
 
 When('I click the previous arrow', async function () {
+  const currentSrc = await this.page.getAttribute('#mainImage', 'src');
   await this.page.click('.image-nav.prev');
-  await this.page.waitForTimeout(100);
+  // Wait for image to change
+  await this.page.waitForFunction((oldSrc) => {
+    const mainImage = document.getElementById('mainImage');
+    return mainImage && mainImage.src !== oldSrc;
+  }, currentSrc, { timeout: 2000 });
 });
 
 Then('the main image should change to the previous image', async function () {
@@ -55,7 +70,8 @@ Then('the main image should change to the previous image', async function () {
 
 When('I click on the main image', async function () {
   await this.page.click('#mainImage');
-  await this.page.waitForTimeout(200);
+  // Wait for lightbox to open
+  await this.page.waitForSelector('#lightbox.active', { state: 'visible', timeout: 3000 });
 });
 
 Then('a lightbox should open', async function () {
@@ -73,12 +89,17 @@ Then('the lightbox should show the enlarged image', async function () {
 
 When('I open the lightbox', async function () {
   await this.page.click('#mainImage');
-  await this.page.waitForTimeout(200);
+  // Wait for lightbox to open
+  await this.page.waitForSelector('#lightbox.active', { state: 'visible', timeout: 3000 });
 });
 
 When('I click outside the image', async function () {
   await this.page.click('#lightbox');
-  await this.page.waitForTimeout(200);
+  // Wait for lightbox to close
+  await this.page.waitForFunction(() => {
+    const lightbox = document.getElementById('lightbox');
+    return !lightbox || !lightbox.classList.contains('active');
+  }, { timeout: 3000 });
 });
 
 Then('the lightbox should close', async function () {
