@@ -234,7 +234,12 @@
             }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"
+            integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"
+            integrity="sha384-hqMJSR/DL+YwCZSLkUvWSD/QJZR8mqA8JHBX7B3pN5R5P4CbVd5F8i6bNKRqJiLz"
+            crossorigin="anonymous"></script>
 </head>
 <body>
     <nav>
@@ -345,7 +350,13 @@
                 const parsedContent = typeof marked !== 'undefined' && marked.parse
                     ? marked.parse(markdownBody)
                     : parseMarkdownFallback(markdownBody);
-                html += `<div class="story">${parsedContent}</div>`;
+
+                // Sanitize HTML to prevent XSS
+                const sanitizedContent = typeof DOMPurify !== 'undefined'
+                    ? DOMPurify.sanitize(parsedContent)
+                    : parsedContent; // Fallback if DOMPurify fails to load
+
+                html += `<div class="story">${sanitizedContent}</div>`;
 
                 container.innerHTML = html;
 
