@@ -234,7 +234,8 @@
             }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="/vendor/marked.js"></script>
+    <script src="/vendor/purify.min.js"></script>
 </head>
 <body>
     <nav>
@@ -331,6 +332,11 @@
                 const container = document.getElementById('aboutContent');
                 let html = '';
 
+                // Sanitization check - fail closed if DOMPurify unavailable
+                if (typeof DOMPurify === 'undefined') {
+                    throw new Error('DOMPurify failed to load - cannot safely render user content');
+                }
+
                 // Add heading if exists
                 if (heading) {
                     html += `<h1>${escapeHtml(heading)}</h1>`;
@@ -345,9 +351,12 @@
                 const parsedContent = typeof marked !== 'undefined' && marked.parse
                     ? marked.parse(markdownBody)
                     : parseMarkdownFallback(markdownBody);
+
                 html += `<div class="story">${parsedContent}</div>`;
 
-                container.innerHTML = html;
+                // Sanitize ALL HTML to prevent XSS (including frontmatter-derived content)
+                const sanitizedHtml = DOMPurify.sanitize(html);
+                container.innerHTML = sanitizedHtml;
 
             } catch (error) {
                 console.error('Failed to load about content:', error);
