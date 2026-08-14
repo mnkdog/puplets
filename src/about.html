@@ -239,7 +239,7 @@
 <body>
     <nav>
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <button class="hamburger" onclick="toggleMobileMenu()">
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -253,11 +253,11 @@
             <a href="/">Home</a>
             <a href="products.html">Products</a>
             <a href="blog.html">Blog</a>
-            <a href="about.html" id="aboutLinkDesktop">About</a>
+            <a href="about.html" id="aboutLinkDesktop" aria-current="page">About</a>
             <a href="cart.html" class="cart-button">
                 <span>🛒</span>
                 Cart
-                <span class="cart-count" id="cartCount" style="display: none;">0</span>
+                <span class="cart-count" id="cartCount" role="status" aria-live="polite" aria-atomic="true" style="display: none;">0</span>
             </a>
         </div>
     </nav>
@@ -265,7 +265,7 @@
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
         <div class="mobile-menu-content" onclick="event.stopPropagation()">
-            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu">&times;</button>
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
@@ -322,14 +322,6 @@
                     // Redirect to home page if not published
                     window.location.href = '/';
                     return;
-                }
-
-                // Hide About links in navigation if not published
-                if (!published) {
-                    const desktopLink = document.getElementById('aboutLinkDesktop');
-                    const mobileLink = document.getElementById('aboutLinkMobile');
-                    if (desktopLink) desktopLink.style.display = 'none';
-                    if (mobileLink) mobileLink.style.display = 'none';
                 }
 
                 // Update page title

@@ -544,7 +544,7 @@
 <body>
     <nav>
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <button class="hamburger" onclick="toggleMobileMenu()">
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -570,7 +570,7 @@
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
         <div class="mobile-menu-content" onclick="event.stopPropagation()">
-            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu">&times;</button>
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
@@ -596,9 +596,9 @@
         <div class="product-layout">
             <div class="product-images">
                 <div class="main-image">
-                    <button class="image-nav prev" onclick="navigateImage(-1)">‹</button>
+                    <button class="image-nav prev" onclick="navigateImage(-1)" aria-label="Previous image">‹</button>
                     <img id="mainImage" src="prod-1.jpg" alt="Waterproof Dog Collar" onclick="openLightbox()">
-                    <button class="image-nav next" onclick="navigateImage(1)">›</button>
+                    <button class="image-nav next" onclick="navigateImage(1)" aria-label="Next image">›</button>
                 </div>
                 <div class="thumbnail-grid">
                     <div class="thumbnail active" data-src="prod-1.jpg"><img src="prod-1.jpg" alt="View 1"></div>
@@ -695,7 +695,7 @@
 
     <!-- Lightbox for enlarged images -->
     <div id="lightbox" class="lightbox" onclick="closeLightbox()">
-        <span class="lightbox-close">&times;</span>
+        <span class="lightbox-close" aria-label="Close image">&times;</span>
         <img id="lightboxImage" src="" alt="Enlarged view">
     </div>
 
@@ -885,6 +885,8 @@
             function createStockMessage() {
                 const msg = document.createElement('div');
                 msg.id = 'stockMessage';
+                msg.setAttribute('role', 'status');
+                msg.setAttribute('aria-live', 'polite');
                 msg.style.cssText = 'color: #D6001C; font-weight: 600; margin-top: 1rem;';
                 addButton.parentElement.appendChild(msg);
                 return msg;
@@ -964,7 +966,7 @@
                     const stockInfo = sizesForColor.find(s => s.size === size);
                     if (stockInfo) {
                         const option = document.createElement('option');
-                        option.value = size;
+                        option.value = size.toLowerCase();
                         option.textContent = `${size} - £${price.toFixed(2)}`;
                         option.dataset.price = price;
                         sizeSelect.appendChild(option);
@@ -1062,22 +1064,35 @@
                 const charmDiv = document.createElement('div');
                 charmDiv.className = 'extra-charm-option';
                 charmDiv.dataset.charm = charm.toLowerCase().replace(/\s+/g, '-');
+                charmDiv.setAttribute('tabindex', '0');
+                charmDiv.setAttribute('role', 'checkbox');
+                charmDiv.setAttribute('aria-checked', 'false');
                 charmDiv.innerHTML = `
                     <div class="charm-icon">✨</div>
                     <div class="charm-name">${charm}</div>
                     <div class="charm-price">+£${charmPrice.toFixed(2)}</div>
                 `;
 
-                charmDiv.addEventListener('click', () => {
+                const toggleCharm = () => {
                     const charmId = charmDiv.dataset.charm;
                     if (selectedExtraCharms.has(charmId)) {
                         selectedExtraCharms.delete(charmId);
                         charmDiv.classList.remove('selected');
+                        charmDiv.setAttribute('aria-checked', 'false');
                     } else {
                         selectedExtraCharms.add(charmId);
                         charmDiv.classList.add('selected');
+                        charmDiv.setAttribute('aria-checked', 'true');
                     }
                     updateTotalPrice();
+                };
+
+                charmDiv.addEventListener('click', toggleCharm);
+                charmDiv.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleCharm();
+                    }
                 });
 
                 grid.appendChild(charmDiv);

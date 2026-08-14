@@ -235,7 +235,7 @@
             Puplets
         </a>
         <div class="nav-links">
-            <button class="hamburger" onclick="toggleMobileMenu()">
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
                 <span></span><span></span><span></span>
             </button>
             <a href="/">Home</a>
@@ -244,14 +244,14 @@
             <a href="about.html" id="aboutLinkDesktop">About</a>
             <a href="cart.html" class="cart-button">
                 🛒 Cart
-                <span class="cart-count" id="cartCount">0</span>
+                <span class="cart-count" id="cartCount" role="status" aria-live="polite" aria-atomic="true">0</span>
             </a>
         </div>
     </nav>
 
     <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
         <div class="mobile-menu-content" onclick="event.stopPropagation()">
-            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu">&times;</button>
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
@@ -401,10 +401,18 @@
         charms.forEach((charm, index) => {
             const thumb = document.createElement('div');
             thumb.className = 'charm-option';
-            thumb.innerHTML = `<img src="prod-9-charms.jpg" alt="${charm}" class="thumbnail" data-charm="${charm.toLowerCase().replace(/\s+/g, '-')}" data-index="${index}">`;
-            thumb.querySelector('img').addEventListener('click', function() {
+            thumb.innerHTML = `<img src="prod-9-charms.jpg" alt="${charm}" class="thumbnail" data-charm="${charm.toLowerCase().replace(/\s+/g, '-')}" data-index="${index}" tabindex="0">`;
+            const img = thumb.querySelector('img');
+            img.addEventListener('click', function() {
                 document.getElementById('charm').value = this.dataset.charm;
                 updateSelection();
+            });
+            img.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    document.getElementById('charm').value = this.dataset.charm;
+                    updateSelection();
+                }
             });
             thumbnailGrid.appendChild(thumb);
         });
@@ -418,6 +426,8 @@
             function createStockMessage() {
                 const msg = document.createElement('div');
                 msg.id = 'stockMessage';
+                msg.setAttribute('role', 'status');
+                msg.setAttribute('aria-live', 'polite');
                 msg.style.cssText = 'color: #D6001C; font-weight: 600; margin-top: 1rem;';
                 addButton.parentElement.appendChild(msg);
                 return msg;
