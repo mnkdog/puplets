@@ -6,12 +6,9 @@ Feature: Security hardening
   Background:
     Given I am on the about page
 
-  Scenario: CDN scripts have Subresource Integrity (SRI) checks
-    Then the marked.js script should have an integrity attribute
-    And the marked.js script should have crossorigin="anonymous"
-    And the DOMPurify script should exist
-    And the DOMPurify script should have an integrity attribute
-    And the DOMPurify script should have crossorigin="anonymous"
+  Scenario: Required sanitization libraries are loaded locally
+    Then the marked.js script should be loaded from local vendor
+    And the DOMPurify script should be loaded from local vendor
 
   Scenario: Markdown content is sanitized against XSS
     Then DOMPurify should be loaded and available

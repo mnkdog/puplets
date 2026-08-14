@@ -1,6 +1,32 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
 
+Then('the marked.js script should be loaded from local vendor', async function () {
+  const markedScript = await this.page.locator('script[src*="vendor"]').filter({ hasText: /marked/ });
+  const count = await markedScript.count();
+  if (count === 0) {
+    // Check for any script with src containing 'marked'
+    const anyMarked = await this.page.locator('script[src*="marked"]');
+    const anyCount = await anyMarked.count();
+    expect(anyCount).to.be.greaterThan(0, 'marked.js script not found at all');
+
+    const src = await anyMarked.first().getAttribute('src');
+    expect(src).to.include('/vendor/', `marked.js should be loaded from /vendor/, but was loaded from: ${src}`);
+  } else {
+    const src = await markedScript.getAttribute('src');
+    expect(src).to.include('/vendor/');
+  }
+});
+
+Then('the DOMPurify script should be loaded from local vendor', async function () {
+  const purifyScript = await this.page.locator('script[src*="purify"]');
+  const count = await purifyScript.count();
+  expect(count).to.equal(1, 'DOMPurify script not found');
+
+  const src = await purifyScript.getAttribute('src');
+  expect(src).to.include('/vendor/', `DOMPurify should be loaded from /vendor/, but was loaded from: ${src}`);
+});
+
 Then('the marked.js script should have an integrity attribute', async function () {
   const markedScript = await this.page.locator('script[src*="marked"]');
   const count = await markedScript.count();
@@ -39,17 +65,19 @@ Then('the DOMPurify script should have crossorigin={string}', async function (cr
 });
 
 Then('DOMPurify should be loaded and available', async function () {
-  // Verify DOMPurify script tag exists with correct attributes
-  const purifyScript = await this.page.locator('script[src*="dompurify"]');
+  // Verify DOMPurify script tag exists (checking for 'purify' in src)
+  const purifyScript = await this.page.locator('script[src*="purify"]');
   const count = await purifyScript.count();
   expect(count).to.equal(1, 'DOMPurify script tag not found');
 
   const src = await purifyScript.getAttribute('src');
-  expect(src).to.include('dompurify');
+  expect(src).to.include('purify');
 
-  // Note: In environments with CDN blocking (proxy, offline), DOMPurify may not load.
-  // The important part is that the script tag is present with SRI integrity.
-  // Runtime availability is verified in production/Vercel environments.
+  // Verify DOMPurify is actually available in the browser
+  const isDOMPurifyAvailable = await this.page.evaluate(() => {
+    return typeof DOMPurify !== 'undefined';
+  });
+  expect(isDOMPurifyAvailable).to.equal(true, 'DOMPurify should be available in browser context');
 });
 
 Then('markdown content should be sanitized before rendering', async function () {

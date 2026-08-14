@@ -24,6 +24,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dompurify": "^3.4.13",
+    "marked": "^18.0.9",
     "stripe": "^17.5.0"
   },
   "devDependencies": {
