@@ -966,7 +966,7 @@
                     const stockInfo = sizesForColor.find(s => s.size === size);
                     if (stockInfo) {
                         const option = document.createElement('option');
-                        option.value = size;
+                        option.value = size.toLowerCase();
                         option.textContent = `${size} - £${price.toFixed(2)}`;
                         option.dataset.price = price;
                         sizeSelect.appendChild(option);

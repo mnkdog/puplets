@@ -324,14 +324,6 @@
                     return;
                 }
 
-                // Hide About links in navigation if not published
-                if (!published) {
-                    const desktopLink = document.getElementById('aboutLinkDesktop');
-                    const mobileLink = document.getElementById('aboutLinkMobile');
-                    if (desktopLink) desktopLink.style.display = 'none';
-                    if (mobileLink) mobileLink.style.display = 'none';
-                }
-
                 // Update page title
                 document.title = `${title} - Puplets`;
 
