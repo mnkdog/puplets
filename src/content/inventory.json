@@ -2,47 +2,47 @@
   "collars": [
     {
       "color": "chilli",
-      "size": "XS",
+      "size": "xs",
       "quantity": 1000
     },
     {
       "color": "chilli",
-      "size": "S",
+      "size": "s",
       "quantity": 1000
     },
     {
       "color": "chilli",
-      "size": "M",
+      "size": "m",
       "quantity": 0
     },
     {
       "color": "ocean",
-      "size": "XS",
+      "size": "xs",
       "quantity": 1000
     },
     {
       "color": "ocean",
-      "size": "S",
+      "size": "s",
       "quantity": 10
     },
     {
       "color": "ocean",
-      "size": "M",
+      "size": "m",
       "quantity": 1000
     },
     {
       "color": "fern",
-      "size": "XS",
+      "size": "xs",
       "quantity": 1000
     },
     {
       "color": "fern",
-      "size": "S",
+      "size": "s",
       "quantity": 1000
     },
     {
       "color": "fern",
-      "size": "M",
+      "size": "m",
       "quantity": 1000
     }
   ],

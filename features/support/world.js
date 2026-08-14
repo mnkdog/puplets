@@ -13,15 +13,15 @@ class CustomWorld extends World {
   getDefaultInventory() {
     return {
       collars: [
-        { color: 'chilli', size: 'XS', quantity: 1000 },
-        { color: 'chilli', size: 'S', quantity: 1000 },
-        { color: 'chilli', size: 'M', quantity: 1000 },
-        { color: 'ocean', size: 'XS', quantity: 1000 },
-        { color: 'ocean', size: 'S', quantity: 1000 },
-        { color: 'ocean', size: 'M', quantity: 1000 },
-        { color: 'fern', size: 'XS', quantity: 1000 },
-        { color: 'fern', size: 'S', quantity: 1000 },
-        { color: 'fern', size: 'M', quantity: 1000 }
+        { color: 'chilli', size: 'xs', quantity: 1000 },
+        { color: 'chilli', size: 's', quantity: 1000 },
+        { color: 'chilli', size: 'm', quantity: 1000 },
+        { color: 'ocean', size: 'xs', quantity: 1000 },
+        { color: 'ocean', size: 's', quantity: 1000 },
+        { color: 'ocean', size: 'm', quantity: 1000 },
+        { color: 'fern', size: 'xs', quantity: 1000 },
+        { color: 'fern', size: 's', quantity: 1000 },
+        { color: 'fern', size: 'm', quantity: 1000 }
       ],
       charms: [
         { name: 'White paw', quantity: 200 },

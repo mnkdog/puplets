@@ -6,15 +6,15 @@ Given('the inventory system is initialized', async function () {
   // Mock handles the rest - no file writes
   this.testInventory = {
     collars: [
-      { color: 'chilli', size: 'XS', quantity: 1000 },
-      { color: 'chilli', size: 'S', quantity: 1000 },
-      { color: 'chilli', size: 'M', quantity: 0 },
-      { color: 'ocean', size: 'XS', quantity: 1000 },
-      { color: 'ocean', size: 'S', quantity: 10 },
-      { color: 'ocean', size: 'M', quantity: 1000 },
-      { color: 'fern', size: 'XS', quantity: 1000 },
-      { color: 'fern', size: 'S', quantity: 1000 },
-      { color: 'fern', size: 'M', quantity: 1000 }
+      { color: 'chilli', size: 'xs', quantity: 1000 },
+      { color: 'chilli', size: 's', quantity: 1000 },
+      { color: 'chilli', size: 'm', quantity: 0 },
+      { color: 'ocean', size: 'xs', quantity: 1000 },
+      { color: 'ocean', size: 's', quantity: 10 },
+      { color: 'ocean', size: 'm', quantity: 1000 },
+      { color: 'fern', size: 'xs', quantity: 1000 },
+      { color: 'fern', size: 's', quantity: 1000 },
+      { color: 'fern', size: 'm', quantity: 1000 }
     ],
     charms: [
       { name: 'White paw', quantity: 0 },
