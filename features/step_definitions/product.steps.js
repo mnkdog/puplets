@@ -16,8 +16,11 @@ Given('I am on a product page', async function () {
     return addButton !== null;
   }, { timeout: 5000 });
 
-  // Give extra time for inventory to load
-  await this.page.waitForTimeout(500);
+  // Wait for inventory to load and populate size options
+  await this.page.waitForFunction(() => {
+    const sizeSelect = document.querySelector('select[name="size"]');
+    return sizeSelect && sizeSelect.options.length > 1;
+  }, { timeout: 5000 });
 });
 
 When('I view the purchasing options', async function () {
@@ -91,8 +94,11 @@ When('I select a free charm', async function () {
     const event = new Event('change', { bubbles: true });
     charmSelect.dispatchEvent(event);
   });
-  // Wait for validation to complete
-  await this.page.waitForTimeout(200);
+  // Wait for validation to complete (button state update)
+  await this.page.waitForFunction(() => {
+    const addButton = document.getElementById('addToBasket');
+    return addButton && !addButton.disabled;
+  }, { timeout: 3000 });
 });
 
 Then('the {string} button should be enabled', async function (buttonText) {
@@ -129,7 +135,11 @@ Given('I have selected a colour and free charm', async function () {
 
 When('I change the size selection', async function () {
   await this.page.selectOption('select[name="size"]', { index: 2 });
-  await this.page.waitForTimeout(100);
+  // Wait for price to update
+  await this.page.waitForFunction(() => {
+    const priceElement = document.querySelector('.product-price, .price-display');
+    return priceElement && priceElement.textContent.includes('£');
+  }, { timeout: 2000 });
 });
 
 Then('the displayed price should update accordingly', async function () {
@@ -146,8 +156,11 @@ Given('I have selected a colour, size, and free charm', async function () {
   }, { timeout: 3000 });
   await this.page.selectOption('select[name="size"]', { index: 1 });
   await this.page.selectOption('select[name="charm"]', { index: 1 });
-  // Small wait for validation to complete
-  await this.page.waitForTimeout(100);
+  // Wait for form validation to complete
+  await this.page.waitForFunction(() => {
+    const addButton = document.getElementById('addToBasket');
+    return addButton && addButton.textContent.trim() !== '';
+  }, { timeout: 2000 });
 });
 
 // Removed duplicate - using implementation from checkout.steps.js
@@ -209,7 +222,13 @@ When('I select that combination', async function () {
     document.querySelector('select[name="size"]').dispatchEvent(event);
   });
 
-  await this.page.waitForTimeout(300);
+  // Wait for stock message or button state to update
+  await this.page.waitForFunction(() => {
+    const stockMessage = document.getElementById('stockMessage');
+    const addButton = document.getElementById('addToBasket');
+    return (stockMessage && stockMessage.textContent !== '') ||
+           (addButton && addButton.disabled);
+  }, { timeout: 3000 });
 });
 
 Then('the variant selector should show {string}', async function (text) {
@@ -219,7 +238,10 @@ Then('the variant selector should show {string}', async function (text) {
 
 Then('the {string} button should show {string}', async function (buttonName, buttonText) {
   // Wait for button text to update
-  await this.page.waitForTimeout(500);
+  await this.page.waitForFunction((expectedText) => {
+    const button = document.getElementById('addToBasket');
+    return button && button.textContent.includes(expectedText);
+  }, buttonText, { timeout: 3000 });
 
   // Find button by ID since text may have changed
   const button = await this.page.locator('#addToBasket');

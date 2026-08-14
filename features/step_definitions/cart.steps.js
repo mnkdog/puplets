@@ -3,14 +3,17 @@ import { expect } from 'chai';
 
 Given('I have added an item to the cart', async function () {
   await this.page.click('#addToBasket');
-  await this.page.waitForTimeout(300);
 
-  // Close the "Added to Cart" modal by clicking "Continue Shopping"
+  // Wait for "Added to Cart" modal to appear
   const continueButton = await this.page.locator('button:has-text("Continue Shopping")');
+  await continueButton.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+
+  // Close the modal if it appeared
   const count = await continueButton.count();
   if (count > 0) {
     await continueButton.click();
-    await this.page.waitForTimeout(200);
+    // Wait for modal to close
+    await continueButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
   }
 });
 
@@ -26,8 +29,8 @@ Given('I have selected {int} extra charms', async function (count) {
     }
   });
 
-  await this.page.waitForTimeout(500);
-  await this.page.waitForSelector('.extra-charm-option', { timeout: 5000 });
+  // Wait for extra charm options to be visible
+  await this.page.waitForSelector('.extra-charm-option', { state: 'visible', timeout: 5000 });
 
   const charms = await this.page.locator('.extra-charm-option');
   const actualCount = await charms.count();
@@ -35,7 +38,11 @@ Given('I have selected {int} extra charms', async function (count) {
 
   for (let i = 0; i < count && i < actualCount; i++) {
     await charms.nth(i).click();
-    await this.page.waitForTimeout(150);
+    // Wait for selection state to update (aria-checked or class change)
+    await this.page.waitForFunction((index) => {
+      const charm = document.querySelectorAll('.extra-charm-option')[index];
+      return charm && (charm.classList.contains('selected') || charm.getAttribute('aria-checked') === 'true');
+    }, i, { timeout: 2000 });
   }
 });
 
@@ -126,7 +133,11 @@ When('I remove all items', async function () {
   });
   await this.page.reload();
   await this.page.waitForLoadState('networkidle');
-  await this.page.waitForTimeout(500);
+  // Wait for cart to render empty state
+  await this.page.waitForFunction(() => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    return cart.length === 0;
+  }, { timeout: 2000 });
 });
 
 When('I click {string}', async function (linkText) {
@@ -134,7 +145,6 @@ When('I click {string}', async function (linkText) {
   const selector = `a:has-text("${linkText}"), button:has-text("${linkText}")`;
   await this.page.waitForSelector(selector, { state: 'visible', timeout: 5000 });
   await this.page.click(selector);
-  await this.page.waitForTimeout(200);
 
   // Wait for navigation to complete
   await this.page.waitForLoadState('networkidle');
@@ -208,7 +218,8 @@ When('I add another item to the cart', async function () {
   await this.page.selectOption('#size', { index: 1 });
   await this.page.selectOption('#charm', { index: 1 });
   await this.page.click('#addToBasket');
-  await this.page.waitForTimeout(200);
+  // Wait for modal to appear
+  await this.page.waitForSelector('button:has-text("Continue Shopping")', { state: 'visible', timeout: 3000 }).catch(() => {});
 });
 
 Then('I should see {int} items', async function (count) {

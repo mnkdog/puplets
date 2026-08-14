@@ -77,12 +77,21 @@ Given('the {string} charm has {int} in stock', async function (charmName, quanti
 
 When('I select color {string}', async function (color) {
   await this.page.selectOption('#color', color);
-  await this.page.waitForTimeout(200);
+  // Wait for size options to populate
+  await this.page.waitForFunction(() => {
+    const sizeSelect = document.querySelector('#size');
+    return sizeSelect && sizeSelect.options.length > 1;
+  }, { timeout: 3000 });
 });
 
 When('I select size {string}', async function (size) {
   await this.page.selectOption('#size', size);
-  await this.page.waitForTimeout(200);
+  // Wait for stock validation to complete
+  await this.page.waitForFunction(() => {
+    const addButton = document.getElementById('addToBasket');
+    const stockMessage = document.getElementById('stockMessage');
+    return addButton && (addButton.disabled !== undefined || (stockMessage && stockMessage.textContent !== ''));
+  }, { timeout: 3000 });
 });
 
 When('I select charm {string}', async function (charm) {
@@ -97,7 +106,12 @@ When('I select charm {string}', async function (charm) {
       break;
     }
   }
-  await this.page.waitForTimeout(200);
+  // Wait for charm validation to complete
+  await this.page.waitForFunction(() => {
+    const addButton = document.getElementById('addToBasket');
+    const stockMessage = document.getElementById('stockMessage');
+    return addButton && (addButton.disabled !== undefined || (stockMessage && stockMessage.textContent !== ''));
+  }, { timeout: 3000 });
 });
 
 Then('the add to basket button should be enabled', async function () {

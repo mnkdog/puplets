@@ -41,7 +41,11 @@ When('I select a charm', async function () {
     const charmOption = await this.page.locator('.charm-option').first();
     await charmOption.click();
   }
-  await this.page.waitForTimeout(200);
+  // Wait for charm selection to complete
+  await this.page.waitForFunction(() => {
+    const charmSelect = document.querySelector('select[name="charm"]');
+    return charmSelect && charmSelect.value !== '';
+  }, { timeout: 3000 });
 });
 
 Then('I should see the selected charm highlighted', async function () {
@@ -66,7 +70,11 @@ When('I select quantity {string}', async function (quantity) {
   } else {
     await this.page.fill('input[name="quantity"]', quantity);
   }
-  await this.page.waitForTimeout(200);
+  // Wait for price calculation to complete
+  await this.page.waitForFunction(() => {
+    const priceElement = document.querySelector('.total-price, .price-display');
+    return priceElement && priceElement.textContent.includes('£');
+  }, { timeout: 3000 });
 });
 
 Then('the total price should be {string}', async function (expectedPrice) {
