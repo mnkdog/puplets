@@ -36,3 +36,4 @@
 {"ts":"2026-08-14T04:24:36Z","hook":"destructive_guard","tool":"Bash","decision":"warn","matched_rule":"Process destruction: pkill","plugin_version":"12.5.0","session_id":"045ffb94-8e13-580e-98bf-d3a3e776c687"}
 {"ts":"2026-08-14T04:32:17Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"12.5.0","session_id":"045ffb94-8e13-580e-98bf-d3a3e776c687"}
 {"ts":"2026-08-14T04:32:35Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"12.5.0","session_id":"045ffb94-8e13-580e-98bf-d3a3e776c687"}
+{"ts":"2026-08-14T04:41:49Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"12.5.0","session_id":"045ffb94-8e13-580e-98bf-d3a3e776c687"}
