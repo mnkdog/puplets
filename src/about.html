@@ -332,6 +332,11 @@
                 const container = document.getElementById('aboutContent');
                 let html = '';
 
+                // Sanitization check - fail closed if DOMPurify unavailable
+                if (typeof DOMPurify === 'undefined') {
+                    throw new Error('DOMPurify failed to load - cannot safely render user content');
+                }
+
                 // Add heading if exists
                 if (heading) {
                     html += `<h1>${escapeHtml(heading)}</h1>`;
@@ -347,15 +352,11 @@
                     ? marked.parse(markdownBody)
                     : parseMarkdownFallback(markdownBody);
 
-                // Sanitize HTML to prevent XSS - fail closed if DOMPurify unavailable
-                if (typeof DOMPurify === 'undefined') {
-                    throw new Error('DOMPurify failed to load - cannot safely render user content');
-                }
-                const sanitizedContent = DOMPurify.sanitize(parsedContent);
+                html += `<div class="story">${parsedContent}</div>`;
 
-                html += `<div class="story">${sanitizedContent}</div>`;
-
-                container.innerHTML = html;
+                // Sanitize ALL HTML to prevent XSS (including frontmatter-derived content)
+                const sanitizedHtml = DOMPurify.sanitize(html);
+                container.innerHTML = sanitizedHtml;
 
             } catch (error) {
                 console.error('Failed to load about content:', error);
