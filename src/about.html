@@ -277,7 +277,7 @@
     </div>
 
     <div class="container" id="aboutContent">
-        <p style="text-align: center; color: #999;">Loading...</p>
+        <p style="text-align: center; color: #767676;">Loading...</p>
     </div>
 
     <script>
@@ -312,11 +312,17 @@
                 const frontmatter = frontmatterMatch[1];
                 const markdownBody = frontmatterMatch[2];
 
+                // Helper to strip surrounding quotes from frontmatter values
+                const unquote = (value) => {
+                    if (!value) return '';
+                    return value.trim().replace(/^["']|["']$/g, '');
+                };
+
                 // Parse frontmatter fields
                 const published = frontmatter.match(/published:\s*(true|false)/)?.[1] === 'true';
-                const title = frontmatter.match(/title:\s*(.+)/)?.[1]?.trim() || 'About Puplets';
-                const heading = frontmatter.match(/heading:\s*(.+)/)?.[1]?.trim() || '';
-                const image = frontmatter.match(/image:\s*(.+)/)?.[1]?.trim() || '';
+                const title = unquote(frontmatter.match(/title:\s*(.+)/)?.[1]) || 'About Puplets';
+                const heading = unquote(frontmatter.match(/heading:\s*(.+)/)?.[1]);
+                const image = unquote(frontmatter.match(/image:\s*(.+)/)?.[1]);
 
                 // Check if published
                 if (!published) {
@@ -361,7 +367,7 @@
             } catch (error) {
                 console.error('Failed to load about content:', error);
                 const container = document.getElementById('aboutContent');
-                container.innerHTML = '<p style="text-align: center; color: #999;">Failed to load content. Please try again later.</p>';
+                container.innerHTML = '<p style="text-align: center; color: #767676;">Failed to load content. Please try again later.</p>';
             }
         }
 
@@ -401,7 +407,9 @@
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
-            return div.innerHTML;
+            return div.innerHTML
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         // Mobile menu toggle

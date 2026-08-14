@@ -1,6 +1,8 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
 
+const VERCEL_CONFIG_FILE = 'vercel.json';
+
 Then('the marked.js script should be loaded from local vendor', async function () {
   const markedScript = await this.page.locator('script[src*="vendor"]').filter({ hasText: /marked/ });
   const count = await markedScript.count();
@@ -108,7 +110,7 @@ Then('the response should include a Content-Security-Policy header', async funct
   // Note: In local dev, headers won't be set. This test validates vercel.json config exists
   // We check the config file rather than runtime headers in local environment
   const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
 
   const headers = vercelConfig.headers;
   expect(headers).to.be.an('array');
@@ -122,7 +124,7 @@ Then('the response should include a Content-Security-Policy header', async funct
 
 Then('the response should include X-Frame-Options header', async function () {
   const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
 
   const xFrameOptions = vercelConfig.headers[0].headers.find(h => h.key === 'X-Frame-Options');
   expect(xFrameOptions).to.exist;
@@ -131,7 +133,7 @@ Then('the response should include X-Frame-Options header', async function () {
 
 Then('the response should include X-Content-Type-Options header', async function () {
   const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
 
   const xContentType = vercelConfig.headers[0].headers.find(h => h.key === 'X-Content-Type-Options');
   expect(xContentType).to.exist;
@@ -140,7 +142,7 @@ Then('the response should include X-Content-Type-Options header', async function
 
 Then('the response should include Referrer-Policy header', async function () {
   const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
 
   const referrerPolicy = vercelConfig.headers[0].headers.find(h => h.key === 'Referrer-Policy');
   expect(referrerPolicy).to.exist;
@@ -149,7 +151,7 @@ Then('the response should include Referrer-Policy header', async function () {
 
 Then('the response should include Permissions-Policy header', async function () {
   const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
 
   const permissionsPolicy = vercelConfig.headers[0].headers.find(h => h.key === 'Permissions-Policy');
   expect(permissionsPolicy).to.exist;
@@ -160,7 +162,7 @@ Then('the response should include Permissions-Policy header', async function () 
 
 Then('the CSP should allow scripts from self', async function () {
   const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
 
   const cspHeader = vercelConfig.headers[0].headers.find(h => h.key === 'Content-Security-Policy');
   expect(cspHeader.value).to.include("script-src 'self'");
@@ -168,7 +170,7 @@ Then('the CSP should allow scripts from self', async function () {
 
 Then('the CSP should allow scripts from cdn.jsdelivr.net', async function () {
   const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
 
   const cspHeader = vercelConfig.headers[0].headers.find(h => h.key === 'Content-Security-Policy');
   expect(cspHeader.value).to.include('https://cdn.jsdelivr.net');
@@ -176,7 +178,7 @@ Then('the CSP should allow scripts from cdn.jsdelivr.net', async function () {
 
 Then('the CSP should allow scripts from checkout.stripe.com', async function () {
   const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
 
   const cspHeader = vercelConfig.headers[0].headers.find(h => h.key === 'Content-Security-Policy');
   expect(cspHeader.value).to.include('https://checkout.stripe.com');
@@ -184,7 +186,7 @@ Then('the CSP should allow scripts from checkout.stripe.com', async function () 
 
 Then('the CSP should allow connects to api.stripe.com', async function () {
   const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
 
   const cspHeader = vercelConfig.headers[0].headers.find(h => h.key === 'Content-Security-Policy');
   expect(cspHeader.value).to.include('https://api.stripe.com');
