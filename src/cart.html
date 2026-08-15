@@ -426,9 +426,9 @@
                                 <div class="item-details">
                                     <h3>${item.product || 'Dog Collar'}</h3>
                                     <div class="item-specs">
-                                        <span class="spec">Colour: ${capitalizeFirst(item.color || 'unknown')}</span>
-                                        <span class="spec">Size: ${item.size || 'N/A'}</span>
-                                        ${item.charm ? `<span class="spec">Free Charm: ${capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>` : ''}
+                                        <span class="spec">Colour: ${item.colorName || capitalizeFirst(item.color || 'unknown')}</span>
+                                        <span class="spec">Size: ${item.sizeName || (item.size || 'N/A').toUpperCase()}</span>
+                                        ${item.charm ? `<span class="spec">Free Charm: ${item.charmName || capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>` : ''}
                                     </div>
                                     ${item.extraCharms && item.extraCharms.length > 0 ? `
                                         <div class="extra-charms-list">
