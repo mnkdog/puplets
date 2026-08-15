@@ -231,6 +231,17 @@
             }
         }
 
+        // Sanitize HTML to prevent XSS attacks
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function renderBlogPosts(posts) {
             const container = document.getElementById('blogPosts');
 
@@ -239,15 +250,15 @@
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
 
             container.innerHTML = sortedPosts.map(post => `
-                <a href="/blog/${post.slug}.html" class="blog-card">
-                    ${post.featured_image ? `<img src="${post.featured_image}" alt="${post.title}">` : ''}
+                <a href="/blog/${escapeHtml(post.slug)}.html" class="blog-card">
+                    ${post.featured_image ? `<img src="${escapeHtml(post.featured_image)}" alt="${escapeHtml(post.title)}">` : ''}
                     <div class="blog-card-content">
                         <div class="blog-meta">
                             <span>📅 ${formatDate(post.date)}</span>
-                            ${post.author ? `<span>✍️ ${post.author}</span>` : ''}
+                            ${post.author ? `<span>✍️ ${escapeHtml(post.author)}</span>` : ''}
                         </div>
-                        <h2>${post.title}</h2>
-                        <p>${post.description || excerpt(post.body)}</p>
+                        <h2>${escapeHtml(post.title)}</h2>
+                        <p>${escapeHtml(post.description || excerpt(post.body))}</p>
                         <span class="read-more">Read more →</span>
                     </div>
                 </a>
