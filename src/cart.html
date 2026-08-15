@@ -419,7 +419,7 @@
                                     </div>
                                     ${item.extraCharms && item.extraCharms.length > 0 ? `
                                         <div class="extra-charms-list">
-                                            <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
+                                            <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${(item.extraCharmsPrice || 0).toFixed(2)}):</strong><br>
                                             ${item.extraCharms.map(c => escapeHtml(capitalizeFirst(c.replace(/-/g, ' ')))).join(', ')}
                                         </div>
                                     ` : ''}
