@@ -304,7 +304,7 @@
                     </div>
 
                     <div class="price-section">
-                        <div class="price-display" id="priceDisplay">£3.99</div>
+                        <div class="price-display" id="priceDisplay" aria-live="polite" aria-atomic="true">£3.99</div>
                         <div class="price-breakdown" id="priceBreakdown">
                             Select charm to add to basket
                         </div>
@@ -316,13 +316,13 @@
         </div>
     </div>
 
-    <div class="added-modal" id="addedModal">
+    <div class="added-modal" id="addedModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="added-modal-content">
-            <h2>✓ Added to Cart!</h2>
+            <h2 id="modalTitle">✓ Added to Cart!</h2>
             <p>Your charms have been added to your basket.</p>
             <div class="added-modal-buttons">
-                <button class="btn-cart" onclick="window.location.href='cart.html'">Go to Cart & Checkout</button>
-                <button class="btn-continue" onclick="closeAddedModal()">Continue Shopping</button>
+                <button class="btn-cart" onclick="window.location.href='cart.html'" id="modalFirstFocus">Go to Cart & Checkout</button>
+                <button class="btn-continue" onclick="closeAddedModal()" id="modalLastFocus">Continue Shopping</button>
             </div>
         </div>
     </div>
@@ -526,13 +526,61 @@
             showAddedModal();
         });
 
+        let modalPreviousFocus = null;
+
         function showAddedModal() {
-            document.getElementById('addedModal').classList.add('active');
+            const modal = document.getElementById('addedModal');
+            modal.classList.add('active');
+
+            // Store current focus and move to first focusable element
+            modalPreviousFocus = document.activeElement;
+            setTimeout(() => {
+                document.getElementById('modalFirstFocus').focus();
+            }, 100);
         }
 
         function closeAddedModal() {
-            document.getElementById('addedModal').classList.remove('active');
+            const modal = document.getElementById('addedModal');
+            modal.classList.remove('active');
+
+            // Return focus to previously focused element
+            if (modalPreviousFocus) {
+                modalPreviousFocus.focus();
+                modalPreviousFocus = null;
+            }
         }
+
+        // Focus trap for modal
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('addedModal');
+            if (!modal.classList.contains('active')) return;
+
+            // ESC to close
+            if (e.key === 'Escape') {
+                closeAddedModal();
+                return;
+            }
+
+            // Tab key focus trap
+            if (e.key === 'Tab') {
+                const firstFocus = document.getElementById('modalFirstFocus');
+                const lastFocus = document.getElementById('modalLastFocus');
+
+                if (e.shiftKey) {
+                    // Shift+Tab: if on first element, wrap to last
+                    if (document.activeElement === firstFocus) {
+                        e.preventDefault();
+                        lastFocus.focus();
+                    }
+                } else {
+                    // Tab: if on last element, wrap to first
+                    if (document.activeElement === lastFocus) {
+                        e.preventDefault();
+                        firstFocus.focus();
+                    }
+                }
+            }
+        });
 
         function updateCartCount() {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');

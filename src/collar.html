@@ -582,13 +582,13 @@
     </div>
 
     <!-- Added to Cart Modal -->
-    <div class="added-to-cart-modal" id="addedModal">
+    <div class="added-to-cart-modal" id="addedModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-content">
-            <h3>✓ Added to Cart!</h3>
+            <h3 id="modalTitle">✓ Added to Cart!</h3>
             <p>Your item has been added to your shopping cart.</p>
             <div class="modal-buttons">
-                <a href="cart.html" class="btn-primary">Go to Cart & Checkout</a>
-                <button onclick="closeAddedModal()" class="btn-secondary">Continue Shopping</button>
+                <a href="cart.html" class="btn-primary" id="modalFirstFocus">Go to Cart & Checkout</a>
+                <button onclick="closeAddedModal()" class="btn-secondary" id="modalLastFocus">Continue Shopping</button>
             </div>
         </div>
     </div>
@@ -624,7 +624,7 @@
             <div class="product-info">
                 <h1>Waterproof Dog Collar with Free Charm</h1>
                 <div class="product-price">
-                    <div id="priceBreakdown">
+                    <div id="priceBreakdown" aria-live="polite" aria-atomic="true">
                         <span class="total">Select size to see price</span>
                     </div>
                 </div>
@@ -1144,15 +1144,61 @@
             showAddedModal();
         }
 
+        let modalPreviousFocus = null;
+
         function showAddedModal() {
             const modal = document.getElementById('addedModal');
             modal.classList.add('active');
+
+            // Store current focus and move to first focusable element
+            modalPreviousFocus = document.activeElement;
+            setTimeout(() => {
+                document.getElementById('modalFirstFocus').focus();
+            }, 100);
         }
 
         function closeAddedModal() {
             const modal = document.getElementById('addedModal');
             modal.classList.remove('active');
+
+            // Return focus to previously focused element
+            if (modalPreviousFocus) {
+                modalPreviousFocus.focus();
+                modalPreviousFocus = null;
+            }
         }
+
+        // Focus trap for modal
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('addedModal');
+            if (!modal.classList.contains('active')) return;
+
+            // ESC to close
+            if (e.key === 'Escape') {
+                closeAddedModal();
+                return;
+            }
+
+            // Tab key focus trap
+            if (e.key === 'Tab') {
+                const firstFocus = document.getElementById('modalFirstFocus');
+                const lastFocus = document.getElementById('modalLastFocus');
+
+                if (e.shiftKey) {
+                    // Shift+Tab: if on first element, wrap to last
+                    if (document.activeElement === firstFocus) {
+                        e.preventDefault();
+                        lastFocus.focus();
+                    }
+                } else {
+                    // Tab: if on last element, wrap to first
+                    if (document.activeElement === lastFocus) {
+                        e.preventDefault();
+                        firstFocus.focus();
+                    }
+                }
+            }
+        });
 
         function updateCartCount() {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
