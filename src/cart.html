@@ -327,6 +327,7 @@
         <div id="cartContent"></div>
     </div>
 
+    <script src="common.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             // Check if payment was cancelled
@@ -344,38 +345,6 @@
             await checkAboutPageVisibility();
         });
 
-        async function checkAboutPageVisibility() {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-            try {
-                const response = await fetch('/content/about.md', { signal: controller.signal });
-                clearTimeout(timeoutId);
-                if (response.ok) {
-                    const content = await response.text();
-                    // Extract frontmatter
-                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-                    if (frontmatterMatch) {
-                        const frontmatter = frontmatterMatch[1];
-                        // Check if published is false
-                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
-                        if (publishedMatch && publishedMatch[1] === 'false') {
-                            // Hide About links
-                            const desktopLink = document.getElementById('aboutLinkDesktop');
-                            const mobileLink = document.getElementById('aboutLinkMobile');
-                            if (desktopLink) desktopLink.style.display = 'none';
-                            if (mobileLink) mobileLink.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') {
-                    console.error('About page status load timeout:', error);
-                } else {
-                    console.error('Failed to load about page status:', error);
-                }
-            }
-        }
 
         function renderCart() {
             try {
@@ -585,17 +554,6 @@
         }
 
         // Mobile menu toggle
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('active');
-        }
-
-        function closeMobileMenu(event) {
-            if (!event || event.target === event.currentTarget) {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.remove('active');
-            }
-        }
     </script>
 </body>
 </html>

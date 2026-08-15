@@ -327,6 +327,7 @@
         </div>
     </div>
 
+    <script src="common.js"></script>
     <script>
         const charmPrice = 3.99;
 
@@ -366,38 +367,6 @@
             return charm ? charm.quantity : 0;
         }
 
-        async function checkAboutPageVisibility() {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-            try {
-                const response = await fetch('/content/about.md', { signal: controller.signal });
-                clearTimeout(timeoutId);
-                if (response.ok) {
-                    const content = await response.text();
-                    // Extract frontmatter
-                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-                    if (frontmatterMatch) {
-                        const frontmatter = frontmatterMatch[1];
-                        // Check if published is false
-                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
-                        if (publishedMatch && publishedMatch[1] === 'false') {
-                            // Hide About links
-                            const desktopLink = document.getElementById('aboutLinkDesktop');
-                            const mobileLink = document.getElementById('aboutLinkMobile');
-                            if (desktopLink) desktopLink.style.display = 'none';
-                            if (mobileLink) mobileLink.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') {
-                    console.error('About page status load timeout:', error);
-                } else {
-                    console.error('Failed to load about page status:', error);
-                }
-            }
-        }
 
         // Initialize inventory
         loadInventory();
@@ -598,14 +567,6 @@
             }
         });
 
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const cartCount = document.getElementById('cartCount');
-            if (cartCount) {
-                cartCount.textContent = cart.length;
-                cartCount.style.display = cart.length > 0 ? 'flex' : 'none';
-            }
-        }
 
         // Mobile menu toggle with focus management
         let previouslyFocusedElement = null;
