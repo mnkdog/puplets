@@ -296,8 +296,11 @@
         });
 
         async function loadAndRenderAboutContent() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             try {
-                const response = await fetch('/content/about.md');
+                const response = await fetch('/content/about.md', { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (!response.ok) {
                     throw new Error('Failed to load about content');
                 }
@@ -366,7 +369,12 @@
                 container.innerHTML = sanitizedHtml;
 
             } catch (error) {
-                console.error('Failed to load about content:', error);
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    console.error('About content load timeout:', error);
+                } else {
+                    console.error('Failed to load about content:', error);
+                }
                 const container = document.getElementById('aboutContent');
                 container.innerHTML = '<p style="text-align: center; color: #5A5A5A;">Failed to load content. Please try again later.</p>';
             }
