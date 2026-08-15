@@ -289,7 +289,7 @@
                 <span></span>
             </button>
             <a href="/">Home</a>
-            <a href="products.html">Products</a>
+            <a href="products.html" aria-current="page">Products</a>
             <a href="blog.html">Blog</a>
             <a href="about.html" id="aboutLinkDesktop">About</a>
             <a href="cart.html" class="cart-button">
@@ -304,7 +304,7 @@
             <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
-                <a href="products.html">Products</a>
+                <a href="products.html" aria-current="page">Products</a>
                 <a href="blog.html">Blog</a>
                 <a href="about.html" id="aboutLinkMobile">About</a>
             </div>
@@ -342,53 +342,9 @@
         </div>
     </div>
 
+    <script src="common.js"></script>
     <script>
         // Update cart count
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const cartCount = document.getElementById('cartCount');
-            if (cartCount) {
-                cartCount.textContent = cart.length;
-                cartCount.style.display = cart.length > 0 ? 'flex' : 'none';
-            }
-        }
-
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('active');
-        }
-
-        function closeMobileMenu(event) {
-            if (!event || event.target === event.currentTarget) {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.remove('active');
-            }
-        }
-
-        async function checkAboutPageVisibility() {
-            try {
-                const response = await fetch('/content/about.md');
-                if (response.ok) {
-                    const content = await response.text();
-                    // Extract frontmatter
-                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-                    if (frontmatterMatch) {
-                        const frontmatter = frontmatterMatch[1];
-                        // Check if published is false
-                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
-                        if (publishedMatch && publishedMatch[1] === 'false') {
-                            // Hide About links
-                            const desktopLink = document.getElementById('aboutLinkDesktop');
-                            const mobileLink = document.getElementById('aboutLinkMobile');
-                            if (desktopLink) desktopLink.style.display = 'none';
-                            if (mobileLink) mobileLink.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load about page status:', error);
-            }
-        }
 
         updateCartCount();
         checkAboutPageVisibility();

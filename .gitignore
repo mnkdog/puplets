@@ -33,3 +33,8 @@ npm-debug.log*
 
 # CodeGraph
 .codegraph/
+
+# Review artifacts (local only)
+.claude/memory/.pr-review-passed
+.claude/metrics/boundary-events.jsonl
+code-review-results.json

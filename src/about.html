@@ -234,12 +234,13 @@
             }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="/vendor/marked.js" integrity="sha384-kyb7rY2xnKgiRpRdAeNJxQ8e2SiGZy1m+FK9yME6M0eGJpg7EFaGGvf7+JSirgqE" crossorigin="anonymous"></script>
+    <script src="/vendor/purify.min.js" integrity="sha384-ZuC+DIACqSIZTsp+7YF57cR5Y+6qXa7YFbEKdA/EHA/R0T+41dtorqucYl71Zp+t" crossorigin="anonymous"></script>
 </head>
 <body>
     <nav>
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu" aria-expanded="false" id="hamburgerButton">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -263,22 +264,24 @@
     </nav>
 
     <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle">
         <div class="mobile-menu-content" onclick="event.stopPropagation()">
-            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu">&times;</button>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu" id="mobileMenuClose">&times;</button>
+            <h2 id="mobileMenuTitle" style="position: absolute; left: -10000px;">Navigation Menu</h2>
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
                 <a href="blog.html">Blog</a>
-                <a href="about.html" id="aboutLinkMobile">About</a>
+                <a href="about.html" id="aboutLinkMobile" aria-current="page">About</a>
             </div>
         </div>
     </div>
 
     <div class="container" id="aboutContent">
-        <p style="text-align: center; color: #999;">Loading...</p>
+        <p style="text-align: center; color: #5A5A5A;">Loading...</p>
     </div>
 
+    <script src="common.js"></script>
     <script>
         // Update cart count and load About content on page load
         document.addEventListener('DOMContentLoaded', async () => {
@@ -294,8 +297,11 @@
         });
 
         async function loadAndRenderAboutContent() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             try {
-                const response = await fetch('/content/about.md');
+                const response = await fetch('/content/about.md', { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (!response.ok) {
                     throw new Error('Failed to load about content');
                 }
@@ -311,11 +317,17 @@
                 const frontmatter = frontmatterMatch[1];
                 const markdownBody = frontmatterMatch[2];
 
+                // Helper to strip surrounding quotes from frontmatter values
+                const unquote = (value) => {
+                    if (!value) return '';
+                    return value.trim().replace(/^["']|["']$/g, '');
+                };
+
                 // Parse frontmatter fields
                 const published = frontmatter.match(/published:\s*(true|false)/)?.[1] === 'true';
-                const title = frontmatter.match(/title:\s*(.+)/)?.[1]?.trim() || 'About Puplets';
-                const heading = frontmatter.match(/heading:\s*(.+)/)?.[1]?.trim() || '';
-                const image = frontmatter.match(/image:\s*(.+)/)?.[1]?.trim() || '';
+                const title = unquote(frontmatter.match(/title:\s*(.+)/)?.[1]) || 'About Puplets';
+                const heading = unquote(frontmatter.match(/heading:\s*(.+)/)?.[1]);
+                const image = unquote(frontmatter.match(/image:\s*(.+)/)?.[1]);
 
                 // Check if published
                 if (!published) {
@@ -331,6 +343,11 @@
                 const container = document.getElementById('aboutContent');
                 let html = '';
 
+                // Sanitization check - fail closed if DOMPurify unavailable
+                if (typeof DOMPurify === 'undefined') {
+                    throw new Error('DOMPurify failed to load - cannot safely render user content');
+                }
+
                 // Add heading if exists
                 if (heading) {
                     html += `<h1>${escapeHtml(heading)}</h1>`;
@@ -345,19 +362,42 @@
                 const parsedContent = typeof marked !== 'undefined' && marked.parse
                     ? marked.parse(markdownBody)
                     : parseMarkdownFallback(markdownBody);
+
                 html += `<div class="story">${parsedContent}</div>`;
 
-                container.innerHTML = html;
+                // Sanitize ALL HTML to prevent XSS (including frontmatter-derived content)
+                const sanitizedHtml = DOMPurify.sanitize(html);
+                container.innerHTML = sanitizedHtml;
 
             } catch (error) {
-                console.error('Failed to load about content:', error);
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    console.error('About content load timeout:', error);
+                } else {
+                    console.error('Failed to load about content:', error);
+                }
                 const container = document.getElementById('aboutContent');
-                container.innerHTML = '<p style="text-align: center; color: #999;">Failed to load content. Please try again later.</p>';
+                container.innerHTML = '<p style="text-align: center; color: #5A5A5A;">Failed to load content. Please try again later.</p>';
             }
         }
 
         function parseMarkdownFallback(markdown) {
             let html = markdown;
+
+            // Helper to validate and sanitize URLs
+            function sanitizeUrl(url) {
+                const trimmed = url.trim();
+                // Allowlist safe schemes only
+                if (trimmed.match(/^(https?|mailto):/i)) {
+                    return trimmed;
+                }
+                // Relative URLs are safe
+                if (trimmed.match(/^[./]/)) {
+                    return trimmed;
+                }
+                // Reject everything else (javascript:, data:, etc.)
+                return '#';
+            }
 
             // Headers (## and ###)
             html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
@@ -369,8 +409,12 @@
             // Italic
             html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
 
-            // Links
-            html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+            // Links - sanitize URLs and escape text
+            html = html.replace(/\[(.+?)\]\((.+?)\)/g, (match, text, url) => {
+                const safeUrl = sanitizeUrl(url);
+                const safeText = escapeHtml(text);
+                return `<a href="${safeUrl}">${safeText}</a>`;
+            });
 
             // Lists - convert markdown lists to HTML
             html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
@@ -392,21 +436,61 @@
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
-            return div.innerHTML;
+            return div.innerHTML
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         // Mobile menu toggle
+        let previouslyFocusedElement = null;
+
         function toggleMobileMenu() {
             const menu = document.getElementById('mobileMenu');
+            const hamburger = document.getElementById('hamburgerButton');
+            const isOpening = !menu.classList.contains('active');
+
             menu.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
+
+            if (isOpening) {
+                // Store current focus and move to close button
+                previouslyFocusedElement = document.activeElement;
+                setTimeout(() => {
+                    document.getElementById('mobileMenuClose').focus();
+                }, 100);
+            } else {
+                // Return focus to hamburger button
+                if (previouslyFocusedElement) {
+                    previouslyFocusedElement.focus();
+                    previouslyFocusedElement = null;
+                }
+            }
         }
 
         function closeMobileMenu(event) {
             if (!event || event.target === event.currentTarget) {
                 const menu = document.getElementById('mobileMenu');
+                const hamburger = document.getElementById('hamburgerButton');
                 menu.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+
+                // Return focus to hamburger button
+                if (previouslyFocusedElement) {
+                    previouslyFocusedElement.focus();
+                    previouslyFocusedElement = null;
+                }
             }
         }
+
+        // Keyboard navigation: ESC to close menu
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                const menu = document.getElementById('mobileMenu');
+                if (menu.classList.contains('active')) {
+                    closeMobileMenu();
+                }
+            }
+        });
     </script>
 </body>
 </html>

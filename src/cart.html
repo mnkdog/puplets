@@ -327,6 +327,7 @@
         <div id="cartContent"></div>
     </div>
 
+    <script src="common.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             // Check if payment was cancelled
@@ -344,29 +345,15 @@
             await checkAboutPageVisibility();
         });
 
-        async function checkAboutPageVisibility() {
-            try {
-                const response = await fetch('/content/about.md');
-                if (response.ok) {
-                    const content = await response.text();
-                    // Extract frontmatter
-                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-                    if (frontmatterMatch) {
-                        const frontmatter = frontmatterMatch[1];
-                        // Check if published is false
-                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
-                        if (publishedMatch && publishedMatch[1] === 'false') {
-                            // Hide About links
-                            const desktopLink = document.getElementById('aboutLinkDesktop');
-                            const mobileLink = document.getElementById('aboutLinkMobile');
-                            if (desktopLink) desktopLink.style.display = 'none';
-                            if (mobileLink) mobileLink.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load about page status:', error);
-            }
+        // Sanitize HTML to prevent XSS attacks
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
 
         function renderCart() {
@@ -407,7 +394,7 @@
                                 <div class="item-details">
                                     <h3>Individual Charm${quantity > 1 ? ` (×${quantity})` : ''}</h3>
                                     <div class="item-specs">
-                                        <span class="spec">Design: ${capitalizeFirst((item.charmName || item.charm || 'Unknown').replace(/-/g, ' '))}</span>
+                                        <span class="spec">Design: ${escapeHtml(capitalizeFirst((item.charmName || item.charm || 'Unknown').replace(/-/g, ' ')))}</span>
                                         ${quantity > 1 ? `<span class="spec">£${(item.price || 0).toFixed(2)} each</span>` : ''}
                                     </div>
                                 </div>
@@ -424,16 +411,16 @@
                         return `
                             <div class="cart-item">
                                 <div class="item-details">
-                                    <h3>${item.product || 'Dog Collar'}</h3>
+                                    <h3>${escapeHtml(item.product || 'Dog Collar')}</h3>
                                     <div class="item-specs">
-                                        <span class="spec">Colour: ${capitalizeFirst(item.color || 'unknown')}</span>
-                                        <span class="spec">Size: ${item.size || 'N/A'}</span>
-                                        ${item.charm ? `<span class="spec">Free Charm: ${capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>` : ''}
+                                        <span class="spec">Colour: ${escapeHtml(item.colorName || capitalizeFirst(item.color || 'unknown'))}</span>
+                                        <span class="spec">Size: ${escapeHtml(item.sizeName || (item.size || 'N/A').toUpperCase())}</span>
+                                        ${item.charm ? `<span class="spec">Free Charm: ${escapeHtml(item.charmName || capitalizeFirst(item.charm.replace(/-/g, ' ')))}</span>` : ''}
                                     </div>
                                     ${item.extraCharms && item.extraCharms.length > 0 ? `
                                         <div class="extra-charms-list">
                                             <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
-                                            ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
+                                            ${item.extraCharms.map(c => escapeHtml(capitalizeFirst(c.replace(/-/g, ' ')))).join(', ')}
                                         </div>
                                     ` : ''}
                                 </div>
@@ -500,13 +487,25 @@
         function removeItem(index) {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             cart.splice(index, 1);
-            localStorage.setItem('cart', JSON.stringify(cart));
+            try {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            } catch (error) {
+                console.error('Failed to save cart:', error);
+                alert('Unable to update cart. Your storage may be full.');
+                return;
+            }
             renderCart();
         }
 
         function clearCart() {
             if (confirm('Are you sure you want to clear your entire cart?')) {
-                localStorage.setItem('cart', '[]');
+                try {
+                    localStorage.setItem('cart', '[]');
+                } catch (error) {
+                    console.error('Failed to clear cart:', error);
+                    alert('Unable to clear cart. Your storage may be full.');
+                    return;
+                }
                 renderCart();
             }
         }
@@ -516,7 +515,13 @@
             const item = cart[index];
 
             // Store item for editing and its index
-            localStorage.setItem('editingItem', JSON.stringify({ item, index }));
+            try {
+                localStorage.setItem('editingItem', JSON.stringify({ item, index }));
+            } catch (error) {
+                console.error('Failed to store editing item:', error);
+                alert('Unable to edit item. Your storage may be full.');
+                return;
+            }
 
             // Redirect to products page
             window.location.href = 'collar.html';
@@ -536,6 +541,9 @@
             checkoutButton.textContent = 'Loading...';
             checkoutButton.disabled = true;
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
             try {
                 // Call Stripe API to create checkout session
                 const response = await fetch('/api/create-checkout-session', {
@@ -546,7 +554,9 @@
                     body: JSON.stringify({
                         items: cart
                     }),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     throw new Error('Failed to create checkout session');
@@ -558,25 +568,20 @@
                 window.location.href = url;
 
             } catch (error) {
-                console.error('Checkout error:', error);
-                alert('Sorry, there was an error processing your checkout. Please try again.');
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    console.error('Checkout session timeout:', error);
+                    alert('The request timed out. Please try again.');
+                } else {
+                    console.error('Checkout error:', error);
+                    alert('Sorry, there was an error processing your checkout. Please try again.');
+                }
                 checkoutButton.textContent = originalText;
                 checkoutButton.disabled = false;
             }
         }
 
         // Mobile menu toggle
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('active');
-        }
-
-        function closeMobileMenu(event) {
-            if (!event || event.target === event.currentTarget) {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.remove('active');
-            }
-        }
     </script>
 </body>
 </html>

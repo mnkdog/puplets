@@ -544,7 +544,7 @@
 <body>
     <nav>
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu" aria-expanded="false" id="hamburgerButton">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -556,7 +556,7 @@
         </div>
         <div class="nav-links">
             <a href="/">Home</a>
-            <a href="products.html">Products</a>
+            <a href="products.html" aria-current="page">Products</a>
             <a href="blog.html">Blog</a>
             <a href="about.html" id="aboutLinkDesktop">About</a>
             <a href="cart.html" class="cart-button">
@@ -568,12 +568,13 @@
     </nav>
 
     <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle">
         <div class="mobile-menu-content" onclick="event.stopPropagation()">
-            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu">&times;</button>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu" id="mobileMenuClose">&times;</button>
+            <h2 id="mobileMenuTitle" style="position: absolute; left: -10000px;">Navigation Menu</h2>
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
-                <a href="products.html">Products</a>
+                <a href="products.html" aria-current="page">Products</a>
                 <a href="blog.html">Blog</a>
                 <a href="about.html" id="aboutLinkMobile">About</a>
             </div>
@@ -581,13 +582,13 @@
     </div>
 
     <!-- Added to Cart Modal -->
-    <div class="added-to-cart-modal" id="addedModal">
+    <div class="added-to-cart-modal" id="addedModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-content">
-            <h3>✓ Added to Cart!</h3>
+            <h3 id="modalTitle">✓ Added to Cart!</h3>
             <p>Your item has been added to your shopping cart.</p>
             <div class="modal-buttons">
-                <a href="cart.html" class="btn-primary">Go to Cart & Checkout</a>
-                <button onclick="closeAddedModal()" class="btn-secondary">Continue Shopping</button>
+                <a href="cart.html" class="btn-primary" id="modalFirstFocus">Go to Cart & Checkout</a>
+                <button onclick="closeAddedModal()" class="btn-secondary" id="modalLastFocus">Continue Shopping</button>
             </div>
         </div>
     </div>
@@ -623,7 +624,7 @@
             <div class="product-info">
                 <h1>Waterproof Dog Collar with Free Charm</h1>
                 <div class="product-price">
-                    <div id="priceBreakdown">
+                    <div id="priceBreakdown" aria-live="polite" aria-atomic="true">
                         <span class="total">Select size to see price</span>
                     </div>
                 </div>
@@ -644,8 +645,8 @@
                         <select name="size" id="size" required>
                             <option value="">Select a size</option>
                             <option value="xs" data-price="17.99">XS - 21-27 cm (8 5/16 - 10 5/8 in)</option>
-                            <option value="s" data-price="20.99">S - 26-32 cm (10 3/16 - 12 5/8 in)</option>
-                            <option value="m" data-price="23.99">M - 31-37 cm (12 3/16 - 14 5/8 in)</option>
+                            <option value="s" data-price="17.99">S - 26-32 cm (10 3/16 - 12 5/8 in)</option>
+                            <option value="m" data-price="20.99">M - 31-37 cm (12 3/16 - 14 5/8 in)</option>
                         </select>
                         <div class="size-guide">
                             Measure around your dog's neck where the collar would naturally sit
@@ -699,12 +700,13 @@
         <img id="lightboxImage" src="" alt="Enlarged view">
     </div>
 
+    <script src="common.js"></script>
     <script>
-        // Product data
+        // Product data - canonical pricing (matches API catalog and product JSON)
         const prices = {
             xs: 17.99,
-            s: 20.99,
-            m: 23.99
+            s: 17.99,
+            m: 20.99
         };
 
         const charmPrice = 3.99;
@@ -721,15 +723,23 @@
 
         // Load inventory
         async function loadInventory() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             try {
-                const response = await fetch('/content/inventory.json');
+                const response = await fetch('/content/inventory.json', { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (response.ok) {
                     inventory = await response.json();
                     // Expose inventory to window for debugging/testing
                     window.__inventory = inventory;
                 }
             } catch (error) {
-                console.error('Failed to load inventory:', error);
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    console.error('Inventory load timeout:', error);
+                } else {
+                    console.error('Failed to load inventory:', error);
+                }
             }
         }
 
@@ -760,31 +770,6 @@
             loadEditingItem();
             await checkAboutPageVisibility();
         });
-
-        async function checkAboutPageVisibility() {
-            try {
-                const response = await fetch('/content/about.md');
-                if (response.ok) {
-                    const content = await response.text();
-                    // Extract frontmatter
-                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-                    if (frontmatterMatch) {
-                        const frontmatter = frontmatterMatch[1];
-                        // Check if published is false
-                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
-                        if (publishedMatch && publishedMatch[1] === 'false') {
-                            // Hide About links
-                            const desktopLink = document.getElementById('aboutLinkDesktop');
-                            const mobileLink = document.getElementById('aboutLinkMobile');
-                            if (desktopLink) desktopLink.style.display = 'none';
-                            if (mobileLink) mobileLink.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load about page status:', error);
-            }
-        }
 
         // Image gallery
         let currentImageIndex = 0;
@@ -954,20 +939,20 @@
                     .filter(item => item.color === color)
                     .map(item => ({ size: item.size, quantity: item.quantity }));
 
-                // Define size order and prices
+                // Define size order, prices, and measurements (matches canonical prices and static HTML)
                 const sizeData = [
-                    { size: 'xs', price: 20.00 },
-                    { size: 's', price: 25.00 },
-                    { size: 'm', price: 30.00 }
+                    { size: 'xs', price: prices.xs, measurements_cm: '21-27 cm', measurements_in: '8 5/16 - 10 5/8 in' },
+                    { size: 's', price: prices.s, measurements_cm: '26-32 cm', measurements_in: '10 3/16 - 12 5/8 in' },
+                    { size: 'm', price: prices.m, measurements_cm: '31-37 cm', measurements_in: '12 3/16 - 14 5/8 in' }
                 ];
 
-                // Add options in order
-                sizeData.forEach(({ size, price }) => {
+                // Add options in order (format matches static HTML options)
+                sizeData.forEach(({ size, price, measurements_cm, measurements_in }) => {
                     const stockInfo = sizesForColor.find(s => s.size === size);
                     if (stockInfo) {
                         const option = document.createElement('option');
                         option.value = size.toLowerCase();
-                        option.textContent = `${size} - £${price.toFixed(2)}`;
+                        option.textContent = `${size.toUpperCase()} - ${measurements_cm} (${measurements_in})`;
                         option.dataset.price = price;
                         sizeSelect.appendChild(option);
                     }
@@ -1104,17 +1089,46 @@
             const color = document.getElementById('color').value;
             const size = document.getElementById('size').value;
             const charm = document.getElementById('charm').value;
+
+            // Validate all required selections
+            if (!color) {
+                alert('Please select a collar colour');
+                document.getElementById('color').focus();
+                return;
+            }
+            if (!size) {
+                alert('Please select a size');
+                document.getElementById('size').focus();
+                return;
+            }
+            if (!charm) {
+                alert('Please select a free charm');
+                document.getElementById('charm').focus();
+                return;
+            }
+
             const sizeSelect = document.getElementById('size');
             const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
             const basePrice = parseFloat(selectedOption.dataset.price);
 
+            // Validate price data
+            if (!basePrice || isNaN(basePrice) || basePrice <= 0) {
+                alert('Invalid price data. Please refresh the page and try again.');
+                return;
+            }
+
             const cartItem = {
+                type: 'collar',
                 id: Date.now(),
                 product: 'Waterproof Dog Collar',
                 color: color,
-                size: size.toUpperCase(),
+                colorName: color.charAt(0).toUpperCase() + color.slice(1),
+                size: size.toLowerCase(),
+                sizeName: size.toUpperCase(),
                 charm: charm,
+                charmName: charm,
                 extraCharms: Array.from(selectedExtraCharms),
+                // Price fields below are for DISPLAY ONLY - server recalculates from catalog
                 price: basePrice,
                 extraCharmsPrice: selectedExtraCharms.size * charmPrice,
                 total: basePrice + (selectedExtraCharms.size * charmPrice)
@@ -1125,84 +1139,174 @@
             // Check if editing an existing item
             const editingData = localStorage.getItem('editingItem');
             if (editingData) {
-                const { index } = JSON.parse(editingData);
-                cart[index] = cartItem;
-                localStorage.removeItem('editingItem');
+                try {
+                    const { index } = JSON.parse(editingData);
+                    cart[index] = cartItem;
+                    localStorage.removeItem('editingItem');
+                } catch (error) {
+                    console.error('Failed to parse editing data, adding as new item:', error);
+                    cart.push(cartItem);
+                }
             } else {
                 cart.push(cartItem);
             }
 
-            localStorage.setItem('cart', JSON.stringify(cart));
+            try {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            } catch (error) {
+                console.error('Failed to save cart:', error);
+                alert('Unable to save item to cart. Your storage may be full. Try clearing your cart or browser data.');
+                return;
+            }
 
             updateCartCount();
             showAddedModal();
         }
 
+        let modalPreviousFocus = null;
+
         function showAddedModal() {
             const modal = document.getElementById('addedModal');
             modal.classList.add('active');
+
+            // Store current focus and move to first focusable element
+            modalPreviousFocus = document.activeElement;
+            setTimeout(() => {
+                document.getElementById('modalFirstFocus').focus();
+            }, 100);
         }
 
         function closeAddedModal() {
             const modal = document.getElementById('addedModal');
             modal.classList.remove('active');
-        }
 
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const countElement = document.querySelector('.cart-count');
-            if (cart.length > 0) {
-                countElement.textContent = cart.length;
-                countElement.style.display = 'flex';
-            } else {
-                countElement.style.display = 'none';
+            // Return focus to previously focused element
+            if (modalPreviousFocus) {
+                modalPreviousFocus.focus();
+                modalPreviousFocus = null;
             }
         }
 
-        // Mobile menu toggle
+        // Focus trap for modal
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('addedModal');
+            if (!modal.classList.contains('active')) return;
+
+            // ESC to close
+            if (e.key === 'Escape') {
+                closeAddedModal();
+                return;
+            }
+
+            // Tab key focus trap
+            if (e.key === 'Tab') {
+                const firstFocus = document.getElementById('modalFirstFocus');
+                const lastFocus = document.getElementById('modalLastFocus');
+
+                if (e.shiftKey) {
+                    // Shift+Tab: if on first element, wrap to last
+                    if (document.activeElement === firstFocus) {
+                        e.preventDefault();
+                        lastFocus.focus();
+                    }
+                } else {
+                    // Tab: if on last element, wrap to first
+                    if (document.activeElement === lastFocus) {
+                        e.preventDefault();
+                        firstFocus.focus();
+                    }
+                }
+            }
+        });
+
+
+        // Mobile menu toggle with focus management
+        let previouslyFocusedElement = null;
+
         function toggleMobileMenu() {
             const menu = document.getElementById('mobileMenu');
+            const hamburger = document.getElementById('hamburgerButton');
+            const isOpening = !menu.classList.contains('active');
+
             menu.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
+
+            if (isOpening) {
+                // Store current focus and move to close button
+                previouslyFocusedElement = document.activeElement;
+                setTimeout(() => {
+                    document.getElementById('mobileMenuClose').focus();
+                }, 100);
+            } else {
+                // Return focus to hamburger button
+                if (previouslyFocusedElement) {
+                    previouslyFocusedElement.focus();
+                    previouslyFocusedElement = null;
+                }
+            }
         }
 
         function closeMobileMenu(event) {
             if (!event || event.target === event.currentTarget) {
                 const menu = document.getElementById('mobileMenu');
+                const hamburger = document.getElementById('hamburgerButton');
                 menu.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+
+                // Return focus to hamburger button
+                if (previouslyFocusedElement) {
+                    previouslyFocusedElement.focus();
+                    previouslyFocusedElement = null;
+                }
             }
         }
+
+        // Keyboard navigation: ESC to close menu
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                const menu = document.getElementById('mobileMenu');
+                if (menu.classList.contains('active')) {
+                    closeMobileMenu();
+                }
+            }
+        });
 
         function loadEditingItem() {
             const editingData = localStorage.getItem('editingItem');
             if (!editingData) return;
 
-            const { item, index } = JSON.parse(editingData);
+            try {
+                const { item, index } = JSON.parse(editingData);
 
-            // Pre-fill form
-            document.getElementById('color').value = item.color;
-            document.getElementById('size').value = item.size.toLowerCase();
-            document.getElementById('charm').value = item.charm;
+                // Pre-fill form
+                document.getElementById('color').value = item.color;
+                document.getElementById('size').value = item.size.toLowerCase();
+                document.getElementById('charm').value = item.charm;
 
-            // Trigger price update
-            const event = new Event('change');
-            document.getElementById('size').dispatchEvent(event);
+                // Trigger price update
+                const event = new Event('change');
+                document.getElementById('size').dispatchEvent(event);
 
-            // Pre-select extra charms
-            setTimeout(() => {
-                item.extraCharms.forEach(charmId => {
-                    const charmDiv = document.querySelector(`[data-charm="${charmId}"]`);
-                    if (charmDiv) {
-                        selectedExtraCharms.add(charmId);
-                        charmDiv.classList.add('selected');
-                    }
-                });
-                updateTotalPrice();
-            }, 100);
+                // Pre-select extra charms
+                setTimeout(() => {
+                    item.extraCharms.forEach(charmId => {
+                        const charmDiv = document.querySelector(`[data-charm="${charmId}"]`);
+                        if (charmDiv) {
+                            selectedExtraCharms.add(charmId);
+                            charmDiv.classList.add('selected');
+                        }
+                    });
+                    updateTotalPrice();
+                }, 100);
 
-            // Change button text to "Update Basket"
-            const addButton = document.getElementById('addToBasket');
-            addButton.textContent = 'Update Basket';
-            addButton.disabled = false;
+                // Change button text to "Update Basket"
+                const addButton = document.getElementById('addToBasket');
+                addButton.textContent = 'Update Basket';
+                addButton.disabled = false;
+            } catch (error) {
+                console.error('Failed to load editing item, clearing corrupted data:', error);
+                localStorage.removeItem('editingItem');
+            }
         }
     </script>
 </body>

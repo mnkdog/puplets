@@ -235,11 +235,11 @@
             Puplets
         </a>
         <div class="nav-links">
-            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu">
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu" aria-expanded="false" id="hamburgerButton">
                 <span></span><span></span><span></span>
             </button>
             <a href="/">Home</a>
-            <a href="products.html">Products</a>
+            <a href="products.html" aria-current="page">Products</a>
             <a href="blog.html">Blog</a>
             <a href="about.html" id="aboutLinkDesktop">About</a>
             <a href="cart.html" class="cart-button">
@@ -249,12 +249,13 @@
         </div>
     </nav>
 
-    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle">
         <div class="mobile-menu-content" onclick="event.stopPropagation()">
-            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu">&times;</button>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu" id="mobileMenuClose">&times;</button>
+            <h2 id="mobileMenuTitle" style="position: absolute; left: -10000px;">Navigation Menu</h2>
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
-                <a href="products.html">Products</a>
+                <a href="products.html" aria-current="page">Products</a>
                 <a href="blog.html">Blog</a>
                 <a href="about.html" id="aboutLinkMobile">About</a>
             </div>
@@ -303,7 +304,7 @@
                     </div>
 
                     <div class="price-section">
-                        <div class="price-display" id="priceDisplay">£3.99</div>
+                        <div class="price-display" id="priceDisplay" aria-live="polite" aria-atomic="true">£3.99</div>
                         <div class="price-breakdown" id="priceBreakdown">
                             Select charm to add to basket
                         </div>
@@ -315,17 +316,18 @@
         </div>
     </div>
 
-    <div class="added-modal" id="addedModal">
+    <div class="added-modal" id="addedModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="added-modal-content">
-            <h2>✓ Added to Cart!</h2>
+            <h2 id="modalTitle">✓ Added to Cart!</h2>
             <p>Your charms have been added to your basket.</p>
             <div class="added-modal-buttons">
-                <button class="btn-cart" onclick="window.location.href='cart.html'">Go to Cart & Checkout</button>
-                <button class="btn-continue" onclick="closeAddedModal()">Continue Shopping</button>
+                <button class="btn-cart" onclick="window.location.href='cart.html'" id="modalFirstFocus">Go to Cart & Checkout</button>
+                <button class="btn-continue" onclick="closeAddedModal()" id="modalLastFocus">Continue Shopping</button>
             </div>
         </div>
     </div>
 
+    <script src="common.js"></script>
     <script>
         const charmPrice = 3.99;
 
@@ -341,13 +343,21 @@
 
         // Load inventory
         async function loadInventory() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             try {
-                const response = await fetch('/content/inventory.json');
+                const response = await fetch('/content/inventory.json', { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (response.ok) {
                     inventory = await response.json();
                 }
             } catch (error) {
-                console.error('Failed to load inventory:', error);
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    console.error('Inventory load timeout:', error);
+                } else {
+                    console.error('Failed to load inventory:', error);
+                }
             }
         }
 
@@ -357,30 +367,6 @@
             return charm ? charm.quantity : 0;
         }
 
-        async function checkAboutPageVisibility() {
-            try {
-                const response = await fetch('/content/about.md');
-                if (response.ok) {
-                    const content = await response.text();
-                    // Extract frontmatter
-                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-                    if (frontmatterMatch) {
-                        const frontmatter = frontmatterMatch[1];
-                        // Check if published is false
-                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
-                        if (publishedMatch && publishedMatch[1] === 'false') {
-                            // Hide About links
-                            const desktopLink = document.getElementById('aboutLinkDesktop');
-                            const mobileLink = document.getElementById('aboutLinkMobile');
-                            if (desktopLink) desktopLink.style.display = 'none';
-                            if (mobileLink) mobileLink.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load about page status:', error);
-            }
-        }
 
         // Initialize inventory
         loadInventory();
@@ -492,9 +478,21 @@
         document.getElementById('addToBasket').addEventListener('click', function() {
             const charmValue = document.getElementById('charm').value;
             const quantity = parseInt(document.getElementById('quantity').value);
-            
-            if (!charmValue) return;
-            
+
+            // Validate charm selection
+            if (!charmValue) {
+                alert('Please select a charm');
+                document.getElementById('charm').focus();
+                return;
+            }
+
+            // Validate quantity
+            if (!quantity || isNaN(quantity) || quantity < 1 || quantity > 999) {
+                alert('Please select a valid quantity (1-999)');
+                document.getElementById('quantity').focus();
+                return;
+            }
+
             const charmName = charms.find(c => c.toLowerCase().replace(/\s+/g, '-') === charmValue);
 
             // Add to cart
@@ -514,43 +512,130 @@
                     type: 'charm',
                     charm: charmValue,
                     charmName: charmName,
-                    price: charmPrice,
+                    price: charmPrice, // Display only - server recalculates from catalog
                     quantity: quantity,
                     timestamp: Date.now()
                 });
             }
 
-            localStorage.setItem('cart', JSON.stringify(cart));
+            try {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            } catch (error) {
+                console.error('Failed to save cart:', error);
+                alert('Unable to add charm to cart. Your storage may be full. Try clearing your cart or browser data.');
+                return;
+            }
             updateCartCount();
             showAddedModal();
         });
 
+        let modalPreviousFocus = null;
+
         function showAddedModal() {
-            document.getElementById('addedModal').classList.add('active');
+            const modal = document.getElementById('addedModal');
+            modal.classList.add('active');
+
+            // Store current focus and move to first focusable element
+            modalPreviousFocus = document.activeElement;
+            setTimeout(() => {
+                document.getElementById('modalFirstFocus').focus();
+            }, 100);
         }
 
         function closeAddedModal() {
-            document.getElementById('addedModal').classList.remove('active');
-        }
+            const modal = document.getElementById('addedModal');
+            modal.classList.remove('active');
 
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const cartCount = document.getElementById('cartCount');
-            if (cartCount) {
-                cartCount.textContent = cart.length;
-                cartCount.style.display = cart.length > 0 ? 'flex' : 'none';
+            // Return focus to previously focused element
+            if (modalPreviousFocus) {
+                modalPreviousFocus.focus();
+                modalPreviousFocus = null;
             }
         }
 
+        // Focus trap for modal
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('addedModal');
+            if (!modal.classList.contains('active')) return;
+
+            // ESC to close
+            if (e.key === 'Escape') {
+                closeAddedModal();
+                return;
+            }
+
+            // Tab key focus trap
+            if (e.key === 'Tab') {
+                const firstFocus = document.getElementById('modalFirstFocus');
+                const lastFocus = document.getElementById('modalLastFocus');
+
+                if (e.shiftKey) {
+                    // Shift+Tab: if on first element, wrap to last
+                    if (document.activeElement === firstFocus) {
+                        e.preventDefault();
+                        lastFocus.focus();
+                    }
+                } else {
+                    // Tab: if on last element, wrap to first
+                    if (document.activeElement === lastFocus) {
+                        e.preventDefault();
+                        firstFocus.focus();
+                    }
+                }
+            }
+        });
+
+
+        // Mobile menu toggle with focus management
+        let previouslyFocusedElement = null;
+
         function toggleMobileMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
+            const menu = document.getElementById('mobileMenu');
+            const hamburger = document.getElementById('hamburgerButton');
+            const isOpening = !menu.classList.contains('active');
+
+            menu.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
+
+            if (isOpening) {
+                // Store current focus and move to close button
+                previouslyFocusedElement = document.activeElement;
+                setTimeout(() => {
+                    document.getElementById('mobileMenuClose').focus();
+                }, 100);
+            } else {
+                // Return focus to hamburger button
+                if (previouslyFocusedElement) {
+                    previouslyFocusedElement.focus();
+                    previouslyFocusedElement = null;
+                }
+            }
         }
 
         function closeMobileMenu(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('mobileMenu').classList.remove('active');
+                const menu = document.getElementById('mobileMenu');
+                const hamburger = document.getElementById('hamburgerButton');
+                menu.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+
+                // Return focus to hamburger button
+                if (previouslyFocusedElement) {
+                    previouslyFocusedElement.focus();
+                    previouslyFocusedElement = null;
+                }
             }
         }
+
+        // Keyboard navigation: ESC to close menu
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                const menu = document.getElementById('mobileMenu');
+                if (menu.classList.contains('active')) {
+                    closeMobileMenu();
+                }
+            }
+        });
 
         updateCartCount();
         updatePrice();
