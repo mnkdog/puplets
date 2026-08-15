@@ -1289,7 +1289,7 @@
 
                 // Pre-select extra charms
                 setTimeout(() => {
-                    item.extraCharms.forEach(charmId => {
+                    (item.extraCharms || []).forEach(charmId => {
                         const charmDiv = document.querySelector(`[data-charm="${charmId}"]`);
                         if (charmDiv) {
                             selectedExtraCharms.add(charmId);
