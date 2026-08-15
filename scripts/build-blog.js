@@ -16,6 +16,17 @@ const BLOG_DIR = path.join(__dirname, '../src/blog');
 const OUTPUT_DIR = path.join(__dirname, '../src/blog');
 const INDEX_FILE = path.join(__dirname, '../src/blog-index.json');
 
+// Sanitize HTML to prevent XSS attacks
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== 'string') return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Simple markdown to HTML converter (basic)
 function markdownToHTML(markdown) {
   return markdown
@@ -85,6 +96,13 @@ async function buildBlog() {
     const { frontmatter, body } = parseFrontmatter(content);
 
     const slug = file.replace('.md', '');
+    const isPublished = frontmatter.published !== 'false';
+
+    // Skip unpublished posts - don't generate HTML or include in index
+    if (!isPublished) {
+      console.log(`⏭️  Skipped (unpublished): ${slug}.md`);
+      continue;
+    }
 
     posts.push({
       slug,
@@ -95,7 +113,7 @@ async function buildBlog() {
       featured_image: frontmatter.featured_image || '',
       categories: frontmatter.categories ? frontmatter.categories.split(',').map(c => c.trim()) : [],
       tags: frontmatter.tags ? frontmatter.tags.split(',').map(t => t.trim()) : [],
-      published: frontmatter.published !== 'false',
+      published: true,
       body: body
     });
 
@@ -120,8 +138,8 @@ function generatePostHTML(frontmatter, body, slug) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${frontmatter.title || 'Blog Post'} - Puplets</title>
-    <meta name="description" content="${frontmatter.description || ''}">
+    <title>${escapeHtml(frontmatter.title || 'Blog Post')} - Puplets</title>
+    <meta name="description" content="${escapeHtml(frontmatter.description || '')}">
     <link rel="icon" type="image/svg+xml" href="../favicon.svg">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -232,17 +250,18 @@ function generatePostHTML(frontmatter, body, slug) {
     <article>
         <a href="/blog.html" class="back-link">← Back to Blog</a>
 
-        ${frontmatter.featured_image ? `<img src="${frontmatter.featured_image}" alt="${frontmatter.title}" class="featured-image">` : ''}
+        ${frontmatter.featured_image ? `<img src="${escapeHtml(frontmatter.featured_image)}" alt="${escapeHtml(frontmatter.title)}" class="featured-image">` : ''}
 
-        <h1>${frontmatter.title || 'Untitled Post'}</h1>
+        <h1>${escapeHtml(frontmatter.title || 'Untitled Post')}</h1>
 
         <div class="post-meta">
             <span>📅 ${formatDate(frontmatter.date)}</span>
-            ${frontmatter.author ? `<span>✍️ ${frontmatter.author}</span>` : ''}
+            ${frontmatter.author ? `<span>✍️ ${escapeHtml(frontmatter.author)}</span>` : ''}
         </div>
 
         <div class="post-content">
             <p>${html}</p>
+            <!-- TODO: Sanitize markdown HTML output with DOMPurify or sanitize-html library to prevent embedded script tags -->
         </div>
     </article>
 </body>
