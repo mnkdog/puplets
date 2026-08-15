@@ -2,6 +2,8 @@
 // This serverless function creates a Stripe checkout session for the cart items
 
 import Stripe from 'stripe';
+import { calculateCollarPrice, calculateCharmPrice } from './catalog.js';
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async (req, res) => {
@@ -28,30 +30,49 @@ export default async (req, res) => {
     }
 
     // Convert cart items to Stripe line items
+    // Prices are calculated SERVER-SIDE from the catalog - never trust client prices
     const lineItems = items.map(item => {
       let productName = '';
       let unitAmount = 0;
 
       if (item.type === 'collar') {
-        // Collar item
+        // Validate required fields
+        if (!item.size) {
+          throw new Error('Collar item missing required field: size');
+        }
+
+        // Calculate price server-side based on size and extra charms
+        const extraCharmsCount = item.extraCharms?.length || 0;
+        const price = calculateCollarPrice(item.size, extraCharmsCount);
+        unitAmount = Math.round(price * 100);
+
+        // Build product name
         productName = `Puplets Dog Collar - ${item.colorName || item.color} (${item.sizeName || item.size})`;
-        unitAmount = Math.round(item.price * 100); // Convert to cents
 
         // Add charm info to description
         const charmInfo = item.charm ? ` with ${item.charmName || item.charm} charm` : '';
-        const extraCharmsInfo = item.extraCharms && item.extraCharms.length > 0
-          ? ` + ${item.extraCharms.length} extra charms`
+        const extraCharmsInfo = extraCharmsCount > 0
+          ? ` + ${extraCharmsCount} extra charm${extraCharmsCount > 1 ? 's' : ''}`
           : '';
 
         productName += charmInfo + extraCharmsInfo;
       } else if (item.type === 'charm') {
-        // Individual charm item
+        // Validate required fields
+        if (!item.charm && !item.charmName) {
+          throw new Error('Charm item missing required field: charm or charmName');
+        }
+
+        // Calculate price server-side
+        const quantity = item.quantity || 1;
+        const price = calculateCharmPrice(quantity);
+        unitAmount = Math.round(price * 100);
+
         productName = `Puplets Charm - ${item.charmName || item.charm}`;
-        unitAmount = Math.round(item.price * 100); // Convert to cents (£3.99 -> 399)
+        if (quantity > 1) {
+          productName += ` (×${quantity})`;
+        }
       } else {
-        // Fallback for unknown item types
-        productName = item.name || 'Puplets Product';
-        unitAmount = Math.round((item.price || 0) * 100);
+        throw new Error(`Unknown item type: ${item.type}`);
       }
 
       return {
@@ -59,7 +80,7 @@ export default async (req, res) => {
           currency: 'gbp',
           product_data: {
             name: productName,
-            images: ['https://puplets.vercel.app/prod-1.jpg'], // Update with actual product images
+            images: ['https://puplets.vercel.app/prod-1.jpg'],
           },
           unit_amount: unitAmount,
         },

@@ -1110,12 +1110,17 @@
             const basePrice = parseFloat(selectedOption.dataset.price);
 
             const cartItem = {
+                type: 'collar',
                 id: Date.now(),
                 product: 'Waterproof Dog Collar',
                 color: color,
-                size: size.toUpperCase(),
+                colorName: color.charAt(0).toUpperCase() + color.slice(1),
+                size: size.toLowerCase(),
+                sizeName: size.toUpperCase(),
                 charm: charm,
+                charmName: charm,
                 extraCharms: Array.from(selectedExtraCharms),
+                // Price fields below are for DISPLAY ONLY - server recalculates from catalog
                 price: basePrice,
                 extraCharmsPrice: selectedExtraCharms.size * charmPrice,
                 total: basePrice + (selectedExtraCharms.size * charmPrice)
