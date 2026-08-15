@@ -1089,9 +1089,33 @@
             const color = document.getElementById('color').value;
             const size = document.getElementById('size').value;
             const charm = document.getElementById('charm').value;
+
+            // Validate all required selections
+            if (!color) {
+                alert('Please select a collar colour');
+                document.getElementById('color').focus();
+                return;
+            }
+            if (!size) {
+                alert('Please select a size');
+                document.getElementById('size').focus();
+                return;
+            }
+            if (!charm) {
+                alert('Please select a free charm');
+                document.getElementById('charm').focus();
+                return;
+            }
+
             const sizeSelect = document.getElementById('size');
             const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
             const basePrice = parseFloat(selectedOption.dataset.price);
+
+            // Validate price data
+            if (!basePrice || isNaN(basePrice) || basePrice <= 0) {
+                alert('Invalid price data. Please refresh the page and try again.');
+                return;
+            }
 
             const cartItem = {
                 type: 'collar',
