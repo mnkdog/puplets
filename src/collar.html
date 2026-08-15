@@ -1115,14 +1115,25 @@
             // Check if editing an existing item
             const editingData = localStorage.getItem('editingItem');
             if (editingData) {
-                const { index } = JSON.parse(editingData);
-                cart[index] = cartItem;
-                localStorage.removeItem('editingItem');
+                try {
+                    const { index } = JSON.parse(editingData);
+                    cart[index] = cartItem;
+                    localStorage.removeItem('editingItem');
+                } catch (error) {
+                    console.error('Failed to parse editing data, adding as new item:', error);
+                    cart.push(cartItem);
+                }
             } else {
                 cart.push(cartItem);
             }
 
-            localStorage.setItem('cart', JSON.stringify(cart));
+            try {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            } catch (error) {
+                console.error('Failed to save cart:', error);
+                alert('Unable to save item to cart. Your storage may be full. Try clearing your cart or browser data.');
+                return;
+            }
 
             updateCartCount();
             showAddedModal();
@@ -1240,33 +1251,38 @@
             const editingData = localStorage.getItem('editingItem');
             if (!editingData) return;
 
-            const { item, index } = JSON.parse(editingData);
+            try {
+                const { item, index } = JSON.parse(editingData);
 
-            // Pre-fill form
-            document.getElementById('color').value = item.color;
-            document.getElementById('size').value = item.size.toLowerCase();
-            document.getElementById('charm').value = item.charm;
+                // Pre-fill form
+                document.getElementById('color').value = item.color;
+                document.getElementById('size').value = item.size.toLowerCase();
+                document.getElementById('charm').value = item.charm;
 
-            // Trigger price update
-            const event = new Event('change');
-            document.getElementById('size').dispatchEvent(event);
+                // Trigger price update
+                const event = new Event('change');
+                document.getElementById('size').dispatchEvent(event);
 
-            // Pre-select extra charms
-            setTimeout(() => {
-                item.extraCharms.forEach(charmId => {
-                    const charmDiv = document.querySelector(`[data-charm="${charmId}"]`);
-                    if (charmDiv) {
-                        selectedExtraCharms.add(charmId);
-                        charmDiv.classList.add('selected');
-                    }
-                });
-                updateTotalPrice();
-            }, 100);
+                // Pre-select extra charms
+                setTimeout(() => {
+                    item.extraCharms.forEach(charmId => {
+                        const charmDiv = document.querySelector(`[data-charm="${charmId}"]`);
+                        if (charmDiv) {
+                            selectedExtraCharms.add(charmId);
+                            charmDiv.classList.add('selected');
+                        }
+                    });
+                    updateTotalPrice();
+                }, 100);
 
-            // Change button text to "Update Basket"
-            const addButton = document.getElementById('addToBasket');
-            addButton.textContent = 'Update Basket';
-            addButton.disabled = false;
+                // Change button text to "Update Basket"
+                const addButton = document.getElementById('addToBasket');
+                addButton.textContent = 'Update Basket';
+                addButton.disabled = false;
+            } catch (error) {
+                console.error('Failed to load editing item, clearing corrupted data:', error);
+                localStorage.removeItem('editingItem');
+            }
         }
     </script>
 </body>

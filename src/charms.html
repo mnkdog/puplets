@@ -506,7 +506,13 @@
                 });
             }
 
-            localStorage.setItem('cart', JSON.stringify(cart));
+            try {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            } catch (error) {
+                console.error('Failed to save cart:', error);
+                alert('Unable to add charm to cart. Your storage may be full. Try clearing your cart or browser data.');
+                return;
+            }
             updateCartCount();
             showAddedModal();
         });

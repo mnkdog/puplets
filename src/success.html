@@ -175,7 +175,12 @@
 
     <script>
         // Clear cart after successful purchase
-        localStorage.setItem('cart', '[]');
+        try {
+            localStorage.setItem('cart', '[]');
+        } catch (error) {
+            console.error('Failed to clear cart after purchase:', error);
+            // Non-fatal - purchase was successful, just log the error
+        }
 
         // Extract session ID from URL if available
         const urlParams = new URLSearchParams(window.location.search);

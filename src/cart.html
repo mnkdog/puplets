@@ -477,13 +477,25 @@
         function removeItem(index) {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             cart.splice(index, 1);
-            localStorage.setItem('cart', JSON.stringify(cart));
+            try {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            } catch (error) {
+                console.error('Failed to save cart:', error);
+                alert('Unable to update cart. Your storage may be full.');
+                return;
+            }
             renderCart();
         }
 
         function clearCart() {
             if (confirm('Are you sure you want to clear your entire cart?')) {
-                localStorage.setItem('cart', '[]');
+                try {
+                    localStorage.setItem('cart', '[]');
+                } catch (error) {
+                    console.error('Failed to clear cart:', error);
+                    alert('Unable to clear cart. Your storage may be full.');
+                    return;
+                }
                 renderCart();
             }
         }
@@ -493,7 +505,13 @@
             const item = cart[index];
 
             // Store item for editing and its index
-            localStorage.setItem('editingItem', JSON.stringify({ item, index }));
+            try {
+                localStorage.setItem('editingItem', JSON.stringify({ item, index }));
+            } catch (error) {
+                console.error('Failed to store editing item:', error);
+                alert('Unable to edit item. Your storage may be full.');
+                return;
+            }
 
             // Redirect to products page
             window.location.href = 'collar.html';
