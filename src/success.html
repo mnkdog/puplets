@@ -186,9 +186,14 @@
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('session_id');
 
+        // Validate session ID format (Stripe session IDs start with "cs_")
         if (sessionId) {
-            console.log('Order completed with session:', sessionId);
-            // You could fetch order details from Stripe here if needed
+            if (/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
+                console.log('Order completed with session:', sessionId);
+                // You could fetch order details from Stripe here if needed
+            } else {
+                console.warn('Invalid session ID format');
+            }
         }
     </script>
 </body>
