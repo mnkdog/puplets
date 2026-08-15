@@ -234,8 +234,8 @@
             }
         }
     </style>
-    <script src="/vendor/marked.js"></script>
-    <script src="/vendor/purify.min.js"></script>
+    <script src="/vendor/marked.js" integrity="sha384-kyb7rY2xnKgiRpRdAeNJxQ8e2SiGZy1m+FK9yME6M0eGJpg7EFaGGvf7+JSirgqE" crossorigin="anonymous"></script>
+    <script src="/vendor/purify.min.js" integrity="sha384-ZuC+DIACqSIZTsp+7YF57cR5Y+6qXa7YFbEKdA/EHA/R0T+41dtorqucYl71Zp+t" crossorigin="anonymous"></script>
 </head>
 <body>
     <nav>
@@ -375,6 +375,21 @@
         function parseMarkdownFallback(markdown) {
             let html = markdown;
 
+            // Helper to validate and sanitize URLs
+            function sanitizeUrl(url) {
+                const trimmed = url.trim();
+                // Allowlist safe schemes only
+                if (trimmed.match(/^(https?|mailto):/i)) {
+                    return trimmed;
+                }
+                // Relative URLs are safe
+                if (trimmed.match(/^[./]/)) {
+                    return trimmed;
+                }
+                // Reject everything else (javascript:, data:, etc.)
+                return '#';
+            }
+
             // Headers (## and ###)
             html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
             html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
@@ -385,8 +400,12 @@
             // Italic
             html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
 
-            // Links
-            html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+            // Links - sanitize URLs and escape text
+            html = html.replace(/\[(.+?)\]\((.+?)\)/g, (match, text, url) => {
+                const safeUrl = sanitizeUrl(url);
+                const safeText = escapeHtml(text);
+                return `<a href="${safeUrl}">${safeText}</a>`;
+            });
 
             // Lists - convert markdown lists to HTML
             html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
