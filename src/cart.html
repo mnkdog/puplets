@@ -345,8 +345,11 @@
         });
 
         async function checkAboutPageVisibility() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             try {
-                const response = await fetch('/content/about.md');
+                const response = await fetch('/content/about.md', { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (response.ok) {
                     const content = await response.text();
                     // Extract frontmatter
@@ -365,7 +368,12 @@
                     }
                 }
             } catch (error) {
-                console.error('Failed to load about page status:', error);
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    console.error('About page status load timeout:', error);
+                } else {
+                    console.error('Failed to load about page status:', error);
+                }
             }
         }
 
@@ -536,6 +544,9 @@
             checkoutButton.textContent = 'Loading...';
             checkoutButton.disabled = true;
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
             try {
                 // Call Stripe API to create checkout session
                 const response = await fetch('/api/create-checkout-session', {
@@ -546,7 +557,9 @@
                     body: JSON.stringify({
                         items: cart
                     }),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     throw new Error('Failed to create checkout session');
@@ -558,8 +571,14 @@
                 window.location.href = url;
 
             } catch (error) {
-                console.error('Checkout error:', error);
-                alert('Sorry, there was an error processing your checkout. Please try again.');
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    console.error('Checkout session timeout:', error);
+                    alert('The request timed out. Please try again.');
+                } else {
+                    console.error('Checkout error:', error);
+                    alert('Sorry, there was an error processing your checkout. Please try again.');
+                }
                 checkoutButton.textContent = originalText;
                 checkoutButton.disabled = false;
             }
