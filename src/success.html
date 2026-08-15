@@ -189,8 +189,7 @@
         // Validate session ID format (Stripe session IDs start with "cs_")
         if (sessionId) {
             if (/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
-                console.log('Order completed with session:', sessionId);
-                // You could fetch order details from Stripe here if needed
+                // Session ID validated - you could fetch order details from Stripe here if needed
             } else {
                 console.warn('Invalid session ID format');
             }
