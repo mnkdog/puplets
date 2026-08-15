@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.stripe.com; frame-src https://checkout.stripe.com; font-src 'self';">
     <title>Shopping Cart - Puplets</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <style>
@@ -345,6 +346,16 @@
             await checkAboutPageVisibility();
         });
 
+        // Sanitize HTML to prevent XSS attacks
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
         function renderCart() {
             try {
@@ -384,7 +395,7 @@
                                 <div class="item-details">
                                     <h3>Individual Charm${quantity > 1 ? ` (×${quantity})` : ''}</h3>
                                     <div class="item-specs">
-                                        <span class="spec">Design: ${capitalizeFirst((item.charmName || item.charm || 'Unknown').replace(/-/g, ' '))}</span>
+                                        <span class="spec">Design: ${escapeHtml(capitalizeFirst((item.charmName || item.charm || 'Unknown').replace(/-/g, ' ')))}</span>
                                         ${quantity > 1 ? `<span class="spec">£${(item.price || 0).toFixed(2)} each</span>` : ''}
                                     </div>
                                 </div>
@@ -401,16 +412,16 @@
                         return `
                             <div class="cart-item">
                                 <div class="item-details">
-                                    <h3>${item.product || 'Dog Collar'}</h3>
+                                    <h3>${escapeHtml(item.product || 'Dog Collar')}</h3>
                                     <div class="item-specs">
-                                        <span class="spec">Colour: ${item.colorName || capitalizeFirst(item.color || 'unknown')}</span>
-                                        <span class="spec">Size: ${item.sizeName || (item.size || 'N/A').toUpperCase()}</span>
-                                        ${item.charm ? `<span class="spec">Free Charm: ${item.charmName || capitalizeFirst(item.charm.replace(/-/g, ' '))}</span>` : ''}
+                                        <span class="spec">Colour: ${escapeHtml(item.colorName || capitalizeFirst(item.color || 'unknown'))}</span>
+                                        <span class="spec">Size: ${escapeHtml(item.sizeName || (item.size || 'N/A').toUpperCase())}</span>
+                                        ${item.charm ? `<span class="spec">Free Charm: ${escapeHtml(item.charmName || capitalizeFirst(item.charm.replace(/-/g, ' ')))}</span>` : ''}
                                     </div>
                                     ${item.extraCharms && item.extraCharms.length > 0 ? `
                                         <div class="extra-charms-list">
                                             <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
-                                            ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
+                                            ${item.extraCharms.map(c => escapeHtml(capitalizeFirst(c.replace(/-/g, ' ')))).join(', ')}
                                         </div>
                                     ` : ''}
                                 </div>

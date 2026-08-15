@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.stripe.com; frame-src https://checkout.stripe.com; font-src 'self';">
     <title>Order Successful - Puplets</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <style>
@@ -186,9 +187,14 @@
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('session_id');
 
+        // Validate session ID format (Stripe session IDs start with "cs_")
         if (sessionId) {
-            console.log('Order completed with session:', sessionId);
-            // You could fetch order details from Stripe here if needed
+            if (/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
+                console.log('Order completed with session:', sessionId);
+                // You could fetch order details from Stripe here if needed
+            } else {
+                console.warn('Invalid session ID format');
+            }
         }
     </script>
 </body>
