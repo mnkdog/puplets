@@ -645,8 +645,8 @@
                         <select name="size" id="size" required>
                             <option value="">Select a size</option>
                             <option value="xs" data-price="17.99">XS - 21-27 cm (8 5/16 - 10 5/8 in)</option>
-                            <option value="s" data-price="20.99">S - 26-32 cm (10 3/16 - 12 5/8 in)</option>
-                            <option value="m" data-price="23.99">M - 31-37 cm (12 3/16 - 14 5/8 in)</option>
+                            <option value="s" data-price="17.99">S - 26-32 cm (10 3/16 - 12 5/8 in)</option>
+                            <option value="m" data-price="20.99">M - 31-37 cm (12 3/16 - 14 5/8 in)</option>
                         </select>
                         <div class="size-guide">
                             Measure around your dog's neck where the collar would naturally sit
@@ -701,11 +701,11 @@
     </div>
 
     <script>
-        // Product data
+        // Product data - canonical pricing (matches API catalog and product JSON)
         const prices = {
             xs: 17.99,
-            s: 20.99,
-            m: 23.99
+            s: 17.99,
+            m: 20.99
         };
 
         const charmPrice = 3.99;
@@ -955,20 +955,20 @@
                     .filter(item => item.color === color)
                     .map(item => ({ size: item.size, quantity: item.quantity }));
 
-                // Define size order and prices
+                // Define size order, prices, and measurements (matches canonical prices and static HTML)
                 const sizeData = [
-                    { size: 'xs', price: 20.00 },
-                    { size: 's', price: 25.00 },
-                    { size: 'm', price: 30.00 }
+                    { size: 'xs', price: prices.xs, measurements_cm: '21-27 cm', measurements_in: '8 5/16 - 10 5/8 in' },
+                    { size: 's', price: prices.s, measurements_cm: '26-32 cm', measurements_in: '10 3/16 - 12 5/8 in' },
+                    { size: 'm', price: prices.m, measurements_cm: '31-37 cm', measurements_in: '12 3/16 - 14 5/8 in' }
                 ];
 
-                // Add options in order
-                sizeData.forEach(({ size, price }) => {
+                // Add options in order (format matches static HTML options)
+                sizeData.forEach(({ size, price, measurements_cm, measurements_in }) => {
                     const stockInfo = sizesForColor.find(s => s.size === size);
                     if (stockInfo) {
                         const option = document.createElement('option');
                         option.value = size.toLowerCase();
-                        option.textContent = `${size} - £${price.toFixed(2)}`;
+                        option.textContent = `${size.toUpperCase()} - ${measurements_cm} (${measurements_in})`;
                         option.dataset.price = price;
                         sizeSelect.appendChild(option);
                     }
