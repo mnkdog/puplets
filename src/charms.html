@@ -478,9 +478,21 @@
         document.getElementById('addToBasket').addEventListener('click', function() {
             const charmValue = document.getElementById('charm').value;
             const quantity = parseInt(document.getElementById('quantity').value);
-            
-            if (!charmValue) return;
-            
+
+            // Validate charm selection
+            if (!charmValue) {
+                alert('Please select a charm');
+                document.getElementById('charm').focus();
+                return;
+            }
+
+            // Validate quantity
+            if (!quantity || isNaN(quantity) || quantity < 1 || quantity > 999) {
+                alert('Please select a valid quantity (1-999)');
+                document.getElementById('quantity').focus();
+                return;
+            }
+
             const charmName = charms.find(c => c.toLowerCase().replace(/\s+/g, '-') === charmValue);
 
             // Add to cart
