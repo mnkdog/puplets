@@ -326,8 +326,26 @@
         </div>
     </div>
 
+    <script src="common.js"></script>
     <script>
-        const charmPrice = 3.99;
+        let charmPrice = 3.99;
+
+        /**
+         * Load charm price from CMS product data
+         * Falls back to hardcoded price on any error
+         * Updates price display when loading completes
+         */
+        async function loadCharmPrice() {
+            const data = await fetchJSON('/products/charms/individual-charms.json', null);
+            if (data === null) {
+                // Error already logged by fetchJSON for authenticated users
+                charmPrice = 3.99;
+            } else {
+                charmPrice = data?.price ?? 3.99;
+            }
+            // Update price display after loading completes
+            updatePrice();
+        }
 
         const charms = [
             'White paw', 'Black paw', 'Bone', 'Heart', 'Star',
@@ -382,8 +400,9 @@
             }
         }
 
-        // Initialize inventory
+        // Initialize inventory and prices
         loadInventory();
+        loadCharmPrice();
         checkAboutPageVisibility();
 
         // Populate charm selector
