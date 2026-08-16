@@ -1166,7 +1166,11 @@
                 size: size.toUpperCase(),
                 charm: charm,
                 extraCharms: Array.from(selectedExtraCharms),
-                price: basePrice,
+                price: {
+                    amount: basePrice,
+                    currency: 'GBP',
+                    source: 'cms'
+                },
                 extraCharmsPrice: selectedExtraCharms.size * charmPrice,
                 total: basePrice + (selectedExtraCharms.size * charmPrice)
             };
