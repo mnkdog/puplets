@@ -276,14 +276,14 @@ None - all work in this plan directly supports the acceptance criteria.
 **Gherkin persistence**: plan-file-only
 
 ### Wave 1
-- [ ] Slice 1: Add shared JSON fetch utility and load collar prices from CMS
-  - [ ] Step 1.1: Create shared fetchJSON utility in common.js
-  - [ ] Step 1.2: Add CMS price validation to admin schema
-  - [ ] Step 1.3: Load collar prices from CMS using shared utility
+- [x] Slice 1: Add shared JSON fetch utility and load collar prices from CMS
+  - [x] Step 1.1: Create shared fetchJSON utility in common.js
+  - [x] Step 1.2: Add CMS price validation to admin schema
+  - [x] Step 1.3: Load collar prices from CMS using shared utility
 
 ### Wave 2
-- [ ] Slice 2: Load charm prices from CMS
-  - [ ] Step 2.1: Load charm prices from CMS using shared utility
+- [x] Slice 2: Load charm prices from CMS
+  - [x] Step 2.1: Load charm prices from CMS using shared utility
 
 ## Plan Review Summary
 
