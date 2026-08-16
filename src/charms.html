@@ -337,11 +337,13 @@
          */
         async function loadCharmPrice() {
             const data = await fetchJSON('/products/charms/individual-charms.json', null);
-            if (data === null) {
-                // Error already logged by fetchJSON for authenticated users
-                charmPrice = 3.99;
+            if (data && isValidPrice(data.price)) {
+                charmPrice = data.price;
             } else {
-                charmPrice = data?.price ?? 3.99;
+                charmPrice = 3.99;
+                if (data && !isValidPrice(data.price)) {
+                    console.warn('[PriceSync Error] Invalid charm price in CMS data');
+                }
             }
             // Update price display after loading completes
             updatePrice();

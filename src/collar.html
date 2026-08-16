@@ -644,8 +644,8 @@
                         <select name="size" id="size" required>
                             <option value="">Select a size</option>
                             <option value="xs" data-price="17.99">XS - 21-27 cm (8 5/16 - 10 5/8 in)</option>
-                            <option value="s" data-price="20.99">S - 26-32 cm (10 3/16 - 12 5/8 in)</option>
-                            <option value="m" data-price="23.99">M - 31-37 cm (12 3/16 - 14 5/8 in)</option>
+                            <option value="s" data-price="17.99">S - 26-32 cm (10 3/16 - 12 5/8 in)</option>
+                            <option value="m" data-price="20.99">M - 31-37 cm (12 3/16 - 14 5/8 in)</option>
                         </select>
                         <div class="size-guide">
                             Measure around your dog's neck where the collar would naturally sit
@@ -722,14 +722,14 @@
             }
 
             const transformed = sizes.reduce((acc, s) => {
-                if (s.size && typeof s.price === 'number') {
+                if (s.size && isValidPrice(s.price)) {
                     return { ...acc, [s.size.toLowerCase()]: s.price };
                 }
                 return acc;
             }, {});
 
-            // Return fallback if no valid entries were transformed
-            return Object.keys(transformed).length > 0 ? transformed : fallback;
+            // Merge with fallback to ensure all sizes have prices
+            return { ...fallback, ...transformed };
         }
 
         /**
@@ -748,7 +748,15 @@
             prices = transformSizesToPrices(data.sizes, FALLBACK_PRICES);
         }
 
-        const charmPrice = 3.99;
+        const FALLBACK_CHARM_PRICE = 3.99;
+        let charmPrice = FALLBACK_CHARM_PRICE;
+
+        async function loadCharmPrice() {
+            const data = await fetchJSON('/products/charms/individual-charms.json', null);
+            if (data && isValidPrice(data.price)) {
+                charmPrice = data.price;
+            }
+        }
 
         const extraCharms = [
             'Strawberry', 'Pink bow', 'White paw', 'Pink balloon dog', 'Pink lightning',
@@ -793,6 +801,7 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             await loadProductPrices();
+            await loadCharmPrice();
             await loadInventory();
             setupImageGallery();
             setupFormValidation();

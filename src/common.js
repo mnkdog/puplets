@@ -9,6 +9,15 @@
 const FETCH_TIMEOUT_MS = 5000;
 
 /**
+ * Validate that a value is a valid price
+ * @param {*} value - The value to validate
+ * @returns {boolean} True if value is a valid positive number
+ */
+function isValidPrice(value) {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
+/**
  * Check if the current user is authenticated in the CMS
  * @returns {boolean} True if user has an active CMS session
  */
