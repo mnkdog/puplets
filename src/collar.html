@@ -699,13 +699,54 @@
         <img id="lightboxImage" src="" alt="Enlarged view">
     </div>
 
+    <script src="common.js"></script>
     <script>
-        // Product data
-        const prices = {
+        // Product data - prices loaded from CMS, fallback values defined here
+        const FALLBACK_PRICES = {
             xs: 17.99,
-            s: 20.99,
-            m: 23.99
+            s: 17.99,
+            m: 20.99
         };
+
+        let prices = { ...FALLBACK_PRICES };
+
+        /**
+         * Transform sizes array from CMS into prices object
+         * @param {Array} sizes - Array of size objects from CMS with size and price fields
+         * @param {Object} fallback - Fallback prices object to use if sizes is invalid
+         * @returns {Object} Prices object with size keys (lowercase) mapping to prices
+         */
+        function transformSizesToPrices(sizes, fallback) {
+            if (!sizes || !Array.isArray(sizes) || sizes.length === 0) {
+                return fallback;
+            }
+
+            const transformed = sizes.reduce((acc, s) => {
+                if (s.size && typeof s.price === 'number') {
+                    return { ...acc, [s.size.toLowerCase()]: s.price };
+                }
+                return acc;
+            }, {});
+
+            // Return fallback if no valid entries were transformed
+            return Object.keys(transformed).length > 0 ? transformed : fallback;
+        }
+
+        /**
+         * Load product prices from CMS
+         * Fetches collar pricing from product data and transforms to prices object
+         */
+        async function loadProductPrices() {
+            const data = await fetchJSON('/products/collars/waterproof-collar.json', null);
+
+            if (data === null) {
+                // fetchJSON already handles logging, use fallback prices
+                return;
+            }
+
+            // Transform sizes array to prices object
+            prices = transformSizesToPrices(data.sizes, FALLBACK_PRICES);
+        }
 
         const charmPrice = 3.99;
 
@@ -751,6 +792,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            await loadProductPrices();
             await loadInventory();
             setupImageGallery();
             setupFormValidation();
@@ -954,11 +996,11 @@
                     .filter(item => item.color === color)
                     .map(item => ({ size: item.size, quantity: item.quantity }));
 
-                // Define size order and prices
+                // Define size order and use loaded prices
                 const sizeData = [
-                    { size: 'xs', price: 20.00 },
-                    { size: 's', price: 25.00 },
-                    { size: 'm', price: 30.00 }
+                    { size: 'xs', price: prices.xs },
+                    { size: 's', price: prices.s },
+                    { size: 'm', price: prices.m }
                 ];
 
                 // Add options in order

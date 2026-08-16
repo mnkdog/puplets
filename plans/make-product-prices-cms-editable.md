@@ -24,7 +24,7 @@ The CMS admin schema (src/admin/index.html) already defines these collections wi
 
 - [ ] Collar page displays distinct prices for XS (£17.99), S (£17.99), and M (£20.99) sizes that match current CMS product data
 - [ ] Charm page displays price (£3.99) that matches current CMS product data
-- [ ] Within 1 second from DOMContentLoaded event, all prices from CMS are displayed on product pages
+- [ ] When CMS data loads successfully, all prices from CMS are displayed within 1 second of DOMContentLoaded event
 - [ ] When product data cannot be loaded (network error, timeout, 404), page displays fallback prices (collar XS/S: £17.99, M: £20.99; charms: £3.99), all UI controls remain interactive, and no error message is shown to end users
 - [ ] When product data is malformed (missing required fields, invalid types), invalid price values (negative, zero, non-numeric), or size mappings missing: immediately serve fallback prices, log error to console once per page load with format `[PriceSync Error] <specific issue>`, and do not retry on malformed data (only on network errors)
 - [ ] CMS admin panel validates price inputs as positive numbers (min £0.01, max £999.99) with max 2 decimal places, rejecting invalid values before save. Price changes are published immediately without approval step.
