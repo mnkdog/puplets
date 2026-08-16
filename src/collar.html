@@ -715,22 +715,24 @@
          * Transform sizes array from CMS into prices object
          * @param {Array} sizes - Array of size objects from CMS with size and price fields
          * @param {Object} fallback - Fallback prices object to use if sizes is invalid
-         * @returns {Object} Prices object with size keys (lowercase) mapping to prices
+         * @returns {{prices: Object, appliedCount: number}} Prices object and count of CMS prices applied
          */
         function transformSizesToPrices(sizes, fallback) {
             if (!sizes || !Array.isArray(sizes) || sizes.length === 0) {
-                return fallback;
+                return { prices: fallback, appliedCount: 0 };
             }
 
+            let appliedCount = 0;
             const transformed = sizes.reduce((acc, s) => {
                 if (s.size && isValidPrice(s.price)) {
+                    appliedCount++;
                     return { ...acc, [s.size.toLowerCase()]: s.price };
                 }
                 return acc;
             }, {});
 
             // Merge with fallback to ensure all sizes have prices
-            return { ...fallback, ...transformed };
+            return { prices: { ...fallback, ...transformed }, appliedCount };
         }
 
         /**
@@ -747,13 +749,10 @@
             }
 
             // Transform sizes array to prices object
-            const transformedPrices = transformSizesToPrices(data.sizes, FALLBACK_PRICES);
-            if (transformedPrices !== FALLBACK_PRICES) {
-                prices = transformedPrices;
-                collarPriceSource = 'cms';
-            } else {
-                collarPriceSource = 'fallback';
-            }
+            const { prices: transformedPrices, appliedCount } = transformSizesToPrices(data.sizes, FALLBACK_PRICES);
+            prices = transformedPrices;
+            // Set source based on whether any CMS prices were actually applied
+            collarPriceSource = appliedCount > 0 ? 'cms' : 'fallback';
         }
 
         const FALLBACK_CHARM_PRICE = 3.99;
@@ -1025,9 +1024,11 @@
                 ];
 
                 // Add options in order
+                const inventoryLoaded = inventory.collars.length > 0;
                 sizeData.forEach(({ size, price }) => {
                     const stockInfo = sizesForColor.find(s => s.size === size);
-                    if (stockInfo) {
+                    // If inventory not loaded, show all sizes; otherwise only show sizes with inventory
+                    if (!inventoryLoaded || stockInfo) {
                         const option = document.createElement('option');
                         option.value = size.toLowerCase();
                         option.textContent = `${size} - £${price.toFixed(2)}`;
@@ -1097,8 +1098,8 @@
 
         function updateTotalPrice() {
             const sizeSelect = document.getElementById('size');
-            const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
-            const basePrice = selectedOption.dataset.price ? parseFloat(selectedOption.dataset.price) : 0;
+            const selectedOption = sizeSelect.selectedIndex >= 0 ? sizeSelect.options[sizeSelect.selectedIndex] : null;
+            const basePrice = selectedOption?.dataset.price ? parseFloat(selectedOption.dataset.price) : 0;
             const extraCharmsCount = selectedExtraCharms.size;
             const extraCharmsTotal = extraCharmsCount * charmPrice;
             const totalPrice = basePrice + extraCharmsTotal;
@@ -1168,8 +1169,8 @@
             const size = document.getElementById('size').value;
             const charm = document.getElementById('charm').value;
             const sizeSelect = document.getElementById('size');
-            const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
-            const basePrice = parseFloat(selectedOption.dataset.price);
+            const selectedOption = sizeSelect.selectedIndex >= 0 ? sizeSelect.options[sizeSelect.selectedIndex] : null;
+            const basePrice = selectedOption?.dataset.price ? parseFloat(selectedOption.dataset.price) : 0;
 
             const cartItem = {
                 id: Date.now(),
@@ -1270,7 +1271,8 @@
             // Change button text to "Update Basket"
             const addButton = document.getElementById('addToBasket');
             addButton.textContent = 'Update Basket';
-            addButton.disabled = false;
+            // Validate form to set button state based on stock availability
+            validateForm();
         }
     </script>
 </body>

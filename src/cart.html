@@ -388,10 +388,10 @@
                     // Handle both collar and charm items
                     if (item.type === 'charm') {
                         const quantity = item.quantity || 1;
-                        const price = typeof item.price === 'object' ? item.price.amount : item.price;
-                        return sum + (price * quantity);
+                        const price = (item.price && typeof item.price === 'object') ? item.price.amount : item.price;
+                        return sum + ((price || 0) * quantity);
                     }
-                    const price = typeof item.price === 'object' ? item.price.amount : item.price;
+                    const price = (item.price && typeof item.price === 'object') ? item.price.amount : item.price;
                     return sum + (item.total || price || 0);
                 }, 0);
                 const total = subtotal; // Free shipping
@@ -435,7 +435,7 @@
                                     </div>
                                     ${item.extraCharms && item.extraCharms.length > 0 ? `
                                         <div class="extra-charms-list">
-                                            <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${item.extraCharmsPrice.toFixed(2)}):</strong><br>
+                                            <strong>+ ${item.extraCharms.length} extra charm${item.extraCharms.length > 1 ? 's' : ''} (£${(item.extraCharmsPrice || 0).toFixed(2)}):</strong><br>
                                             ${item.extraCharms.map(c => capitalizeFirst(c.replace(/-/g, ' '))).join(', ')}
                                         </div>
                                     ` : ''}
