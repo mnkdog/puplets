@@ -329,6 +329,7 @@
     <script src="common.js"></script>
     <script>
         let charmPrice = 3.99;
+        let charmPriceSource = 'fallback';
 
         /**
          * Load charm price from CMS product data
@@ -339,8 +340,10 @@
             const data = await fetchJSON('/products/charms/individual-charms.json', null);
             if (data && isValidPrice(data.price)) {
                 charmPrice = data.price;
+                charmPriceSource = 'cms';
             } else {
                 charmPrice = 3.99;
+                charmPriceSource = 'fallback';
                 if (data && !isValidPrice(data.price)) {
                     console.warn('[PriceSync Error] Invalid charm price in CMS data');
                 }
@@ -538,7 +541,7 @@
                     price: {
                         amount: charmPrice,
                         currency: 'GBP',
-                        source: 'cms'
+                        source: charmPriceSource
                     },
                     quantity: quantity,
                     timestamp: Date.now()

@@ -709,6 +709,7 @@
         };
 
         let prices = { ...FALLBACK_PRICES };
+        let collarPriceSource = 'fallback';
 
         /**
          * Transform sizes array from CMS into prices object
@@ -741,20 +742,31 @@
 
             if (data === null) {
                 // fetchJSON already handles logging, use fallback prices
+                collarPriceSource = 'fallback';
                 return;
             }
 
             // Transform sizes array to prices object
-            prices = transformSizesToPrices(data.sizes, FALLBACK_PRICES);
+            const transformedPrices = transformSizesToPrices(data.sizes, FALLBACK_PRICES);
+            if (transformedPrices !== FALLBACK_PRICES) {
+                prices = transformedPrices;
+                collarPriceSource = 'cms';
+            } else {
+                collarPriceSource = 'fallback';
+            }
         }
 
         const FALLBACK_CHARM_PRICE = 3.99;
         let charmPrice = FALLBACK_CHARM_PRICE;
+        let charmPriceSource = 'fallback';
 
         async function loadCharmPrice() {
             const data = await fetchJSON('/products/charms/individual-charms.json', null);
             if (data && isValidPrice(data.price)) {
                 charmPrice = data.price;
+                charmPriceSource = 'cms';
+            } else if (data && !isValidPrice(data.price)) {
+                console.warn('[PriceSync Error] Invalid charm price in CMS data');
             }
         }
 
@@ -1169,7 +1181,7 @@
                 price: {
                     amount: basePrice,
                     currency: 'GBP',
-                    source: 'cms'
+                    source: collarPriceSource
                 },
                 extraCharmsPrice: selectedExtraCharms.size * charmPrice,
                 total: basePrice + (selectedExtraCharms.size * charmPrice)
