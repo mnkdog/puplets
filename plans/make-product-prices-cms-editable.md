@@ -24,17 +24,16 @@ The CMS admin schema (src/admin/index.html) already defines these collections wi
 
 - [ ] Collar page displays distinct prices for XS (£17.99), S (£17.99), and M (£20.99) sizes that match current CMS product data
 - [ ] Charm page displays price (£3.99) that matches current CMS product data
-- [ ] When CMS product data is updated and product page is refreshed, displayed prices match updated CMS values within 1 second of page load
+- [ ] Within 1 second from DOMContentLoaded event, all prices from CMS are displayed on product pages
 - [ ] When product data cannot be loaded (network error, timeout, 404), page displays fallback prices (collar XS/S: £17.99, M: £20.99; charms: £3.99), all UI controls remain interactive, and no error message is shown to end users
-- [ ] When product data is malformed, missing required price fields, or contains invalid price values (negative, zero, non-numeric), page falls back to hardcoded prices and logs error to console (not user-visible)
-- [ ] CMS admin panel validates price inputs as positive numbers with max 2 decimal places, rejecting invalid values before save
-- [ ] Authenticated CMS editors see console warning when fallback prices are active (to distinguish from successfully loaded CMS prices)
+- [ ] When product data is malformed (missing required fields, invalid types), invalid price values (negative, zero, non-numeric), or size mappings missing: immediately serve fallback prices, log error to console once per page load with format `[PriceSync Error] <specific issue>`, and do not retry on malformed data (only on network errors)
+- [ ] CMS admin panel validates price inputs as positive numbers (min £0.01, max £999.99) with max 2 decimal places, rejecting invalid values before save. Price changes are published immediately without approval step.
 - [ ] All 60 existing BDD scenarios still pass
-- [ ] Cart accepts products with CMS-loaded prices using same data structure as hardcoded prices
-- [ ] Items already in cart retain their added-at price when CMS prices change
-- [ ] Cart calculations, checkout flow, and persistence remain functionally identical
+- [ ] Cart accepts products with prices stored as objects: `{amount: number, currency: "GBP", source: "cms"|"fallback"}`. Cart item contains exact `amount` and `currency` fields regardless of price source.
+- [ ] Items already in cart retain their added-at price when CMS prices change. Cart does not modify or re-fetch prices for items already added; uses stored `amount` field at checkout.
+- [ ] Cart calculations: Subtotal = sum of (item.amount × item.quantity) rounded to 2 decimals. All existing cart calculation tests continue to pass with CMS prices injected in place of hardcoded values.
 - [ ] Product pages do not display loading spinners, error messages, or blank prices when CMS data fails to load
-- [ ] Product pages do not make repeated fetch attempts on failure
+- [ ] On network error or timeout, fetch attempt count is exactly 1 with no automatic retry. On 404, no retry. Test: mock fetch to fail, verify XHR/fetch call count = 1.
 
 ## Approach Stances
 
