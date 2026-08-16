@@ -1247,6 +1247,7 @@
 
             // Pre-fill form
             document.getElementById('color').value = item.color;
+            document.getElementById('color').dispatchEvent(new Event('change'));
             document.getElementById('size').value = item.size.toLowerCase();
             document.getElementById('charm').value = item.charm;
 
