@@ -376,6 +376,102 @@ describe('create-checkout-session origin validation', () => {
     });
   });
 
+  describe('redirect URL validation', () => {
+    it('should use validated origin for success_url and cancel_url', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
+
+      mockCheckoutSessions.create.mockResolvedValue({
+        id: 'cs_test_123',
+        url: 'https://checkout.stripe.com/test'
+      });
+
+      const req = createMockRequest('https://puplets.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 'medium',
+          color: 'red',
+          colorName: 'Red'
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(mockCheckoutSessions.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success_url: 'https://puplets.vercel.app/success.html?session_id={CHECKOUT_SESSION_ID}',
+          cancel_url: 'https://puplets.vercel.app/cart.html?cancelled=true'
+        })
+      );
+    });
+
+    it('should prevent open redirect by using validated origin only', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
+
+      mockCheckoutSessions.create.mockResolvedValue({
+        id: 'cs_test_456',
+        url: 'https://checkout.stripe.com/test'
+      });
+
+      const req = createMockRequest('https://puplets.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 'medium',
+          color: 'red',
+          colorName: 'Red'
+        }],
+        // Attacker tries to inject malicious success_url
+        success_url: 'https://evil-site.com/success'
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+
+      // Verify the Stripe session creation was called
+      const createCall = mockCheckoutSessions.create.mock.calls[0][0];
+
+      // success_url must use validated origin, not the user-supplied one
+      expect(createCall.success_url).toBe('https://puplets.vercel.app/success.html?session_id={CHECKOUT_SESSION_ID}');
+      expect(createCall.success_url).not.toContain('evil-site.com');
+
+      // cancel_url must also use validated origin
+      expect(createCall.cancel_url).toBe('https://puplets.vercel.app/cart.html?cancelled=true');
+      expect(createCall.cancel_url).not.toContain('evil-site.com');
+    });
+
+    it('should use different validated origin when request comes from staging', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app,https://puplets-staging.vercel.app';
+
+      mockCheckoutSessions.create.mockResolvedValue({
+        id: 'cs_test_789',
+        url: 'https://checkout.stripe.com/test'
+      });
+
+      const req = createMockRequest('https://puplets-staging.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 'medium',
+          color: 'red',
+          colorName: 'Red'
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(mockCheckoutSessions.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success_url: 'https://puplets-staging.vercel.app/success.html?session_id={CHECKOUT_SESSION_ID}',
+          cancel_url: 'https://puplets-staging.vercel.app/cart.html?cancelled=true'
+        })
+      );
+    });
+  });
+
   describe('existing functionality preservation', () => {
     it('should still validate cart items after origin check', async () => {
       process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';

@@ -108,8 +108,8 @@ export default async (req, res) => {
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${req.headers.origin || 'https://puplets.vercel.app'}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin || 'https://puplets.vercel.app'}/cart.html?cancelled=true`,
+      success_url: `${validatedOrigin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${validatedOrigin}/cart.html?cancelled=true`,
       shipping_options: [
         {
           shipping_rate_data: {
