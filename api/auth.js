@@ -1,60 +1,9 @@
-import crypto from 'crypto';
-import { parseAllowedOrigins } from './security-utils.js';
-
-// Helper: Generate cryptographically random CSRF state
-function generateCSRFState() {
-  return crypto.randomBytes(32).toString('hex');
-}
-
-// Helper: Set secure state cookie
-function setSecureStateCookie(res, state) {
-  res.setHeader('Set-Cookie', [
-    `oauth_state=${state}`,
-    'HttpOnly',
-    'Secure',
-    'SameSite=Lax',
-    `Max-Age=300`, // 5 minutes
-    'Path=/api/auth'
-  ].join('; '));
-}
-
-// Helper: Clear state cookie
-function clearStateCookie(res) {
-  res.setHeader('Set-Cookie', [
-    'oauth_state=',
-    'HttpOnly',
-    'Secure',
-    'SameSite=Lax',
-    'Max-Age=0',
-    'Path=/api/auth'
-  ].join('; '));
-}
-
-// Helper: Validate CSRF state
-function validateCSRFState(req, res) {
-  const callbackState = req.query.state;
-  const cookies = req.headers.cookie || '';
-  const cookieMatch = cookies.match(/oauth_state=([^;]+)/);
-  const cookieState = cookieMatch ? cookieMatch[1] : null;
-
-  if (!callbackState || !cookieState || callbackState !== cookieState) {
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-      <head><title>Authentication Failed</title></head>
-      <body>
-        <h1 role="alert">Authentication failed. Please try again.</h1>
-        <p>The security validation did not pass.</p>
-      </body>
-      </html>
-    `);
-    return false;
-  }
-
-  // Clear state cookie after successful validation
-  clearStateCookie(res);
-  return true;
-}
+import {
+  parseAllowedOrigins,
+  generateCSRFState,
+  setSecureStateCookie,
+  validateCSRFState
+} from './security-utils.js';
 
 export default async function handler(req, res) {
   const { code, error } = req.query;
