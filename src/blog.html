@@ -178,7 +178,7 @@
             </button>
             <a href="/">Home</a>
             <a href="products.html">Products</a>
-            <a href="blog.html">Blog</a>
+            <a href="blog.html" aria-current="page">Blog</a>
             <a href="about.html" id="aboutLinkDesktop">About</a>
             <a href="cart.html" class="cart-button">
                 🛒 Cart
@@ -193,7 +193,7 @@
             <div class="mobile-menu-links">
                 <a href="/">Home</a>
                 <a href="products.html">Products</a>
-                <a href="blog.html">Blog</a>
+                <a href="blog.html" aria-current="page">Blog</a>
                 <a href="about.html" id="aboutLinkMobile">About</a>
             </div>
         </div>
@@ -206,11 +206,15 @@
         <div id="blogPosts" class="blog-grid"></div>
     </div>
 
+    <script src="common.js"></script>
     <script>
         async function loadBlogPosts() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             try {
                 // Fetch blog posts from the blog directory
-                const response = await fetch('/blog-index.json');
+                const response = await fetch('/blog-index.json', { signal: controller.signal });
+                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     showEmptyState();
@@ -226,9 +230,25 @@
 
                 renderBlogPosts(posts);
             } catch (error) {
-                console.error('Error loading blog posts:', error);
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    console.error('Blog posts load timeout:', error);
+                } else {
+                    console.error('Error loading blog posts:', error);
+                }
                 showEmptyState();
             }
+        }
+
+        // Sanitize HTML to prevent XSS attacks
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
 
         function renderBlogPosts(posts) {
@@ -239,15 +259,15 @@
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
 
             container.innerHTML = sortedPosts.map(post => `
-                <a href="/blog/${post.slug}.html" class="blog-card">
-                    ${post.featured_image ? `<img src="${post.featured_image}" alt="${post.title}">` : ''}
+                <a href="/blog/${escapeHtml(post.slug)}.html" class="blog-card">
+                    ${post.featured_image ? `<img src="${escapeHtml(post.featured_image)}" alt="${escapeHtml(post.title)}">` : ''}
                     <div class="blog-card-content">
                         <div class="blog-meta">
                             <span>📅 ${formatDate(post.date)}</span>
-                            ${post.author ? `<span>✍️ ${post.author}</span>` : ''}
+                            ${post.author ? `<span>✍️ ${escapeHtml(post.author)}</span>` : ''}
                         </div>
-                        <h2>${post.title}</h2>
-                        <p>${post.description || excerpt(post.body)}</p>
+                        <h2>${escapeHtml(post.title)}</h2>
+                        <p>${escapeHtml(post.description || excerpt(post.body))}</p>
                         <span class="read-more">Read more →</span>
                     </div>
                 </a>
@@ -274,49 +294,6 @@
             return clean + (text.length > length ? '...' : '');
         }
 
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const cartCount = document.getElementById('cartCount');
-            if (cartCount) {
-                cartCount.textContent = cart.length;
-                cartCount.style.display = cart.length > 0 ? 'flex' : 'none';
-            }
-        }
-
-        function toggleMobileMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
-        }
-
-        function closeMobileMenu(event) {
-            if (!event || event.target === event.currentTarget) {
-                document.getElementById('mobileMenu').classList.remove('active');
-            }
-        }
-
-        async function checkAboutPageVisibility() {
-            try {
-                const response = await fetch('/content/about.md');
-                if (response.ok) {
-                    const content = await response.text();
-                    // Extract frontmatter
-                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-                    if (frontmatterMatch) {
-                        const frontmatter = frontmatterMatch[1];
-                        // Check if published is false
-                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
-                        if (publishedMatch && publishedMatch[1] === 'false') {
-                            // Hide About links
-                            const desktopLink = document.getElementById('aboutLinkDesktop');
-                            const mobileLink = document.getElementById('aboutLinkMobile');
-                            if (desktopLink) desktopLink.style.display = 'none';
-                            if (mobileLink) mobileLink.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load about page status:', error);
-            }
-        }
 
         updateCartCount();
         loadBlogPosts();

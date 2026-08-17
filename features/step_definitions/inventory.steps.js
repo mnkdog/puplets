@@ -60,6 +60,10 @@ Given('the {string} collar variant has {int} in stock', async function (variant,
   } else {
     this.testInventory.collars.push({ color, size, quantity });
   }
+
+  // Reload page so it fetches updated inventory
+  await this.page.reload();
+  await this.page.waitForLoadState('networkidle');
 });
 
 Given('the {string} charm has {int} in stock', async function (charmName, quantity) {
@@ -73,6 +77,10 @@ Given('the {string} charm has {int} in stock', async function (charmName, quanti
   } else {
     this.testInventory.charms.push({ name: charmName, quantity });
   }
+
+  // Reload page so it fetches updated inventory
+  await this.page.reload();
+  await this.page.waitForLoadState('networkidle');
 });
 
 When('I select color {string}', async function (color) {

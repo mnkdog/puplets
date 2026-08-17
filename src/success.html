@@ -175,15 +175,24 @@
 
     <script>
         // Clear cart after successful purchase
-        localStorage.setItem('cart', '[]');
+        try {
+            localStorage.setItem('cart', '[]');
+        } catch (error) {
+            console.error('Failed to clear cart after purchase:', error);
+            // Non-fatal - purchase was successful, just log the error
+        }
 
         // Extract session ID from URL if available
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('session_id');
 
+        // Validate session ID format (Stripe session IDs start with "cs_")
         if (sessionId) {
-            console.log('Order completed with session:', sessionId);
-            // You could fetch order details from Stripe here if needed
+            if (/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
+                // Session ID validated - you could fetch order details from Stripe here if needed
+            } else {
+                console.warn('Invalid session ID format');
+            }
         }
     </script>
 </body>
