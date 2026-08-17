@@ -125,13 +125,16 @@ export default async (req, res) => {
       };
     });
 
+    // Get base URL for redirects from server config (not client-supplied origin)
+    const baseUrl = process.env.PUBLIC_BASE_URL || 'https://puplets.vercel.app';
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${validatedOrigin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${validatedOrigin}/cart.html?cancelled=true`,
+      success_url: `${baseUrl}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/cart.html?cancelled=true`,
       shipping_options: [
         {
           shipping_rate_data: {

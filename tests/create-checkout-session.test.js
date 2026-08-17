@@ -498,14 +498,16 @@ describe('create-checkout-session origin validation', () => {
       expect(createCall.cancel_url).not.toContain('evil-site.com');
     });
 
-    it('should use different validated origin when request comes from staging', async () => {
+    it('should use PUBLIC_BASE_URL for redirects regardless of request origin', async () => {
       process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app,https://puplets-staging.vercel.app';
+      process.env.PUBLIC_BASE_URL = 'https://puplets.vercel.app';
 
       mockCheckoutSessions.create.mockResolvedValue({
         id: 'cs_test_789',
         url: 'https://checkout.stripe.com/test'
       });
 
+      // Request from staging origin
       const req = createMockRequest('https://puplets-staging.vercel.app', 'POST', {
         items: [{
           type: 'collar',
@@ -519,10 +521,12 @@ describe('create-checkout-session origin validation', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
+      // Redirect URLs use PUBLIC_BASE_URL, not the client-supplied origin
+      // This prevents open redirect vulnerabilities
       expect(mockCheckoutSessions.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          success_url: 'https://puplets-staging.vercel.app/success.html?session_id={CHECKOUT_SESSION_ID}',
-          cancel_url: 'https://puplets-staging.vercel.app/cart.html?cancelled=true'
+          success_url: 'https://puplets.vercel.app/success.html?session_id={CHECKOUT_SESSION_ID}',
+          cancel_url: 'https://puplets.vercel.app/cart.html?cancelled=true'
         })
       );
     });
@@ -726,10 +730,13 @@ describe('create-checkout-session origin validation', () => {
   });
 
   describe('price manipulation security', () => {
-    it('should reject collar with negative extraCharms length (price manipulation attempt)', async () => {
+    it('should neutralize collar with negative extraCharms length (price manipulation attempt)', async () => {
       process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
 
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockCheckoutSessions.create.mockResolvedValue({
+        id: 'cs_test_attack_neutralized',
+        url: 'https://checkout.stripe.com/test'
+      });
 
       // Attack: extraCharms as object with negative length to lower price
       const req = createMockRequest('https://puplets.vercel.app', 'POST', {
@@ -738,19 +745,21 @@ describe('create-checkout-session origin validation', () => {
           size: 'm',
           color: 'red',
           colorName: 'Red',
-          extraCharms: { length: -4 }  // Attack: fake Array.length
+          extraCharms: { length: -4 }  // Attack: fake Array.length (not a real array)
         }]
       });
       const res = createMockResponse();
 
       await handler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        error: 'Failed to create checkout session'
-      });
+      // Attack is neutralized - Array.isArray() type check sets extraCharmsCount to 0
+      // Handler charges base price (20.99 = 2099 cents for size 'm'), not a reduced price
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(mockCheckoutSessions.create).toHaveBeenCalled();
 
-      consoleErrorSpy.mockRestore();
+      // Verify charged at correct base price for medium collar with 0 charms
+      const createCall = mockCheckoutSessions.create.mock.calls[0][0];
+      expect(createCall.line_items[0].price_data.unit_amount).toBe(2099);
     });
 
     it('should correctly handle valid array extraCharms', async () => {
