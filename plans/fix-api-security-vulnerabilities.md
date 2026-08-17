@@ -40,7 +40,7 @@ These vulnerabilities pose immediate risk: an attacker could steal user OAuth to
 - [ ] Authenticated users can complete checkout from allowed origins with valid cart items and receive a Stripe session URL
 - [ ] Users can authenticate via GitHub OAuth from allowed origins and receive an access token via postMessage
 - [ ] Vercel deployment configuration includes ALLOWED_ORIGINS (comma-separated) and OAUTH_REDIRECT_URI environment variables with documented examples
-- [ ] All preview and staging environments are listed in initial ALLOWED_ORIGINS before deployment
+- [ ] ALLOWED_ORIGINS includes https://puplets.vercel.app, https://puplets-staging.vercel.app, and follows documented pattern for adding preview environments
 - [ ] OAuth popup origin validation failure displays error message to user: "Authentication failed due to a security policy. Please try again or contact support."
 - [ ] Requests from disallowed origins receive user-friendly error: "This request cannot be completed. Please contact support." (not technical "origin not allowed")
 
@@ -214,15 +214,14 @@ Feature: Secure OAuth Authentication Flow
     Given a user completed GitHub OAuth
     And the original state was "abc123secure"
     When GitHub redirects back with code and state "xyz456different"
-    Then the response status should be 403
-    And the response should contain "Invalid state parameter"
+    Then the popup should display "Authentication failed. Please try again."
     And no access token should be requested from GitHub
 
   Scenario: OAuth callback with missing state is rejected
     Given a user completed GitHub OAuth
     When GitHub redirects back with code but no state parameter
-    Then the response status should be 400
-    And the response should contain "State parameter required"
+    Then the popup should display "Authentication failed. Please try again."
+    And no access token should be requested from GitHub
 
   Scenario: Access token is delivered securely via postMessage
     Given a user completed OAuth successfully
@@ -270,17 +269,17 @@ Feature: Secure OAuth Authentication Flow
 #### Step 2.2: Validate CSRF state on OAuth callback
 
 **Complexity:** standard
-**IMPLEMENT:** On callback (line 15), extract state from query params. Extract state from cookie. Compare them. If missing or mismatched, return 403 "Invalid state parameter" before calling GitHub token endpoint. Clear state cookie after successful validation (set with expired date). Only proceed to step 16 after successful state validation.
-**TEST:** Verify callback with matching state proceeds. Verify callback with mismatched state returns 403. Verify callback with missing state returns 400. Verify state cookie is cleared after successful validation. Verify no token request is made to GitHub when state validation fails.
+**IMPLEMENT:** On callback (line 15), extract state from query params. Extract state from cookie. Compare them. If missing or mismatched, render HTML popup displaying "Authentication failed. Please try again." with semantic HTML structure (h1 heading, p for message, role="alert" for accessibility). Do NOT call GitHub token endpoint if state validation fails. Clear state cookie after successful validation (set with expired date). Only proceed to token exchange after successful state validation.
+**TEST:** Verify callback with matching state proceeds. Verify callback with mismatched/missing state displays user-friendly HTML error in popup (not bare HTTP response). Verify state cookie is cleared after successful validation. Verify no token request is made to GitHub when state validation fails.
 **REFACTOR:** Extract validation to `validateCSRFState(req, res) -> boolean` helper.
 **Files:** `api/auth.js`
 
 #### Step 2.3: Validate popup origin and replace postMessage wildcard
 
 **Complexity:** standard
-**IMPLEMENT:** Import `{ parseAllowedOrigins, validateOrigin }` from `./security-utils.js`. At token delivery time (line 46-52), determine popup opener's origin from request headers. Parse ALLOWED_ORIGINS using `parseAllowedOrigins()` (fail with 500 if malformed). Validate opener origin using `validateOrigin()`. If opener origin is not valid, respond with HTML showing user-friendly error: "Authentication failed due to a security policy. Please try again or contact support." and do NOT send postMessage. If origin is valid, replace wildcard in both postMessage calls (lines 46-52, 56) with the validated origin. Token remains in response HTML for Decap CMS compatibility but is only sent via postMessage to validated origins.
+**IMPLEMENT:** Server-side: Import `{ parseAllowedOrigins }` from `./security-utils.js`. Parse ALLOWED_ORIGINS using `parseAllowedOrigins()` (fail with 500 if malformed). Inject the parsed allowlist into the client-side script as a JavaScript constant. Client-side: In the `receiveMessage(e)` function (line 45), validate `e.origin` against the injected allowlist before sending the token. If `e.origin` is not in the allowlist, display user-friendly error in the popup: "Authentication failed due to a security policy. Please try again or contact support." and do NOT send postMessage. If `e.origin` is valid, replace wildcard in both postMessage calls (lines 46-52, 56) with `e.origin`. Token remains in response HTML for Decap CMS compatibility but is only sent via postMessage to validated origins.
 **TEST:** Verify postMessage uses specific validated origin, never wildcard. Verify popup from disallowed origin shows error message and does not send token. Verify popup from allowed origin completes successfully with token via postMessage to that specific origin. Verify Decap CMS integration still works (no protocol changes).
-**REFACTOR:** Extract CSRF and origin validation helper if inline logic grows beyond 10 lines.
+**REFACTOR:** Extract client-side validation logic into a testable function if it grows beyond 10 lines.
 **Files:** `api/auth.js`
 
 #### Step 2.4: Add OAuth environment variables to deployment config
