@@ -33,9 +33,9 @@ These vulnerabilities pose immediate risk: an attacker could steal user OAuth to
 - [ ] OAuth flow includes CSRF protection via state parameter that is validated on callback
 - [ ] OAuth callback with invalid or missing state parameter returns 403 and does not request access token from GitHub
 - [ ] postMessage delivers tokens only to the verified opener origin, never wildcard - verified by origin validation before message send
-- [ ] Access tokens are never embedded in HTML or visible in browser history
+- [ ] Access tokens are delivered via postMessage to validated origins only; OAuth callback page embeds tokens in HTML for Decap CMS compatibility but only sends via postMessage after origin validation
 - [ ] Error responses do not leak sensitive system information (stack traces, internal paths, library versions) - verified by triggering errors and inspecting response bodies
-- [ ] Redirect URLs are validated against an allowlist before use - verified by attempting to set success_url to unlisted origin
+- [ ] Redirect URLs use only the validated request origin, ignoring any user-supplied success_url parameter - verified by requesting success_url to unlisted origin and confirming it's replaced with validated origin
 - [ ] OAuth redirect URL is configurable via environment variable
 - [ ] Authenticated users can complete checkout from allowed origins with valid cart items and receive a Stripe session URL
 - [ ] Users can authenticate via GitHub OAuth from allowed origins and receive an access token via postMessage
@@ -57,7 +57,7 @@ These vulnerabilities pose immediate risk: an attacker could steal user OAuth to
 ### Slice 1: Fix CORS and origin validation in checkout API
 
 **Depends-on:** none
-**Files:** `api/create-checkout-session.js`, `vercel.json`
+**Files:** `api/security-utils.js`, `tests/security-utils.test.js`, `api/create-checkout-session.js`, `vercel.json`
 
 **Gherkin**:
 ```gherkin
@@ -78,14 +78,14 @@ Feature: Secure Checkout API CORS and Origin Validation
     Given I am making a request from "https://evil-site.com"
     When I POST valid cart items to "/api/create-checkout-session"
     Then the response status should be 403
-    And the response body should contain "Origin not allowed"
+    And the response body should contain "This request cannot be completed. Please contact support."
     And the CORS header "Access-Control-Allow-Origin" should not be present
 
   Scenario: Checkout request with no Origin header is rejected
     Given I am making a request with no Origin header
     When I POST valid cart items to "/api/create-checkout-session"
     Then the response status should be 403
-    And the response body should contain "Origin required"
+    And the response body should contain "This request cannot be completed. Please contact support."
 
   Scenario: Success URL must match validated origin
     Given the allowed origins are configured as "https://puplets.vercel.app"
@@ -117,19 +117,45 @@ Feature: Secure Checkout API CORS and Origin Validation
     Then the response status should be 403
     And the response body should contain "This request cannot be completed. Please contact support."
 
-  Scenario: Malformed ALLOWED_ORIGINS falls back to default
+  Scenario: Malformed or missing ALLOWED_ORIGINS fails closed
     Given the ALLOWED_ORIGINS environment variable is malformed or unset
     When I POST valid cart items from "https://puplets.vercel.app"
+    Then the response status should be 500
+    And the response body should contain "Server configuration error"
+    And the server logs should alert "ALLOWED_ORIGINS not configured or malformed"
+
+  Scenario: ALLOWED_ORIGINS with whitespace is normalized
+    Given the ALLOWED_ORIGINS environment variable is "https://puplets.vercel.app, https://puplets-staging.vercel.app"
+    When I POST valid cart items from "https://puplets-staging.vercel.app"
     Then the response status should be 200
-    And the CORS header "Access-Control-Allow-Origin" should be "https://puplets.vercel.app"
+    And the request should succeed despite whitespace in configuration
+
+  Scenario: CORS preflight from allowed origin succeeds
+    Given I am making a preflight OPTIONS request from "https://puplets.vercel.app"
+    When I request "/api/create-checkout-session" with Access-Control-Request-Method: POST
+    Then the response status should be 200
+    And Access-Control-Allow-Origin should be "https://puplets.vercel.app"
+    And Access-Control-Allow-Methods should include POST
 ```
+
+#### Step 1.0: Create shared security validation module
+
+**Complexity:** simple
+**IMPLEMENT:** Create `api/security-utils.js` exporting shared security functions that both APIs will use:
+- `parseAllowedOrigins(envVar)`: Parse comma-separated ALLOWED_ORIGINS, trim whitespace, validate format. Return array or throw if malformed/empty.
+- `validateOrigin(origin, allowedOrigins)`: Check if origin is in allowlist. Return { valid: boolean, origin: string }.
+- `setCORSHeaders(res, validatedOrigin)`: Set CORS headers for validated origin only.
+Add unit tests in `tests/security-utils.test.js` covering: valid/invalid/malformed origins, empty/malformed ALLOWED_ORIGINS, whitespace handling.
+**TEST:** Unit tests verify: parseAllowedOrigins with valid/empty/malformed env vars; validateOrigin with allowed/disallowed/missing origins; setCORSHeaders sets correct headers.
+**REFACTOR:** None (new file)
+**Files:** `api/security-utils.js`, `tests/security-utils.test.js`
 
 #### Step 1.1: Add origin allowlist validation to checkout API
 
 **Complexity:** standard
-**IMPLEMENT:** Read `ALLOWED_ORIGINS` from environment variable (comma-separated list, default to production domain). Add `validateOrigin(origin, allowedOrigins)` function that checks origin against allowlist. At request entry (line 10), extract `req.headers.origin`, validate it, and reject with 403 "Origin not allowed" if not in allowlist. Replace wildcard CORS (line 12) with conditional: set `Access-Control-Allow-Origin` to the validated origin only when it passes. Remove all other CORS headers except for validated origins.
-**TEST:** Mock requests from allowed and disallowed origins. Verify 200 response + correct CORS header for allowed. Verify 403 rejection for disallowed. Verify 403 for missing origin header.
-**REFACTOR:** Extract CORS header setting to `setCORSHeaders(res, validatedOrigin)` helper function for reuse.
+**IMPLEMENT:** Import `{ parseAllowedOrigins, validateOrigin, setCORSHeaders }` from `./security-utils.js`. Read `ALLOWED_ORIGINS` from environment variable using `parseAllowedOrigins()` - if it throws (malformed/empty), return 500 "Server configuration error" and log alert. At request entry (line 10), extract `req.headers.origin`, validate using `validateOrigin()`, and reject with 403 "This request cannot be completed. Please contact support." if not valid. Replace wildcard CORS (line 12) with `setCORSHeaders(res, validatedOrigin)`.
+**TEST:** Mock requests from allowed and disallowed origins. Verify 200 response + correct CORS header for allowed. Verify 403 rejection for disallowed with user-friendly message. Verify 403 for missing origin header. Verify 500 for malformed ALLOWED_ORIGINS.
+**REFACTOR:** None (already using shared module)
 **Files:** `api/create-checkout-session.js`
 
 #### Step 1.2: Validate redirect URLs against allowed origins
@@ -151,8 +177,8 @@ Feature: Secure Checkout API CORS and Origin Validation
 #### Step 1.4: Add ALLOWED_ORIGINS environment variable to deployment config
 
 **Complexity:** simple
-**IMPLEMENT:** Add `ALLOWED_ORIGINS` to `vercel.json` environment variables with production domains. Document the expected format (comma-separated, no spaces). Add example comment showing staging/production setup.
-**TEST:** Verify environment variable is accessible in deployed function. Verify default fallback works when not set.
+**IMPLEMENT:** Add `ALLOWED_ORIGINS` to `vercel.json` environment variables with production domains. Document the expected format (comma-separated, no spaces, no trailing commas). Add example comment showing staging/production setup. This is REQUIRED - the API will return 500 if not configured.
+**TEST:** Verify environment variable is accessible in deployed function. Verify 500 error response when ALLOWED_ORIGINS is malformed or missing.
 **REFACTOR:** None expected
 **Files:** `vercel.json`
 
@@ -202,16 +228,17 @@ Feature: Secure OAuth Authentication Flow
     Given a user completed OAuth successfully
     And the popup window opener is "https://puplets.vercel.app"
     When the token response is generated
-    Then postMessage should target the opener's specific origin
+    Then postMessage should target the opener's specific origin "https://puplets.vercel.app"
     And postMessage should never use wildcard "*"
-    And the token should not be embedded in HTML
+    And the token should be sent only to the validated origin
 
   Scenario: postMessage rejects mismatched popup origin
     Given a user completed OAuth successfully
     And the popup window opener is "https://evil-site.com"
     And the allowed origin is "https://puplets.vercel.app"
     When the token response is generated
-    Then the popup should be closed without sending token
+    Then the popup should display "Authentication failed due to a security policy. Please try again or contact support."
+    And no postMessage should be sent
     And an error should be logged
 
   Scenario: Redirect URL is configurable via environment
@@ -223,6 +250,13 @@ Feature: Secure OAuth Authentication Flow
     Given OAUTH_REDIRECT_URI is not set
     When a user initiates OAuth authentication
     Then the GitHub authorization URL should use "https://puplets.vercel.app/api/auth"
+
+  Scenario: User denies GitHub OAuth permission
+    Given a user initiated OAuth authentication
+    When GitHub redirects back with error=access_denied
+    Then the popup should display "Authentication was cancelled"
+    And no access token should be requested from GitHub
+    And the popup should close after displaying the message
 ```
 
 #### Step 2.1: Add CSRF state parameter to OAuth initiation
@@ -241,23 +275,15 @@ Feature: Secure OAuth Authentication Flow
 **REFACTOR:** Extract validation to `validateCSRFState(req, res) -> boolean` helper.
 **Files:** `api/auth.js`
 
-#### Step 2.3: Replace postMessage wildcard with validated origin
+#### Step 2.3: Validate popup origin and replace postMessage wildcard
 
 **Complexity:** standard
-**IMPLEMENT:** Determine the popup opener's origin at callback time. Compare against `ALLOWED_ORIGINS` from environment (same allowlist as Slice 1). If opener origin is not in allowlist, close the window with error message and log warning (do NOT send token). Replace wildcard postMessage (line 56) with validated origin: `window.opener.postMessage("authorizing:github", validatedOrigin)`. Do the same for the token-sending postMessage (line 46-52).
-**TEST:** Verify postMessage uses specific origin when opener matches allowlist. Verify window closes with error when opener is not in allowlist. Verify token is never sent to disallowed origins.
-**REFACTOR:** Extract origin validation to `validatePopupOrigin(req) -> {valid: boolean, origin: string}` helper.
-**Files:** `api/auth.js`
-
-#### Step 2.4: Validate popup origin before postMessage (keep current protocol)
-
-**Complexity:** standard
-**IMPLEMENT:** Keep current postMessage protocol (Decap CMS compatible) but validate opener origin first. At token delivery time (line 46-52), determine popup opener's origin from request headers. Compare against `ALLOWED_ORIGINS`. If opener origin is not in allowlist, respond with HTML showing user-friendly error: "Authentication failed due to a security policy. Please try again or contact support." and do NOT send postMessage. If origin is valid, replace wildcard in both postMessage calls (lines 46-52, 56) with the validated origin. Token remains in response HTML for current protocol compatibility but is only sent via postMessage to validated origins.
+**IMPLEMENT:** Import `{ parseAllowedOrigins, validateOrigin }` from `./security-utils.js`. At token delivery time (line 46-52), determine popup opener's origin from request headers. Parse ALLOWED_ORIGINS using `parseAllowedOrigins()` (fail with 500 if malformed). Validate opener origin using `validateOrigin()`. If opener origin is not valid, respond with HTML showing user-friendly error: "Authentication failed due to a security policy. Please try again or contact support." and do NOT send postMessage. If origin is valid, replace wildcard in both postMessage calls (lines 46-52, 56) with the validated origin. Token remains in response HTML for Decap CMS compatibility but is only sent via postMessage to validated origins.
 **TEST:** Verify postMessage uses specific validated origin, never wildcard. Verify popup from disallowed origin shows error message and does not send token. Verify popup from allowed origin completes successfully with token via postMessage to that specific origin. Verify Decap CMS integration still works (no protocol changes).
-**REFACTOR:** Extract origin validation to `validatePopupOrigin(req, allowedOrigins) -> {valid: boolean, origin: string, error?: string}` helper.
+**REFACTOR:** Extract CSRF and origin validation helper if inline logic grows beyond 10 lines.
 **Files:** `api/auth.js`
 
-#### Step 2.5: Add OAuth environment variables to deployment config
+#### Step 2.4: Add OAuth environment variables to deployment config
 
 **Complexity:** simple
 **IMPLEMENT:** Add `OAUTH_REDIRECT_URI` to `vercel.json` environment variables. Document the format and staging/production examples. Verify `ALLOWED_ORIGINS` from Slice 1 applies here too (no duplication needed).
@@ -289,7 +315,8 @@ graph TD
 ## Pre-PR Gate
 
 Before opening a pull request:
-- [ ] All Gherkin scenarios pass (13 scenarios across 2 slices)
+- [ ] All Gherkin scenarios pass (16 scenarios across 2 slices)
+- [ ] All unit tests pass (security-utils.test.js)
 - [ ] Manual verification: Checkout flow works from production domain
 - [ ] Manual verification: OAuth flow works with CSRF protection
 - [ ] Manual verification: postMessage delivers token securely to allowed origins only
@@ -315,6 +342,7 @@ Before opening a pull request:
 
 ### Wave 1
 - [ ] Slice 1: Fix CORS and origin validation in checkout API
+  - [ ] Step 1.0: Create shared security validation module
   - [ ] Step 1.1: Add origin allowlist validation to checkout API
   - [ ] Step 1.2: Validate redirect URLs against allowed origins
   - [ ] Step 1.3: Remove sensitive error details from responses
@@ -324,6 +352,5 @@ Before opening a pull request:
 - [ ] Slice 2: Fix OAuth security vulnerabilities in auth.js
   - [ ] Step 2.1: Add CSRF state parameter to OAuth initiation
   - [ ] Step 2.2: Validate CSRF state on OAuth callback
-  - [ ] Step 2.3: Replace postMessage wildcard with validated origin
-  - [ ] Step 2.4: Validate popup origin before postMessage (keep current protocol)
-  - [ ] Step 2.5: Add OAuth environment variables to deployment config
+  - [ ] Step 2.3: Validate popup origin and replace postMessage wildcard
+  - [ ] Step 2.4: Add OAuth environment variables to deployment config
