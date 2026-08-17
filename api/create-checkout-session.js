@@ -3,15 +3,30 @@
 
 import Stripe from 'stripe';
 import { calculateCollarPrice, calculateCharmPrice } from './catalog.js';
+import { parseAllowedOrigins, validateOrigin, setCORSHeaders } from './security-utils.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async (req, res) => {
-  // CORS headers for local testing
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  // Parse allowed origins from environment variable
+  let allowedOrigins;
+  try {
+    allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
+  } catch (error) {
+    console.error('[SECURITY ALERT] ALLOWED_ORIGINS not configured or malformed:', error.message);
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
+  // Validate request origin
+  const requestOrigin = req.headers.origin;
+  const { valid, origin: validatedOrigin } = validateOrigin(requestOrigin, allowedOrigins);
+
+  if (!valid) {
+    return res.status(403).json({ error: 'This request cannot be completed. Please contact support.' });
+  }
+
+  // Set CORS headers for validated origin only
+  setCORSHeaders(res, validatedOrigin);
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
