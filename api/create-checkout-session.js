@@ -37,6 +37,14 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Custom error class for validation errors
+  class ValidationError extends Error {
+    constructor(message) {
+      super(message);
+      this.name = 'ValidationError';
+    }
+  }
+
   try {
     const { items } = req.body;
 
@@ -53,7 +61,7 @@ export default async (req, res) => {
       if (item.type === 'collar') {
         // Validate required fields
         if (!item.size) {
-          throw new Error('Collar item missing required field: size');
+          throw new ValidationError('Collar item missing required field: size');
         }
 
         // Calculate price server-side based on size and extra charms
@@ -81,20 +89,27 @@ export default async (req, res) => {
       } else if (item.type === 'charm') {
         // Validate required fields
         if (!item.charm && !item.charmName) {
-          throw new Error('Charm item missing required field: charm or charmName');
+          throw new ValidationError('Charm item missing required field: charm or charmName');
         }
 
         // Calculate price server-side
-        const quantity = item.quantity || 1;
+        // Type-check quantity to prevent price manipulation (matches collar guard)
+        const quantity = Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1;
         const price = calculateCharmPrice(quantity);
         unitAmount = Math.round(price * 100);
+
+        // Security: Reject if calculated price is below catalog base (detect manipulation)
+        const minPrice = Math.round(CATALOG.charm.price * 100);
+        if (unitAmount < minPrice) {
+          throw new Error(`Invalid charm price: ${unitAmount} is below minimum ${minPrice}`);
+        }
 
         productName = `Puplets Charm - ${item.charmName || item.charm}`;
         if (quantity > 1) {
           productName += ` (×${quantity})`;
         }
       } else {
-        throw new Error(`Unknown item type: ${item.type}`);
+        throw new ValidationError(`Unknown item type: ${item.type}`);
       }
 
       return {
@@ -154,9 +169,12 @@ export default async (req, res) => {
     // Log full error details server-side for debugging
     console.error('Stripe session creation error:', error);
 
+    // Validation errors return 400, all others return 500
+    const statusCode = error instanceof ValidationError ? 400 : 500;
+
     // Security: Never expose error details (stack traces, file paths, internal messages) to client
     // Full error details are logged above for server-side debugging only
-    return res.status(500).json({
+    return res.status(statusCode).json({
       error: 'Failed to create checkout session'
     });
   }

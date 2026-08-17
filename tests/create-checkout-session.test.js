@@ -545,6 +545,36 @@ describe('create-checkout-session origin validation', () => {
       });
     });
 
+    it('should reject charm item missing charm identifier', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const req = createMockRequest('https://puplets.vercel.app', 'POST', {
+        items: [{
+          type: 'charm',
+          quantity: 1
+          // Missing both charm and charmName
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+
+      // Verify server logs contain the validation error
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Stripe session creation error:',
+        expect.any(Error)
+      );
+
+      const loggedError = consoleErrorSpy.mock.calls[0][1];
+      expect(loggedError.message).toContain('missing required field');
+
+      consoleErrorSpy.mockRestore();
+    });
+
     it('should still reject non-POST methods after origin check', async () => {
       process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
 
@@ -661,14 +691,15 @@ describe('create-checkout-session origin validation', () => {
       const req = createMockRequest('https://puplets.vercel.app', 'POST', {
         items: [{
           type: 'unknown-type',
-          // This will trigger "Unknown item type" error in the handler
+          // This will trigger "Unknown item type" validation error in the handler
         }]
       });
       const res = createMockResponse();
 
       await handler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
+      // Validation errors return 400 (not 500)
+      expect(res.status).toHaveBeenCalledWith(400);
 
       const responseBody = res.json.mock.calls[0][0];
 
