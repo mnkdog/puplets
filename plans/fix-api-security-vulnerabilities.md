@@ -31,17 +31,17 @@ These vulnerabilities pose immediate risk: an attacker could steal user OAuth to
 ## Acceptance Criteria
 
 - [ ] Checkout API accepts requests only from configured allowed origins (no wildcard CORS) - verified by making request from unlisted origin and receiving 403
-- [ ] OAuth flow includes CSRF protection via state parameter that is validated on callback
-- [ ] OAuth callback with invalid or missing state parameter returns 403 and does not request access token from GitHub
+- [ ] OAuth flow includes CSRF protection via cryptographically random state parameter (minimum 32 bytes), stored in secure HTTP-only cookie with SameSite=Lax and 5-minute expiry, validated on callback by comparing cookie value with callback parameter
+- [ ] OAuth callback with invalid or missing state parameter renders HTML error popup displaying "Authentication failed. Please try again." without requesting access token from GitHub - state validation failures are logged as security events
 - [ ] postMessage delivers tokens only to the verified opener origin, never wildcard - verified by origin validation before message send
-- [ ] Access tokens are delivered via postMessage to validated origins only; OAuth callback page embeds tokens in HTML for Decap CMS compatibility but only sends via postMessage after origin validation
-- [ ] Error responses do not leak sensitive system information (stack traces, internal paths, library versions) - verified by triggering errors and inspecting response bodies
-- [ ] Redirect URLs use only the validated request origin, ignoring any user-supplied success_url parameter - verified by requesting success_url to unlisted origin and confirming it's replaced with validated origin
+- [ ] OAuth callback page embeds access token in HTML response for Decap CMS compatibility, then validates popup opener origin and sends token via postMessage to that specific validated origin only (never wildcard) - tokens reach the client only if origin validation passes
+- [ ] Error responses do not leak sensitive system information (stack traces, internal paths, library versions) in response body or headers - verified by triggering errors and inspecting responses - server-side logs may contain full error details for debugging
+- [ ] Redirect URLs use only the validated request origin - any user-supplied success_url path is ignored and replaced with {validated_origin}/success.html?session_id={CHECKOUT_SESSION_ID}
 - [ ] OAuth redirect URL is configurable via environment variable
 - [ ] Authenticated users can complete checkout from allowed origins with valid cart items and receive a Stripe session URL
 - [ ] Users can authenticate via GitHub OAuth from allowed origins and receive an access token via postMessage
 - [ ] Vercel deployment configuration includes ALLOWED_ORIGINS (comma-separated) and OAUTH_REDIRECT_URI environment variables with documented examples
-- [ ] ALLOWED_ORIGINS includes https://puplets.vercel.app, https://puplets-staging.vercel.app, and follows documented pattern for adding preview environments
+- [ ] ALLOWED_ORIGINS includes https://puplets.vercel.app (production), https://puplets-staging.vercel.app (staging), and supports pattern https://puplets-*.vercel.app for Vercel preview deployments - deployment documentation includes example showing how to add new environments
 - [ ] OAuth popup origin validation failure displays error message to user: "Authentication failed due to a security policy. Please try again or contact support."
 - [ ] Requests from disallowed origins receive user-friendly error: "This request cannot be completed. Please contact support." (not technical "origin not allowed")
 
