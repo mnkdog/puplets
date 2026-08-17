@@ -4,18 +4,20 @@
 
 /**
  * Parse comma-separated ALLOWED_ORIGINS environment variable
- * @param {string} envVar - Comma-separated list of allowed origins
- * @returns {string[]} Array of trimmed origin URLs
- * @throws {Error} If envVar is malformed or empty
+ * @param {string} envVar - Comma-separated list of allowed origins (or patterns)
+ * @returns {string[]} Array of trimmed origin URLs/patterns
+ * @throws {Error} If envVar is malformed or missing
  */
 export function parseAllowedOrigins(envVar) {
   if (typeof envVar !== 'string') {
-    throw new Error('ALLOWED_ORIGINS must be a non-empty string');
+    throw new Error('ALLOWED_ORIGINS must be a string');
   }
 
   const trimmed = envVar.trim();
+
+  // Empty string is valid (means no origins allowed) - returns empty array for 403
   if (trimmed === '') {
-    throw new Error('ALLOWED_ORIGINS cannot be empty');
+    return [];
   }
 
   const origins = trimmed.split(',').map(origin => origin.trim()).filter(origin => origin !== '');
@@ -35,9 +37,30 @@ export function parseAllowedOrigins(envVar) {
 }
 
 /**
+ * Match origin against a pattern with wildcard support
+ * @param {string} origin - Origin to test
+ * @param {string} pattern - Pattern with optional * wildcard
+ * @returns {boolean} True if origin matches pattern
+ */
+function matchesPattern(origin, pattern) {
+  if (!pattern.includes('*')) {
+    return origin === pattern;
+  }
+
+  // Convert pattern to regex: escape special chars, replace * with valid subdomain pattern
+  // * matches any valid subdomain characters (alphanumeric, hyphens, dots)
+  const regexPattern = pattern
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')  // Escape regex special chars
+    .replace(/\*/g, '[a-zA-Z0-9.-]+');      // Replace * with subdomain pattern
+
+  const regex = new RegExp(`^${regexPattern}$`);
+  return regex.test(origin);
+}
+
+/**
  * Validate if a request origin is in the allowed list
  * @param {string} origin - Request origin to validate
- * @param {string[]} allowedOrigins - List of allowed origins
+ * @param {string[]} allowedOrigins - List of allowed origins (may include wildcard patterns)
  * @returns {{valid: boolean, origin: string}} Validation result
  */
 export function validateOrigin(origin, allowedOrigins) {
@@ -45,7 +68,8 @@ export function validateOrigin(origin, allowedOrigins) {
     return { valid: false, origin: '' };
   }
 
-  const valid = allowedOrigins.includes(origin);
+  // Check exact match first, then wildcard patterns
+  const valid = allowedOrigins.some(allowed => matchesPattern(origin, allowed));
   return { valid, origin };
 }
 

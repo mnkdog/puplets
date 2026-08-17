@@ -27,24 +27,26 @@ describe('parseAllowedOrigins', () => {
     expect(result).toEqual(['https://a.com', 'https://b.com', 'https://c.com']);
   });
 
-  it('should throw error for empty string', () => {
-    expect(() => parseAllowedOrigins('')).toThrow('ALLOWED_ORIGINS cannot be empty');
+  it('should return empty array for empty string', () => {
+    const result = parseAllowedOrigins('');
+    expect(result).toEqual([]);
   });
 
-  it('should throw error for whitespace-only string', () => {
-    expect(() => parseAllowedOrigins('   ')).toThrow('ALLOWED_ORIGINS cannot be empty');
+  it('should return empty array for whitespace-only string', () => {
+    const result = parseAllowedOrigins('   ');
+    expect(result).toEqual([]);
   });
 
   it('should throw error for undefined', () => {
-    expect(() => parseAllowedOrigins(undefined)).toThrow('ALLOWED_ORIGINS must be a non-empty string');
+    expect(() => parseAllowedOrigins(undefined)).toThrow('ALLOWED_ORIGINS must be a string');
   });
 
   it('should throw error for null', () => {
-    expect(() => parseAllowedOrigins(null)).toThrow('ALLOWED_ORIGINS must be a non-empty string');
+    expect(() => parseAllowedOrigins(null)).toThrow('ALLOWED_ORIGINS must be a string');
   });
 
   it('should throw error for non-string input', () => {
-    expect(() => parseAllowedOrigins(123)).toThrow('ALLOWED_ORIGINS must be a non-empty string');
+    expect(() => parseAllowedOrigins(123)).toThrow('ALLOWED_ORIGINS must be a string');
   });
 
   it('should throw error for malformed origin without protocol', () => {
@@ -77,6 +79,16 @@ describe('parseAllowedOrigins', () => {
   it('should filter out empty strings between commas', () => {
     const result = parseAllowedOrigins('https://a.com,,https://b.com');
     expect(result).toEqual(['https://a.com', 'https://b.com']);
+  });
+
+  it('should parse wildcard patterns', () => {
+    const result = parseAllowedOrigins('https://puplets-*.vercel.app');
+    expect(result).toEqual(['https://puplets-*.vercel.app']);
+  });
+
+  it('should parse mix of exact origins and wildcard patterns', () => {
+    const result = parseAllowedOrigins('https://puplets.vercel.app,https://puplets-*.vercel.app');
+    expect(result).toEqual(['https://puplets.vercel.app', 'https://puplets-*.vercel.app']);
   });
 });
 
@@ -126,6 +138,42 @@ describe('validateOrigin', () => {
   it('should work with empty allowed origins array', () => {
     const result = validateOrigin('https://puplets.vercel.app', []);
     expect(result).toEqual({ valid: false, origin: 'https://puplets.vercel.app' });
+  });
+
+  it('should match wildcard pattern for preview deployments', () => {
+    const allowedWithWildcard = ['https://puplets.vercel.app', 'https://puplets-*.vercel.app'];
+    const result = validateOrigin('https://puplets-abc123.vercel.app', allowedWithWildcard);
+    expect(result).toEqual({ valid: true, origin: 'https://puplets-abc123.vercel.app' });
+  });
+
+  it('should match wildcard pattern with hyphens and numbers', () => {
+    const allowedWithWildcard = ['https://puplets-*.vercel.app'];
+    const result = validateOrigin('https://puplets-pr-456-xyz.vercel.app', allowedWithWildcard);
+    expect(result).toEqual({ valid: true, origin: 'https://puplets-pr-456-xyz.vercel.app' });
+  });
+
+  it('should not match wildcard across different domains', () => {
+    const allowedWithWildcard = ['https://puplets-*.vercel.app'];
+    const result = validateOrigin('https://puplets-evil.evil.com', allowedWithWildcard);
+    expect(result).toEqual({ valid: false, origin: 'https://puplets-evil.evil.com' });
+  });
+
+  it('should match exact origin when wildcard pattern is also present', () => {
+    const allowedWithWildcard = ['https://puplets.vercel.app', 'https://puplets-*.vercel.app'];
+    const result = validateOrigin('https://puplets.vercel.app', allowedWithWildcard);
+    expect(result).toEqual({ valid: true, origin: 'https://puplets.vercel.app' });
+  });
+
+  it('should not match wildcard with protocol mismatch', () => {
+    const allowedWithWildcard = ['https://puplets-*.vercel.app'];
+    const result = validateOrigin('http://puplets-abc123.vercel.app', allowedWithWildcard);
+    expect(result).toEqual({ valid: false, origin: 'http://puplets-abc123.vercel.app' });
+  });
+
+  it('should not match when wildcard pattern has wrong prefix', () => {
+    const allowedWithWildcard = ['https://puplets-*.vercel.app'];
+    const result = validateOrigin('https://evil-abc123.vercel.app', allowedWithWildcard);
+    expect(result).toEqual({ valid: false, origin: 'https://evil-abc123.vercel.app' });
   });
 });
 

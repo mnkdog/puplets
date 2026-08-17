@@ -145,6 +145,51 @@ describe('create-checkout-session origin validation', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
     });
+
+    it('should accept request from wildcard-matched preview deployment', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app,https://puplets-*.vercel.app';
+
+      mockCheckoutSessions.create.mockResolvedValue({
+        id: 'cs_test_preview_123',
+        url: 'https://checkout.stripe.com/test'
+      });
+
+      const req = createMockRequest('https://puplets-pr-456.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 'medium',
+          color: 'red',
+          colorName: 'Red'
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', 'https://puplets-pr-456.vercel.app');
+    });
+
+    it('should reject request that does not match wildcard pattern', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets-*.vercel.app';
+
+      const req = createMockRequest('https://evil-*.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 'medium',
+          color: 'red',
+          colorName: 'Red'
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'This request cannot be completed. Please contact support.'
+      });
+    });
   });
 
   describe('disallowed origin rejection', () => {
@@ -258,7 +303,7 @@ describe('create-checkout-session origin validation', () => {
       expect(mockCheckoutSessions.create).not.toHaveBeenCalled();
     });
 
-    it('should return 500 when ALLOWED_ORIGINS is empty string', async () => {
+    it('should return 403 when ALLOWED_ORIGINS is empty string', async () => {
       process.env.ALLOWED_ORIGINS = '';
 
       const req = createMockRequest('https://puplets.vercel.app', 'POST', {
@@ -273,13 +318,13 @@ describe('create-checkout-session origin validation', () => {
 
       await handler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Server configuration error'
+        error: 'This request cannot be completed. Please contact support.'
       });
     });
 
-    it('should return 500 when ALLOWED_ORIGINS is whitespace only', async () => {
+    it('should return 403 when ALLOWED_ORIGINS is whitespace only', async () => {
       process.env.ALLOWED_ORIGINS = '   ';
 
       const req = createMockRequest('https://puplets.vercel.app', 'POST', {
@@ -294,9 +339,9 @@ describe('create-checkout-session origin validation', () => {
 
       await handler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Server configuration error'
+        error: 'This request cannot be completed. Please contact support.'
       });
     });
 
@@ -323,7 +368,7 @@ describe('create-checkout-session origin validation', () => {
 
     it('should log security alert when ALLOWED_ORIGINS is malformed', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      process.env.ALLOWED_ORIGINS = '';
+      process.env.ALLOWED_ORIGINS = 'puplets.vercel.app'; // Missing protocol - truly malformed
 
       const req = createMockRequest('https://puplets.vercel.app', 'POST', {
         items: [{
