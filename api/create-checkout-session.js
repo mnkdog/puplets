@@ -2,7 +2,7 @@
 // This serverless function creates a Stripe checkout session for the cart items
 
 import Stripe from 'stripe';
-import { calculateCollarPrice, calculateCharmPrice } from './catalog.js';
+import { calculateCollarPrice, calculateCharmPrice, CATALOG } from './catalog.js';
 import { parseAllowedOrigins, validateOrigin, setCORSHeaders } from './security-utils.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -57,9 +57,16 @@ export default async (req, res) => {
         }
 
         // Calculate price server-side based on size and extra charms
-        const extraCharmsCount = item.extraCharms?.length || 0;
+        // Type-check extraCharms to prevent price manipulation via negative length
+        const extraCharmsCount = Array.isArray(item.extraCharms) ? item.extraCharms.length : 0;
         const price = calculateCollarPrice(item.size, extraCharmsCount);
         unitAmount = Math.round(price * 100);
+
+        // Security: Reject if calculated price is below catalog base (detect manipulation)
+        const minPrice = Math.round(CATALOG.collar.basePrice * 100);
+        if (unitAmount < minPrice) {
+          throw new Error(`Invalid collar price: ${unitAmount} is below minimum ${minPrice}`);
+        }
 
         // Build product name
         productName = `Puplets Dog Collar - ${item.colorName || item.color} (${item.sizeName || item.size})`;

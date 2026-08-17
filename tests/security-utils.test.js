@@ -175,6 +175,20 @@ describe('validateOrigin', () => {
     const result = validateOrigin('https://evil-abc123.vercel.app', allowedWithWildcard);
     expect(result).toEqual({ valid: false, origin: 'https://evil-abc123.vercel.app' });
   });
+
+  it('should not match wildcard across label boundaries (security)', () => {
+    const allowedWithWildcard = ['https://puplets-*.vercel.app'];
+    // puplets-evil.evil.com should NOT match even though * previously matched dots
+    const result = validateOrigin('https://puplets-evil.evil.com', allowedWithWildcard);
+    expect(result).toEqual({ valid: false, origin: 'https://puplets-evil.evil.com' });
+  });
+
+  it('should not match subdomain with internal dots via wildcard', () => {
+    const allowedWithWildcard = ['https://puplets-*.vercel.app'];
+    // puplets-a.b.c would match with [a-zA-Z0-9.-]+ but should not with [a-zA-Z0-9-]+
+    const result = validateOrigin('https://puplets-a.b.c.vercel.app', allowedWithWildcard);
+    expect(result).toEqual({ valid: false, origin: 'https://puplets-a.b.c.vercel.app' });
+  });
 });
 
 describe('setCORSHeaders', () => {
@@ -218,14 +232,14 @@ describe('setCORSHeaders', () => {
     expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Credentials', 'true');
   });
 
-  it('should set all four CORS headers', () => {
+  it('should set all five CORS headers including Vary', () => {
     const res = {
       setHeader: vi.fn()
     };
 
     setCORSHeaders(res, 'https://puplets.vercel.app');
 
-    expect(res.setHeader).toHaveBeenCalledTimes(4);
+    expect(res.setHeader).toHaveBeenCalledTimes(5);
   });
 
   it('should use the specific validated origin', () => {
@@ -248,5 +262,15 @@ describe('setCORSHeaders', () => {
     // Verify it's called with specific origin, not "*"
     expect(res.setHeader).not.toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
     expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', 'https://puplets.vercel.app');
+  });
+
+  it('should set Vary: Origin header to prevent cache poisoning', () => {
+    const res = {
+      setHeader: vi.fn()
+    };
+
+    setCORSHeaders(res, 'https://puplets.vercel.app');
+
+    expect(res.setHeader).toHaveBeenCalledWith('Vary', 'Origin');
   });
 });

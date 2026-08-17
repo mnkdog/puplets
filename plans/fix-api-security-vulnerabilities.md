@@ -346,7 +346,7 @@ Before opening a pull request:
   - [x] Step 1.1: Add origin allowlist validation to checkout API
   - [x] Step 1.2: Validate redirect URLs against allowed origins
   - [x] Step 1.3: Remove sensitive error details from responses
-  - [ ] Step 1.4: Add ALLOWED_ORIGINS environment variable to deployment config
+  - [x] Step 1.4: Add ALLOWED_ORIGINS environment variable to deployment config
 
 ### Wave 2
 - [ ] Slice 2: Fix OAuth security vulnerabilities in auth.js

@@ -48,10 +48,10 @@ function matchesPattern(origin, pattern) {
   }
 
   // Convert pattern to regex: escape special chars, replace * with valid subdomain pattern
-  // * matches any valid subdomain characters (alphanumeric, hyphens, dots)
+  // * matches single label only (alphanumeric, hyphens) - NOT dots to prevent cross-label matching
   const regexPattern = pattern
     .replace(/[.+?^${}()|[\]\\]/g, '\\$&')  // Escape regex special chars
-    .replace(/\*/g, '[a-zA-Z0-9.-]+');      // Replace * with subdomain pattern
+    .replace(/\*/g, '[a-zA-Z0-9-]+');       // Replace * with single-label pattern (no dot)
 
   const regex = new RegExp(`^${regexPattern}$`);
   return regex.test(origin);
@@ -83,4 +83,5 @@ export function setCORSHeaders(res, validatedOrigin) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Vary', 'Origin');  // Prevent cache serving wrong origin's CORS response
 }

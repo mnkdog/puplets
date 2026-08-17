@@ -17,10 +17,21 @@ vi.mock('stripe', () => {
   };
 });
 
-// Mock catalog functions
+// Mock catalog functions and constants
 vi.mock('../api/catalog.js', () => ({
-  calculateCollarPrice: vi.fn(() => 15.99),
-  calculateCharmPrice: vi.fn(() => 4.99)
+  CATALOG: {
+    collar: {
+      basePrice: 17.99,
+      sizes: { xs: 17.99, s: 17.99, m: 20.99 }
+    },
+    charm: { price: 3.99 }
+  },
+  calculateCollarPrice: vi.fn((size, extraCharms = 0) => {
+    const prices = { xs: 17.99, s: 17.99, m: 20.99, medium: 20.99 };
+    const basePrice = prices[size] || 17.99;
+    return basePrice + (extraCharms * 3.99);
+  }),
+  calculateCharmPrice: vi.fn((quantity = 1) => 3.99 * quantity)
 }));
 
 describe('create-checkout-session origin validation', () => {
@@ -680,6 +691,91 @@ describe('create-checkout-session origin validation', () => {
       expect(loggedError.message).toContain('Unknown item type');
 
       consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('price manipulation security', () => {
+    it('should reject collar with negative extraCharms length (price manipulation attempt)', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Attack: extraCharms as object with negative length to lower price
+      const req = createMockRequest('https://puplets.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 'm',
+          color: 'red',
+          colorName: 'Red',
+          extraCharms: { length: -4 }  // Attack: fake Array.length
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Failed to create checkout session'
+      });
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should correctly handle valid array extraCharms', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
+
+      mockCheckoutSessions.create.mockResolvedValue({
+        id: 'cs_test_charms',
+        url: 'https://checkout.stripe.com/test'
+      });
+
+      const req = createMockRequest('https://puplets.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 'm',
+          color: 'red',
+          colorName: 'Red',
+          extraCharms: ['charm1', 'charm2']  // Valid array with 2 charms
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+
+      // Verify price calculation: m = £20.99 + 2*£3.99 = £28.97 = 2897 pence
+      const session = mockCheckoutSessions.create.mock.calls[0][0];
+      expect(session.line_items[0].price_data.unit_amount).toBe(2897);
+    });
+
+    it('should handle missing extraCharms as zero count', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
+
+      mockCheckoutSessions.create.mockResolvedValue({
+        id: 'cs_test_no_charms',
+        url: 'https://checkout.stripe.com/test'
+      });
+
+      const req = createMockRequest('https://puplets.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 's',
+          color: 'red',
+          colorName: 'Red'
+          // No extraCharms field
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+
+      // Verify price calculation: s = £17.99 + 0*£3.99 = £17.99 = 1799 pence
+      const session = mockCheckoutSessions.create.mock.calls[0][0];
+      expect(session.line_items[0].price_data.unit_amount).toBe(1799);
     });
   });
 });
