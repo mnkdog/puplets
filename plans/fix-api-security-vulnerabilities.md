@@ -29,16 +29,20 @@ These vulnerabilities pose immediate risk: an attacker could steal user OAuth to
 
 ## Acceptance Criteria
 
-- [ ] Checkout API accepts requests only from configured allowed origins (no wildcard CORS)
+- [ ] Checkout API accepts requests only from configured allowed origins (no wildcard CORS) - verified by making request from unlisted origin and receiving 403
 - [ ] OAuth flow includes CSRF protection via state parameter that is validated on callback
-- [ ] postMessage delivers tokens only to the verified opener origin, never wildcard
+- [ ] OAuth callback with invalid or missing state parameter returns 403 and does not request access token from GitHub
+- [ ] postMessage delivers tokens only to the verified opener origin, never wildcard - verified by origin validation before message send
 - [ ] Access tokens are never embedded in HTML or visible in browser history
-- [ ] Error responses do not leak sensitive system information (stack traces, internal paths, library versions)
-- [ ] Redirect URLs are validated against an allowlist before use
+- [ ] Error responses do not leak sensitive system information (stack traces, internal paths, library versions) - verified by triggering errors and inspecting response bodies
+- [ ] Redirect URLs are validated against an allowlist before use - verified by attempting to set success_url to unlisted origin
 - [ ] OAuth redirect URL is configurable via environment variable
-- [ ] Rate limiting prevents abuse: max 10 requests/minute per IP on checkout endpoint
-- [ ] All existing checkout and authentication flows continue to work
-- [ ] Vercel deployment configuration includes required environment variables
+- [ ] Authenticated users can complete checkout from allowed origins with valid cart items and receive a Stripe session URL
+- [ ] Users can authenticate via GitHub OAuth from allowed origins and receive an access token via postMessage
+- [ ] Vercel deployment configuration includes ALLOWED_ORIGINS (comma-separated) and OAUTH_REDIRECT_URI environment variables with documented examples
+- [ ] All preview and staging environments are listed in initial ALLOWED_ORIGINS before deployment
+- [ ] OAuth popup origin validation failure displays error message to user: "Authentication failed due to a security policy. Please try again or contact support."
+- [ ] Requests from disallowed origins receive user-friendly error: "This request cannot be completed. Please contact support." (not technical "origin not allowed")
 
 ## Approach Stances
 
@@ -83,21 +87,24 @@ Feature: Secure Checkout API CORS and Origin Validation
     Then the response status should be 403
     And the response body should contain "Origin required"
 
-  Scenario: Success URL is validated against allowed origins
-    Given I am making a request from "https://puplets.vercel.app"
-    And the request Origin header is "https://evil-site.com"
-    When I POST valid cart items to "/api/create-checkout-session"
-    Then the response status should be 403
-    And no Stripe session should be created
+  Scenario: Success URL must match validated origin
+    Given the allowed origins are configured as "https://puplets.vercel.app"
+    And I am making a request from "https://puplets.vercel.app"
+    When I POST valid cart items with success_url "https://evil-site.com/success"
+    Then the response status should be 200
+    And the Stripe session success_url should be "https://puplets.vercel.app/success.html?session_id={CHECKOUT_SESSION_ID}"
+    And the Stripe session success_url should not contain "evil-site.com"
 
   Scenario: Error responses do not leak system details
     Given I am making a request from "https://puplets.vercel.app"
-    When I POST invalid cart items that trigger an internal error
+    And the Stripe API is unavailable (mocked to return 500)
+    When I POST valid cart items to "/api/create-checkout-session"
     Then the response status should be 500
     And the response body should not contain stack traces
     And the response body should not contain file paths
     And the response body should not contain "node_modules"
-    And the response should contain only "Failed to create checkout session"
+    And the response body should contain "Failed to create checkout session"
+    And the server logs should contain the full error details for debugging
 
   Scenario: Multiple allowed origins are supported
     Given the allowed origins are configured as "https://puplets.vercel.app,https://puplets-staging.vercel.app"
@@ -230,12 +237,12 @@ Feature: Secure OAuth Authentication Flow
 **REFACTOR:** Extract origin validation to `validatePopupOrigin(req) -> {valid: boolean, origin: string}` helper.
 **Files:** `api/auth.js`
 
-#### Step 2.4: Remove token from HTML, deliver via secure postMessage only
+#### Step 2.4: Validate popup origin before postMessage (keep current protocol)
 
 **Complexity:** standard
-**IMPLEMENT:** Current implementation embeds token in HTML script (line 48). Change to deliver token ONLY via postMessage after popup origin is validated. Remove token from the inline script entirely. The script should wait for opener to send "ready" message, then respond with token via postMessage to validated origin. If postMessage fails or times out, show error to user.
-**TEST:** Verify token does not appear in HTML source. Verify token is delivered via postMessage only. Verify token delivery requires valid popup origin. Verify no token in browser history or cache.
-**REFACTOR:** None expected
+**IMPLEMENT:** Keep current postMessage protocol (Decap CMS compatible) but validate opener origin first. At token delivery time (line 46-52), determine popup opener's origin from request headers. Compare against `ALLOWED_ORIGINS`. If opener origin is not in allowlist, respond with HTML showing user-friendly error: "Authentication failed due to a security policy. Please try again or contact support." and do NOT send postMessage. If origin is valid, replace wildcard in both postMessage calls (lines 46-52, 56) with the validated origin. Token remains in response HTML for current protocol compatibility but is only sent via postMessage to validated origins.
+**TEST:** Verify postMessage uses specific validated origin, never wildcard. Verify popup from disallowed origin shows error message and does not send token. Verify popup from allowed origin completes successfully with token via postMessage to that specific origin. Verify Decap CMS integration still works (no protocol changes).
+**REFACTOR:** Extract origin validation to `validatePopupOrigin(req, allowedOrigins) -> {valid: boolean, origin: string, error?: string}` helper.
 **Files:** `api/auth.js`
 
 #### Step 2.5: Add OAuth environment variables to deployment config
@@ -246,57 +253,6 @@ Feature: Secure OAuth Authentication Flow
 **REFACTOR:** None expected
 **Files:** `vercel.json`
 
-### Slice 3: Add rate limiting to checkout endpoint
-
-**Depends-on:** 1
-**Files:** `api/create-checkout-session.js`, `middleware/rateLimit.js`, `package.json`
-
-**Gherkin**:
-```gherkin
-Feature: Checkout API Rate Limiting
-
-  Background:
-    Given the checkout API is deployed
-    And rate limiting is configured for 10 requests per minute per IP
-
-  Scenario: Requests within rate limit succeed
-    Given I am a client at IP "192.0.2.1"
-    When I make 5 requests to "/api/create-checkout-session" within 1 minute
-    Then all 5 requests should succeed with status 200
-
-  Scenario: Requests exceeding rate limit are rejected
-    Given I am a client at IP "192.0.2.1"
-    And I have made 10 requests in the current minute
-    When I make an 11th request to "/api/create-checkout-session"
-    Then the response status should be 429
-    And the response should contain "Too many requests"
-    And the response should include a "Retry-After" header
-
-  Scenario: Rate limit resets after time window
-    Given I am a client at IP "192.0.2.1"
-    And I made 10 requests at 12:00:00
-    When I make a request at 12:01:01
-    Then the request should succeed with status 200
-
-  Scenario: Different IPs have independent rate limits
-    Given client at IP "192.0.2.1" has made 10 requests
-    When a client at IP "192.0.2.2" makes a request
-    Then the request should succeed with status 200
-
-  Scenario: Rate limit applies only to checkout endpoint
-    Given I am a client at IP "192.0.2.1"
-    And I have made 10 requests to "/api/create-checkout-session"
-    When I make a request to "/api/catalog.js"
-    Then the request should succeed with status 200
-```
-
-#### Step 3.1: Add rate limiting middleware to checkout endpoint
-
-**Complexity:** standard
-**IMPLEMENT:** Install `@upstash/ratelimit` and `@upstash/redis` packages. Create `middleware/rateLimit.js` with sliding window rate limiter (10 requests per 60 seconds per IP). Extract IP from `req.headers['x-forwarded-for']` or `req.socket.remoteAddress`. Apply rate limit check at the start of create-checkout-session handler (line 25, after CORS validation). Return 429 "Too many requests" with Retry-After header when limit exceeded.
-**TEST:** Simulate 10 requests from same IP within 60s - all succeed. Verify 11th request returns 429. Verify Retry-After header is present. Verify different IPs have independent limits. Verify limit resets after 60s.
-**REFACTOR:** Extract rate limit check to `checkRateLimit(req) -> {allowed: boolean, retryAfter?: number}` helper for potential reuse on other endpoints.
-**Files:** `api/create-checkout-session.js`, `middleware/rateLimit.js`, `package.json`
 
 ## Parallelization
 
@@ -304,22 +260,19 @@ Feature: Checkout API Rate Limiting
 graph TD
     Slice1[Slice 1: Fix CORS & origin validation]
     Slice2[Slice 2: Fix OAuth security]
-    Slice3[Slice 3: Add rate limiting]
     
     Slice1 -.-> Slice2
-    Slice1 -.-> Slice3
     
     style Slice1 fill:#e1f5ff
     style Slice2 fill:#e1f5ff
-    style Slice3 fill:#e1f5ff
 ```
 
 | Wave | Slices | Rationale |
 |------|--------|-----------|
 | 1 | Slice 1 | Fix CORS and origin validation in checkout API first |
-| 2 | Slice 2, Slice 3 | OAuth fixes and rate limiting can proceed in parallel after CORS is secured |
+| 2 | Slice 2 | OAuth fixes after CORS infrastructure is established |
 
-**Why this structure**: Slice 1 establishes the origin allowlist infrastructure (ALLOWED_ORIGINS env var) that Slice 2 reuses for OAuth origin validation. Both modify `vercel.json`, so they cannot run in parallel. Slice 3 depends on Slice 1's CORS validation completing first. Wave 2 contains Slices 2 and 3 which are independent of each other (different files, different endpoints) and can safely proceed in parallel.
+**Why this structure**: Slice 1 establishes the origin allowlist infrastructure (ALLOWED_ORIGINS env var) that Slice 2 reuses for OAuth origin validation. Both modify `vercel.json`, so they must run sequentially. This 2-slice plan focuses on the CRITICAL vulnerabilities (CSRF, token theft, CORS wildcard, information leakage). Rate limiting (abuse prevention, not a vulnerability enabling data theft) is deferred to a follow-up plan.
 
 ## Pre-PR Gate
 
