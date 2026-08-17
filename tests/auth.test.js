@@ -387,6 +387,10 @@ describe('OAuth Authentication', () => {
 
       await handler(req, res);
 
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://github.com/login/oauth/access_token',
+        expect.any(Object)
+      );
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Authentication failed'
@@ -394,6 +398,8 @@ describe('OAuth Authentication', () => {
     });
 
     it('should handle GitHub token exchange timeout', async () => {
+      vi.useFakeTimers();
+
       global.fetch.mockImplementation(() =>
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Request timeout')), 100)
@@ -407,8 +413,16 @@ describe('OAuth Authentication', () => {
       });
       const res = createMockResponse();
 
-      await handler(req, res);
+      const handlerPromise = handler(req, res);
+      await vi.runAllTimersAsync();
+      await handlerPromise;
 
+      vi.useRealTimers();
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://github.com/login/oauth/access_token',
+        expect.any(Object)
+      );
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Authentication failed'
