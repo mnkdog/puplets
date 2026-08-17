@@ -110,6 +110,18 @@ Feature: Secure Checkout API CORS and Origin Validation
     Given the allowed origins are configured as "https://puplets.vercel.app,https://puplets-staging.vercel.app"
     When I make requests from both origins
     Then both requests should succeed with status 200
+
+  Scenario: Empty ALLOWED_ORIGINS is rejected
+    Given the ALLOWED_ORIGINS environment variable is set to ""
+    When I POST valid cart items from "https://puplets.vercel.app"
+    Then the response status should be 403
+    And the response body should contain "This request cannot be completed. Please contact support."
+
+  Scenario: Malformed ALLOWED_ORIGINS falls back to default
+    Given the ALLOWED_ORIGINS environment variable is malformed or unset
+    When I POST valid cart items from "https://puplets.vercel.app"
+    Then the response status should be 200
+    And the CORS header "Access-Control-Allow-Origin" should be "https://puplets.vercel.app"
 ```
 
 #### Step 1.1: Add origin allowlist validation to checkout API
@@ -277,26 +289,21 @@ graph TD
 ## Pre-PR Gate
 
 Before opening a pull request:
-- [ ] All Gherkin scenarios pass (11 scenarios across 3 slices)
+- [ ] All Gherkin scenarios pass (13 scenarios across 2 slices)
 - [ ] Manual verification: Checkout flow works from production domain
 - [ ] Manual verification: OAuth flow works with CSRF protection
-- [ ] Manual verification: postMessage delivers token securely
-- [ ] Manual verification: Rate limiting triggers at 11th request
+- [ ] Manual verification: postMessage delivers token securely to allowed origins only
 - [ ] No console errors in browser or server logs
 - [ ] Vercel deployment includes all new environment variables
 - [ ] Security audit: Verify no wildcard CORS, no wildcard postMessage, no error detail leakage
 
 ## Skipped (low value)
 
-None - all identified security vulnerabilities are high/critical severity and must be fixed.
+**Rate limiting** - Deferred to separate follow-up plan. While abuse prevention is valuable, rate limiting is not a vulnerability that enables direct data theft or token compromise. This plan focuses on CRITICAL vulnerabilities (CSRF, token theft, CORS wildcard, information leakage) only.
 
 ## Risks & Open Questions
 
 **No specification artifacts found** - Continuing with plan based on security audit findings. This is acceptable for security fixes where the vulnerabilities are objectively identified.
-
-**Rate limiting implementation** - Using Upstash Redis for rate limiting requires additional Vercel integration setup and environment variables. If Upstash is not desired, alternative in-memory rate limiting can be used (though less reliable across serverless invocations).
-
-**OAuth token delivery timing** - The secure postMessage delivery in Step 2.4 changes the token handoff timing. CMS integration may need to handle the async postMessage pattern. Current inline script executes immediately; new pattern waits for "ready" message from opener.
 
 **ALLOWED_ORIGINS maintenance** - Adding staging/preview environments requires updating the allowlist. Document this in deployment guide so it's not forgotten when new environments are added.
 
@@ -318,7 +325,5 @@ None - all identified security vulnerabilities are high/critical severity and mu
   - [ ] Step 2.1: Add CSRF state parameter to OAuth initiation
   - [ ] Step 2.2: Validate CSRF state on OAuth callback
   - [ ] Step 2.3: Replace postMessage wildcard with validated origin
-  - [ ] Step 2.4: Remove token from HTML, deliver via secure postMessage only
+  - [ ] Step 2.4: Validate popup origin before postMessage (keep current protocol)
   - [ ] Step 2.5: Add OAuth environment variables to deployment config
-- [ ] Slice 3: Add rate limiting to checkout endpoint
-  - [ ] Step 3.1: Add rate limiting middleware to checkout endpoint
