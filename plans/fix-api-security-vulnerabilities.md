@@ -344,8 +344,8 @@ Before opening a pull request:
 - [ ] Slice 1: Fix CORS and origin validation in checkout API
   - [x] Step 1.0: Create shared security validation module
   - [x] Step 1.1: Add origin allowlist validation to checkout API
-  - [ ] Step 1.2: Validate redirect URLs against allowed origins
-  - [ ] Step 1.3: Remove sensitive error details from responses
+  - [x] Step 1.2: Validate redirect URLs against allowed origins
+  - [x] Step 1.3: Remove sensitive error details from responses
   - [ ] Step 1.4: Add ALLOWED_ORIGINS environment variable to deployment config
 
 ### Wave 2
