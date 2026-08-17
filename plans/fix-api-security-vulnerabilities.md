@@ -1,7 +1,8 @@
 # Fix Critical API Security Vulnerabilities
 
-**Status**: draft
+**Status**: approved
 **Created**: 2026-08-17
+**Approved**: 2026-08-17
 **Gherkin persistence**: plan-file-only
 
 ## Goal
