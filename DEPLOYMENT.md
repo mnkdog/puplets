@@ -59,9 +59,36 @@ In your Vercel project dashboard:
 |------|-------|-------------|
 | `STRIPE_PUBLISHABLE_KEY` | `pk_test_...` | Production, Preview, Development |
 | `STRIPE_SECRET_KEY` | `sk_test_...` | Production, Preview, Development |
+| `ALLOWED_ORIGINS` | See format below | Production, Preview, Development |
 
 3. Click **Save**
 4. Redeploy your application
+
+#### ALLOWED_ORIGINS Format (REQUIRED)
+
+**Format:** Comma-separated list of allowed origins. NO SPACES, NO TRAILING COMMAS.
+
+**Examples:**
+
+- **Production only:**
+  ```
+  https://puplets.vercel.app
+  ```
+
+- **Production + staging:**
+  ```
+  https://puplets.vercel.app,https://puplets-staging.vercel.app
+  ```
+
+- **Production + staging + preview deployments (wildcard):**
+  ```
+  https://puplets.vercel.app,https://puplets-staging.vercel.app,https://puplets-*.vercel.app
+  ```
+
+**Important:** 
+- The `*` wildcard in `https://puplets-*.vercel.app` matches any valid subdomain characters (preview deployments)
+- Malformed or missing `ALLOWED_ORIGINS` will cause the API to return 500 errors for all requests
+- This variable is REQUIRED for security - it prevents CORS attacks by restricting which origins can access your API
 
 ### Step 4: Update Stripe Webhook URLs (Optional)
 
