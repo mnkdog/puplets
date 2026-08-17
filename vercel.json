@@ -3,7 +3,8 @@
   "outputDirectory": "src",
   "env": {
     "ALLOWED_ORIGINS": "https://puplets.vercel.app,https://puplets-staging.vercel.app",
-    "PUBLIC_BASE_URL": "https://puplets.vercel.app"
+    "PUBLIC_BASE_URL": "https://puplets.vercel.app",
+    "OAUTH_REDIRECT_URI": "https://puplets.vercel.app/api/auth"
   },
   "headers": [
     {
