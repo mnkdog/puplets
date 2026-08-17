@@ -144,10 +144,13 @@ export default async (req, res) => {
     });
 
   } catch (error) {
+    // Log full error details server-side for debugging
     console.error('Stripe session creation error:', error);
+
+    // Security: Never expose error details (stack traces, file paths, internal messages) to client
+    // Full error details are logged above for server-side debugging only
     return res.status(500).json({
-      error: 'Failed to create checkout session',
-      details: error.message
+      error: 'Failed to create checkout session'
     });
   }
 };

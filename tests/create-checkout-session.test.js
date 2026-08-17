@@ -503,4 +503,138 @@ describe('create-checkout-session origin validation', () => {
       });
     });
   });
+
+  describe('error response security', () => {
+    it('should not leak error details when Stripe API fails', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Mock Stripe to simulate API failure
+      const stripeError = new Error('Invalid API key provided');
+      stripeError.stack = 'Error: Invalid API key provided\n    at /node_modules/stripe/lib/Error.js:14:15';
+      mockCheckoutSessions.create.mockRejectedValue(stripeError);
+
+      const req = createMockRequest('https://puplets.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 'medium',
+          color: 'red',
+          colorName: 'Red'
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+
+      const responseBody = res.json.mock.calls[0][0];
+
+      // Verify response contains generic error message
+      expect(responseBody.error).toBe('Failed to create checkout session');
+
+      // Verify response does NOT contain sensitive details
+      expect(responseBody.details).toBeUndefined();
+      expect(JSON.stringify(responseBody)).not.toContain('Invalid API key');
+      expect(JSON.stringify(responseBody)).not.toContain('node_modules');
+      expect(JSON.stringify(responseBody)).not.toContain('/stripe/lib/');
+      expect(JSON.stringify(responseBody)).not.toContain('Error.js');
+
+      // Verify server logs still contain full error details
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Stripe session creation error:',
+        stripeError
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should not leak error details when network error occurs', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Simulate network error
+      const networkError = new Error('Network request failed');
+      networkError.stack = 'Error: Network request failed\n    at fetch (/app/node_modules/node-fetch/lib/index.js:50:10)';
+      mockCheckoutSessions.create.mockRejectedValue(networkError);
+
+      const req = createMockRequest('https://puplets.vercel.app', 'POST', {
+        items: [{
+          type: 'collar',
+          size: 'medium',
+          color: 'red',
+          colorName: 'Red'
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+
+      const responseBody = res.json.mock.calls[0][0];
+
+      // Verify response contains only generic error
+      expect(responseBody).toEqual({
+        error: 'Failed to create checkout session'
+      });
+
+      // Verify no stack trace or internal paths leaked
+      expect(JSON.stringify(responseBody)).not.toContain('node_modules');
+      expect(JSON.stringify(responseBody)).not.toContain('node-fetch');
+      expect(JSON.stringify(responseBody)).not.toContain('/app/');
+      expect(JSON.stringify(responseBody)).not.toContain('fetch (');
+
+      // Verify server logs have full details
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Stripe session creation error:',
+        networkError
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should not leak error details when malformed item causes exception', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app';
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Mock doesn't matter - the error will be thrown during processing
+      const req = createMockRequest('https://puplets.vercel.app', 'POST', {
+        items: [{
+          type: 'unknown-type',
+          // This will trigger "Unknown item type" error in the handler
+        }]
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+
+      const responseBody = res.json.mock.calls[0][0];
+
+      // Verify response contains only generic error
+      expect(responseBody).toEqual({
+        error: 'Failed to create checkout session'
+      });
+
+      // Verify no internal error message leaked
+      expect(JSON.stringify(responseBody)).not.toContain('Unknown item type');
+      expect(JSON.stringify(responseBody)).not.toContain('unknown-type');
+
+      // Verify server logs contain the real error
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Stripe session creation error:',
+        expect.any(Error)
+      );
+
+      const loggedError = consoleErrorSpy.mock.calls[0][1];
+      expect(loggedError.message).toContain('Unknown item type');
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
 });
