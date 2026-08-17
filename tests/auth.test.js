@@ -374,5 +374,45 @@ describe('OAuth Authentication', () => {
         error: 'The code passed is incorrect or expired'
       });
     });
+
+    it('should handle GitHub token exchange network failure', async () => {
+      global.fetch.mockRejectedValue(new Error('Network request failed'));
+
+      const req = createMockRequest({
+        code: 'test_code',
+        state: 'abc123',
+        _cookie: 'oauth_state=abc123'
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Authentication failed'
+      });
+    });
+
+    it('should handle GitHub token exchange timeout', async () => {
+      global.fetch.mockImplementation(() =>
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 100)
+        )
+      );
+
+      const req = createMockRequest({
+        code: 'test_code',
+        state: 'abc123',
+        _cookie: 'oauth_state=abc123'
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Authentication failed'
+      });
+    });
   });
 });
