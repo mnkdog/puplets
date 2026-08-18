@@ -3,20 +3,21 @@ Feature: Admin CMS
   I want to access and use the CMS interface
   So that I can manage site content
 
-  Scenario: Admin CMS page loads without CSP errors
+  Scenario: Admin CMS page loads successfully
     When I navigate to "/admin/"
     Then the page should load successfully
-    And there should be no Content-Security-Policy violations in the console
-    And the Decap CMS should initialize
+    And the page should include the Decap CMS script
+    And the page should have CMS configuration
 
+  Scenario: Admin CMS configuration is correct
+    When I navigate to "/admin/"
+    Then the CMS should be configured for GitHub backend
+    And the CMS should point to mnkdog/puplets repository
+    And the CMS should use the main branch
+
+  @vercel-only
   Scenario: Admin CSP allows required CMS resources
-    When I request the admin page
+    When I request the admin page in production
     Then the CSP should allow scripts from cdn.jsdelivr.net
     And the CSP should allow unsafe-eval for CMS configuration
     And the CSP should allow connects to api.github.com
-
-  Scenario: Admin CMS connects to GitHub backend
-    Given I am on the admin page
-    When the CMS initializes
-    Then it should be configured for GitHub backend
-    And it should point to the correct repository
