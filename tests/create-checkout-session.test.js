@@ -158,14 +158,15 @@ describe('create-checkout-session origin validation', () => {
     });
 
     it('should accept request from wildcard-matched preview deployment', async () => {
-      process.env.ALLOWED_ORIGINS = 'https://puplets.vercel.app,https://puplets-*.vercel.app';
+      process.env.ALLOWED_ORIGINS = 'https://puplets.com,https://puplets-*.example.com';
+      process.env.ALLOW_UNSAFE_WILDCARDS = 'false'; // Not needed, using custom domain
 
       mockCheckoutSessions.create.mockResolvedValue({
         id: 'cs_test_preview_123',
         url: 'https://checkout.stripe.com/test'
       });
 
-      const req = createMockRequest('https://puplets-pr-456.vercel.app', 'POST', {
+      const req = createMockRequest('https://puplets-pr-456.example.com', 'POST', {
         items: [{
           type: 'collar',
           size: 'medium',
@@ -178,13 +179,13 @@ describe('create-checkout-session origin validation', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', 'https://puplets-pr-456.vercel.app');
+      expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', 'https://puplets-pr-456.example.com');
     });
 
     it('should reject request that does not match wildcard pattern', async () => {
-      process.env.ALLOWED_ORIGINS = 'https://puplets-*.vercel.app';
+      process.env.ALLOWED_ORIGINS = 'https://puplets-*.example.com';
 
-      const req = createMockRequest('https://evil-*.vercel.app', 'POST', {
+      const req = createMockRequest('https://evil-attack.example.com', 'POST', {
         items: [{
           type: 'collar',
           size: 'medium',

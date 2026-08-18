@@ -326,7 +326,7 @@ describe('OAuth Authentication', () => {
 
     it('should support wildcard patterns in allowed origins', async () => {
       // Set up with wildcard pattern for preview deployments
-      process.env.ALLOWED_ORIGINS = 'https://puplets-*.vercel.app';
+      process.env.ALLOWED_ORIGINS = 'https://puplets-*.example.com';
 
       const module = await import('../api/auth.js?t=' + Date.now());
       const freshHandler = module.default;
@@ -346,7 +346,7 @@ describe('OAuth Authentication', () => {
 
       const html = res.send.mock.calls[0][0];
       // Should inject the wildcard pattern
-      expect(html).toContain('https://puplets-*.vercel.app');
+      expect(html).toContain('https://puplets-*.example.com');
       // Should include the matchesPattern function
       expect(html).toContain('function matchesPattern(origin, pattern)');
       // Should use pattern matching logic

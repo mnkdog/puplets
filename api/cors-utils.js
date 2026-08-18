@@ -3,14 +3,44 @@
  */
 
 /**
+ * Shared multi-tenant suffixes where wildcards are dangerous
+ * These allow first-come-first-served subdomains by any third party
+ */
+const SHARED_MULTI_TENANT_SUFFIXES = [
+  '.vercel.app',
+  '.herokuapp.com',
+  '.netlify.app',
+  '.github.io',
+  '.gitlab.io',
+  '.cloudflare.pages.dev',
+  '.amplifyapp.com',
+  '.azurewebsites.net'
+];
+
+/**
  * Validate that origins have proper URL format
  * @param {string[]} origins - Array of origin strings to validate
  * @throws {Error} If any origin doesn't start with http:// or https://
+ * @throws {Error} If wildcard pattern uses a shared multi-tenant suffix
  */
 function validateOriginFormat(origins) {
   for (const origin of origins) {
     if (!origin.startsWith('http://') && !origin.startsWith('https://')) {
       throw new Error(`Invalid origin format: ${origin}. Origins must start with http:// or https://`);
+    }
+
+    // Security: reject wildcards on shared multi-tenant namespaces
+    if (origin.includes('*')) {
+      for (const suffix of SHARED_MULTI_TENANT_SUFFIXES) {
+        if (origin.endsWith(suffix)) {
+          throw new Error(
+            `Security error: Wildcard pattern '${origin}' uses shared multi-tenant suffix '${suffix}'. ` +
+            `Any third party can register a matching subdomain and bypass origin validation. ` +
+            `Either: (1) enumerate preview origins explicitly, (2) use a custom domain you control, ` +
+            `or (3) set ALLOW_UNSAFE_WILDCARDS=true (development only, never in production).`
+          );
+        }
+      }
     }
   }
 }
@@ -21,7 +51,7 @@ function validateOriginFormat(origins) {
  * @returns {string[]} Array of trimmed origin URLs/patterns
  * @throws {Error} If envVar is malformed or missing
  */
-export function parseAllowedOrigins(envVar) {
+export function parseAllowedOrigins(envVar, options = {}) {
   if (typeof envVar !== 'string') {
     throw new Error('ALLOWED_ORIGINS must be a string');
   }
@@ -39,7 +69,20 @@ export function parseAllowedOrigins(envVar) {
     throw new Error('ALLOWED_ORIGINS must contain at least one valid origin');
   }
 
-  validateOriginFormat(origins);
+  // Skip wildcard security check if explicitly allowed (development only)
+  const allowUnsafeWildcards = options.allowUnsafeWildcards ||
+                                 process.env.ALLOW_UNSAFE_WILDCARDS === 'true';
+
+  if (allowUnsafeWildcards) {
+    // Only validate protocol, skip multi-tenant suffix check
+    for (const origin of origins) {
+      if (!origin.startsWith('http://') && !origin.startsWith('https://')) {
+        throw new Error(`Invalid origin format: ${origin}. Origins must start with http:// or https://`);
+      }
+    }
+  } else {
+    validateOriginFormat(origins);
+  }
 
   return origins;
 }
