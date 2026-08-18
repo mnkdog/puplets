@@ -16,8 +16,15 @@ export function generateCSRFState() {
  * Set secure state cookie for CSRF protection
  * @param {Object} res - Response object
  * @param {string} state - CSRF state value to store
+ * @throws {Error} If state contains characters that could inject cookie attributes
  */
 export function setSecureStateCookie(res, state) {
+  // Validate state contains only safe characters to prevent cookie injection
+  // Allow alphanumeric, dot, underscore, tilde, hyphen (RFC 3986 unreserved chars)
+  if (!/^[A-Za-z0-9._~-]+$/.test(state)) {
+    throw new Error('Invalid state value: contains characters that could inject cookie attributes');
+  }
+
   res.setHeader('Set-Cookie', [
     `__Host-oauth_state=${state}`,
     'HttpOnly',

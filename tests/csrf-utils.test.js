@@ -45,25 +45,38 @@ describe('setSecureStateCookie', () => {
     expect(cookieValue).toContain('Path=/');
   });
 
-  it('should handle empty string state', () => {
+  it('should reject empty string state', () => {
     const mockRes = {
       setHeader: vi.fn()
     };
 
-    setSecureStateCookie(mockRes, '');
-
-    expect(mockRes.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('__Host-oauth_state='));
+    expect(() => setSecureStateCookie(mockRes, '')).toThrow('Invalid state value');
+    expect(mockRes.setHeader).not.toHaveBeenCalled();
   });
 
-  it('should handle state with special characters', () => {
+  it('should reject state with cookie-injection characters', () => {
     const mockRes = {
       setHeader: vi.fn()
     };
-    const specialState = 'abc=123;def';
 
-    setSecureStateCookie(mockRes, specialState);
+    // Semicolon could inject additional cookie attributes
+    expect(() => setSecureStateCookie(mockRes, 'abc=123;def')).toThrow('Invalid state value');
 
-    expect(mockRes.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('__Host-oauth_state=abc=123;def'));
+    // Equals sign could also be problematic
+    expect(() => setSecureStateCookie(mockRes, 'abc=123')).toThrow('Invalid state value');
+
+    expect(mockRes.setHeader).not.toHaveBeenCalled();
+  });
+
+  it('should accept valid hex state (normal case)', () => {
+    const mockRes = {
+      setHeader: vi.fn()
+    };
+    const hexState = 'a1b2c3d4e5f67890';
+
+    setSecureStateCookie(mockRes, hexState);
+
+    expect(mockRes.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('__Host-oauth_state=a1b2c3d4e5f67890'));
   });
 });
 
