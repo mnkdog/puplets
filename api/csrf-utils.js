@@ -56,6 +56,7 @@ export function validateCSRFState(req, res) {
   const cookieState = cookieMatch ? cookieMatch[1] : null;
 
   if (!callbackState || !cookieState || callbackState !== cookieState) {
+    console.error('[SECURITY ALERT] CSRF state validation failed for OAuth callback');
     res.status(403).send(`
       <!DOCTYPE html>
       <html>
