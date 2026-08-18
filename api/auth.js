@@ -48,6 +48,26 @@ export default async function handler(req, res) {
       `);
     }
 
+    // Generate and store CSRF state
+    const state = generateCSRFState();
+
+    // Validate state (same validation as setSecureStateCookie)
+    if (!/^[A-Za-z0-9._~-]+$/.test(state)) {
+      throw new Error('Invalid state value: contains characters that could inject cookie attributes');
+    }
+
+    // Build cookies array - must set both in single setHeader call to avoid overwrite
+    const cookiesToSet = [
+      [
+        `__Host-oauth_state=${state}`,
+        'HttpOnly',
+        'Secure',
+        'SameSite=Lax',
+        'Max-Age=300',
+        'Path=/'
+      ].join('; ')
+    ];
+
     if (cms_origin) {
       // Validate CMS origin against allowed origins
       const { validateOrigin } = await import('./cors-utils.js');
@@ -67,20 +87,19 @@ export default async function handler(req, res) {
         `);
       }
 
-      // Store validated CMS origin in secure cookie
-      res.setHeader('Set-Cookie', [
+      // Add validated CMS origin cookie to array
+      cookiesToSet.push([
         `__Host-cms_origin=${encodeURIComponent(cms_origin)}`,
         'HttpOnly',
         'Secure',
         'SameSite=Lax',
-        'Max-Age=300', // 5 minutes
+        'Max-Age=300',
         'Path=/'
       ].join('; '));
     }
 
-    // Generate and store CSRF state
-    const state = generateCSRFState();
-    setSecureStateCookie(res, state);
+    // Set all cookies in single call to prevent header overwrite
+    res.setHeader('Set-Cookie', cookiesToSet);
 
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
 
@@ -94,18 +113,43 @@ export default async function handler(req, res) {
 
   // Step 3: Exchange code for access token
   try {
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        client_id: process.env.OAUTH_GITHUB_CLIENT_ID,
-        client_secret: process.env.OAUTH_GITHUB_CLIENT_SECRET,
-        code
-      })
-    });
+    // Security: Add timeout to prevent resource exhaustion if GitHub API is slow/unresponsive
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+    let tokenResponse;
+    try {
+      tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          client_id: process.env.OAUTH_GITHUB_CLIENT_ID,
+          client_secret: process.env.OAUTH_GITHUB_CLIENT_SECRET,
+          code
+        })
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('[SECURITY ALERT] GitHub OAuth API timeout after 10s');
+        return res.status(504).send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Authentication Timeout</title></head>
+          <body>
+            <h1 role="alert">Authentication timed out</h1>
+            <p>Please try again. If the problem persists, contact support.</p>
+          </body>
+          </html>
+        `);
+      }
+      throw fetchError;
+    }
 
     const data = await tokenResponse.json();
 

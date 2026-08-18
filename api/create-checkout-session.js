@@ -1,11 +1,27 @@
 // Stripe Checkout Session API
 // This serverless function creates a Stripe checkout session for the cart items
+//
+// SECURITY TODO: Add rate limiting to prevent abuse
+// Recommended: @upstash/ratelimit with Redis or Vercel Edge Config
+// Example: 10 requests per 60s per IP address
+// See: https://github.com/vercel/examples/tree/main/edge-middleware/api-rate-limit
 
 import Stripe from 'stripe';
 import { calculateCollarPrice, calculateCharmPrice, CATALOG } from './catalog.js';
 import { parseAllowedOrigins, validateOrigin, setCORSHeaders } from './cors-utils.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+/**
+ * Sanitize user-provided product name fields to prevent XSS
+ * @param {string} value - User input (colorName, charmName, sizeName)
+ * @returns {string} Sanitized string safe for display
+ */
+function sanitizeProductName(value) {
+  if (typeof value !== 'string') return '';
+  // Allow letters, numbers, spaces, hyphens only
+  return value.replace(/[^a-zA-Z0-9 -]/g, '').trim().slice(0, 100);
+}
 
 export default async (req, res) => {
   // Parse allowed origins from environment variable
@@ -76,11 +92,11 @@ export default async (req, res) => {
           throw new Error(`Invalid collar price: ${unitAmount} is below minimum ${minPrice}`);
         }
 
-        // Build product name
-        productName = `Puplets Dog Collar - ${item.colorName || item.color} (${item.sizeName || item.size})`;
+        // Build product name (sanitize user inputs to prevent XSS)
+        productName = `Puplets Dog Collar - ${sanitizeProductName(item.colorName || item.color)} (${sanitizeProductName(item.sizeName || item.size)})`;
 
         // Add charm info to description
-        const charmInfo = item.charm ? ` with ${item.charmName || item.charm} charm` : '';
+        const charmInfo = item.charm ? ` with ${sanitizeProductName(item.charmName || item.charm)} charm` : '';
         const extraCharmsInfo = extraCharmsCount > 0
           ? ` + ${extraCharmsCount} extra charm${extraCharmsCount > 1 ? 's' : ''}`
           : '';
@@ -104,7 +120,7 @@ export default async (req, res) => {
           throw new Error(`Invalid charm price: ${unitAmount} is below minimum ${minPrice}`);
         }
 
-        productName = `Puplets Charm - ${item.charmName || item.charm}`;
+        productName = `Puplets Charm - ${sanitizeProductName(item.charmName || item.charm)}`;
         if (quantity > 1) {
           productName += ` (×${quantity})`;
         }
