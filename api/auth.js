@@ -1,9 +1,9 @@
+import { parseAllowedOrigins } from './cors-utils.js';
 import {
-  parseAllowedOrigins,
   generateCSRFState,
   setSecureStateCookie,
   validateCSRFState
-} from './security-utils.js';
+} from './csrf-utils.js';
 
 export default async function handler(req, res) {
   const { code, error } = req.query;
