@@ -341,7 +341,7 @@ Before opening a pull request:
 **Gherkin persistence**: plan-file-only
 
 ### Wave 1
-- [ ] Slice 1: Fix CORS and origin validation in checkout API
+- [x] Slice 1: Fix CORS and origin validation in checkout API
   - [x] Step 1.0: Create shared security validation module
   - [x] Step 1.1: Add origin allowlist validation to checkout API
   - [x] Step 1.2: Validate redirect URLs against allowed origins
@@ -349,8 +349,8 @@ Before opening a pull request:
   - [x] Step 1.4: Add ALLOWED_ORIGINS environment variable to deployment config
 
 ### Wave 2
-- [ ] Slice 2: Fix OAuth security vulnerabilities in auth.js
-  - [ ] Step 2.1: Add CSRF state parameter to OAuth initiation
-  - [ ] Step 2.2: Validate CSRF state on OAuth callback
-  - [ ] Step 2.3: Validate popup origin and replace postMessage wildcard
-  - [ ] Step 2.4: Add OAuth environment variables to deployment config
+- [x] Slice 2: Fix OAuth security vulnerabilities in auth.js
+  - [x] Step 2.1: Add CSRF state parameter to OAuth initiation
+  - [x] Step 2.2: Validate CSRF state on OAuth callback
+  - [x] Step 2.3: Validate popup origin and replace postMessage wildcard
+  - [x] Step 2.4: Add OAuth environment variables to deployment config
