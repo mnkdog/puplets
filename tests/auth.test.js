@@ -69,12 +69,19 @@ describe('OAuth Authentication', () => {
 
       await handler(req, res);
 
-      expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('__Host-oauth_state='));
-      const cookieHeader = res.setHeader.mock.calls.find(call => call[0] === 'Set-Cookie')[1];
-      expect(cookieHeader).toContain('HttpOnly');
-      expect(cookieHeader).toContain('Secure');
-      expect(cookieHeader).toContain('SameSite=Lax');
-      expect(cookieHeader).toContain('Max-Age=300'); // 5 minutes
+      // setHeader now receives an array of cookies (to prevent header overwrite)
+      const setCookieCall = res.setHeader.mock.calls.find(call => call[0] === 'Set-Cookie');
+      expect(setCookieCall).toBeDefined();
+      const cookieArray = setCookieCall[1];
+      expect(Array.isArray(cookieArray)).toBe(true);
+
+      // Find the oauth_state cookie in the array
+      const stateCookie = cookieArray.find(c => c.includes('__Host-oauth_state='));
+      expect(stateCookie).toBeDefined();
+      expect(stateCookie).toContain('HttpOnly');
+      expect(stateCookie).toContain('Secure');
+      expect(stateCookie).toContain('SameSite=Lax');
+      expect(stateCookie).toContain('Max-Age=300'); // 5 minutes
     });
 
     it('should use configurable redirect URI from environment', async () => {
