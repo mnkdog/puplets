@@ -3,7 +3,7 @@
 
 import Stripe from 'stripe';
 import { calculateCollarPrice, calculateCharmPrice, CATALOG } from './catalog.js';
-import { parseAllowedOrigins, validateOrigin, setCORSHeaders } from './security-utils.js';
+import { parseAllowedOrigins, validateOrigin, setCORSHeaders } from './cors-utils.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 

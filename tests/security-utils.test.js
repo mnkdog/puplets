@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { parseAllowedOrigins, validateOrigin, setCORSHeaders } from '../api/security-utils.js';
+import { parseAllowedOrigins, validateOrigin, setCORSHeaders } from '../api/cors-utils.js';
 
 describe('parseAllowedOrigins', () => {
   it('should parse single origin', () => {
