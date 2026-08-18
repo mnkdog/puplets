@@ -6,7 +6,7 @@ import {
 } from './csrf-utils.js';
 
 export default async function handler(req, res) {
-  const { code, error } = req.query;
+  const { code, error, cms_origin } = req.query;
 
   // Handle OAuth denial
   if (error === 'access_denied') {
@@ -28,6 +28,54 @@ export default async function handler(req, res) {
     const clientId = process.env.OAUTH_GITHUB_CLIENT_ID;
     const redirectUri = process.env.OAUTH_REDIRECT_URI || 'https://puplets.vercel.app/api/auth';
     const scope = 'repo,user';
+
+    // Validate and store CMS origin if provided
+    let allowedOrigins;
+    try {
+      allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
+    } catch (error) {
+      console.error('[SECURITY ALERT] ALLOWED_ORIGINS not configured:', error.message);
+      return res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Configuration Error</title></head>
+        <body>
+          <h1 role="alert">Authentication failed due to server configuration</h1>
+          <p>Please contact support.</p>
+        </body>
+        </html>
+      `);
+    }
+
+    if (cms_origin) {
+      // Validate CMS origin against allowed origins
+      const { validateOrigin } = await import('./cors-utils.js');
+      const validation = validateOrigin(cms_origin, allowedOrigins);
+
+      if (!validation.valid) {
+        console.error('[SECURITY ALERT] Invalid CMS origin attempted:', cms_origin);
+        return res.status(403).send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Invalid Origin</title></head>
+          <body>
+            <h1 role="alert">Authentication failed</h1>
+            <p>The requesting origin is not authorized.</p>
+          </body>
+          </html>
+        `);
+      }
+
+      // Store validated CMS origin in secure cookie
+      res.setHeader('Set-Cookie', [
+        `__Host-cms_origin=${encodeURIComponent(cms_origin)}`,
+        'HttpOnly',
+        'Secure',
+        'SameSite=Lax',
+        'Max-Age=300', // 5 minutes
+        'Path=/'
+      ].join('; '));
+    }
 
     // Generate and store CSRF state
     const state = generateCSRFState();
@@ -78,6 +126,11 @@ export default async function handler(req, res) {
       `);
     }
 
+    // Extract CMS origin from cookie if present
+    const cookies = req.headers.cookie || '';
+    const cmsOriginMatch = cookies.match(/(?:^|;\s*)__Host-cms_origin=([^;]*)/);
+    const storedCmsOrigin = cmsOriginMatch ? decodeURIComponent(cmsOriginMatch[1]) : null;
+
     // Parse allowed origins for client-side validation
     let allowedOrigins;
     try {
@@ -102,6 +155,7 @@ export default async function handler(req, res) {
     // Return token to CMS via postMessage with origin validation
     const escapedOrigins = JSON.stringify(allowedOrigins).replace(/</g, '\\u003c');
     const escapedToken = JSON.stringify(data.access_token).replace(/</g, '\\u003c');
+    const escapedCmsOrigin = storedCmsOrigin ? JSON.stringify(storedCmsOrigin).replace(/</g, '\\u003c') : 'null';
     const script = `
       <!DOCTYPE html>
       <html>
@@ -111,6 +165,7 @@ export default async function handler(req, res) {
         <script>
           (function() {
             const allowedOrigins = ${escapedOrigins};
+            const cmsOrigin = ${escapedCmsOrigin};
 
             function matchesPattern(origin, pattern) {
               if (!pattern.includes('*')) {
@@ -145,9 +200,18 @@ export default async function handler(req, res) {
             }
             window.addEventListener("message", receiveMessage, false);
 
-            // Initial message to specific origin (determine from window.opener)
+            // Initial handshake to CMS origin
             if (window.opener) {
-              window.opener.postMessage("authorizing:github", window.location.origin);
+              // Use stored CMS origin if available, otherwise fall back to first allowed origin
+              const targetOrigin = cmsOrigin || (allowedOrigins.length > 0 ? allowedOrigins[0] : window.location.origin);
+
+              // Don't send to wildcard patterns - they need to message us first
+              if (targetOrigin.includes('*')) {
+                // Wait for CMS to send first message - no handshake
+                console.log('Waiting for CMS message (wildcard pattern)');
+              } else {
+                window.opener.postMessage("authorizing:github", targetOrigin);
+              }
             }
           })();
         </script>
@@ -155,6 +219,19 @@ export default async function handler(req, res) {
       </html>
     `;
 
+    // Clear CMS origin cookie after use (validateCSRFState already cleared the CSRF cookie)
+    // Need to set both cookies together since setHeader overwrites
+    const cookiesToClear = [
+      ['__Host-oauth_state=', 'HttpOnly', 'Secure', 'SameSite=Lax', 'Max-Age=0', 'Path=/'].join('; ')
+    ];
+
+    if (storedCmsOrigin) {
+      cookiesToClear.push(
+        ['__Host-cms_origin=', 'HttpOnly', 'Secure', 'SameSite=Lax', 'Max-Age=0', 'Path=/'].join('; ')
+      );
+    }
+
+    res.setHeader('Set-Cookie', cookiesToClear);
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
