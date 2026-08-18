@@ -77,10 +77,11 @@ export function parseAllowedOrigins(envVar, options = {}) {
     throw new Error('ALLOWED_ORIGINS must contain at least one valid origin');
   }
 
-  // Skip wildcard security check if explicitly allowed (development only, never production)
+  // Skip wildcard security check if explicitly allowed (development/test only, never production)
   const allowUnsafeWildcards = (options.allowUnsafeWildcards === true ||
                                  process.env.ALLOW_UNSAFE_WILDCARDS === 'true') &&
-                                 process.env.NODE_ENV !== 'production';
+                                 (process.env.NODE_ENV === 'development' ||
+                                  process.env.NODE_ENV === 'test');
 
   if (allowUnsafeWildcards) {
     console.warn('[SECURITY] multi-tenant wildcard guard DISABLED - development only');

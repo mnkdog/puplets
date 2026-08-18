@@ -100,7 +100,7 @@ export default async function handler(req, res) {
     }
 
     // Return token to CMS via postMessage with origin validation
-    const escapedOrigins = JSON.stringify(allowedOrigins).replace(/</g, '\u003c');
+    const escapedOrigins = JSON.stringify(allowedOrigins).replace(/</g, '\\u003c');
     const escapedToken = JSON.stringify(data.access_token).replace(/</g, '\\u003c');
     const script = `
       <!DOCTYPE html>

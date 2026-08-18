@@ -24,7 +24,7 @@ export function setSecureStateCookie(res, state) {
     'Secure',
     'SameSite=Lax',
     `Max-Age=300`, // 5 minutes
-    'Path=/api/auth'
+    'Path=/'
   ].join('; '));
 }
 
@@ -39,7 +39,7 @@ export function clearStateCookie(res) {
     'Secure',
     'SameSite=Lax',
     'Max-Age=0',
-    'Path=/api/auth'
+    'Path=/'
   ].join('; '));
 }
 

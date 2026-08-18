@@ -42,7 +42,7 @@ describe('setSecureStateCookie', () => {
     expect(cookieValue).toContain('Secure');
     expect(cookieValue).toContain('SameSite=Lax');
     expect(cookieValue).toContain('Max-Age=300');
-    expect(cookieValue).toContain('Path=/api/auth');
+    expect(cookieValue).toContain('Path=/');
   });
 
   it('should handle empty string state', () => {
@@ -93,7 +93,7 @@ describe('clearStateCookie', () => {
     expect(cookieValue).toContain('HttpOnly');
     expect(cookieValue).toContain('Secure');
     expect(cookieValue).toContain('SameSite=Lax');
-    expect(cookieValue).toContain('Path=/api/auth');
+    expect(cookieValue).toContain('Path=/');
   });
 
   it('should set empty __Host-oauth_state value', () => {
