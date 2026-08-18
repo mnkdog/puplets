@@ -12,7 +12,15 @@ const SHARED_MULTI_TENANT_SUFFIXES = [
   '.netlify.app',
   '.github.io',
   '.gitlab.io',
-  '.cloudflare.pages.dev',
+  '.pages.dev',
+  '.workers.dev',
+  '.fly.dev',
+  '.onrender.com',
+  '.web.app',
+  '.firebaseapp.com',
+  '.surge.sh',
+  '.repl.co',
+  '.glitch.me',
   '.amplifyapp.com',
   '.azurewebsites.net'
 ];
@@ -69,11 +77,13 @@ export function parseAllowedOrigins(envVar, options = {}) {
     throw new Error('ALLOWED_ORIGINS must contain at least one valid origin');
   }
 
-  // Skip wildcard security check if explicitly allowed (development only)
-  const allowUnsafeWildcards = options.allowUnsafeWildcards ||
-                                 process.env.ALLOW_UNSAFE_WILDCARDS === 'true';
+  // Skip wildcard security check if explicitly allowed (development only, never production)
+  const allowUnsafeWildcards = (options.allowUnsafeWildcards === true ||
+                                 process.env.ALLOW_UNSAFE_WILDCARDS === 'true') &&
+                                 process.env.NODE_ENV !== 'production';
 
   if (allowUnsafeWildcards) {
+    console.warn('[SECURITY] multi-tenant wildcard guard DISABLED - development only');
     // Only validate protocol, skip multi-tenant suffix check
     for (const origin of origins) {
       if (!origin.startsWith('http://') && !origin.startsWith('https://')) {

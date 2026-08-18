@@ -64,12 +64,29 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: data.error_description || data.error });
     }
 
+    if (!data.access_token) {
+      console.error('[SECURITY ALERT] GitHub token response missing access_token');
+      return res.status(502).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Authentication Failed</title></head>
+        <body>
+          <h1 role="alert">Authentication failed</h1>
+          <p>Unable to complete authentication. Please try again.</p>
+        </body>
+        </html>
+      `);
+    }
+
     // Parse allowed origins for client-side validation
     let allowedOrigins;
     try {
       allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
     } catch (error) {
       console.error('[SECURITY ALERT] ALLOWED_ORIGINS not configured for OAuth:', error.message);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Referrer-Policy', 'no-referrer');
       return res.status(500).send(`
         <!DOCTYPE html>
         <html>
@@ -83,6 +100,8 @@ export default async function handler(req, res) {
     }
 
     // Return token to CMS via postMessage with origin validation
+    const escapedOrigins = JSON.stringify(allowedOrigins).replace(/</g, '\u003c');
+    const escapedToken = JSON.stringify(data.access_token).replace(/</g, '\\u003c');
     const script = `
       <!DOCTYPE html>
       <html>
@@ -91,7 +110,7 @@ export default async function handler(req, res) {
         <p>Authorization successful. Closing window...</p>
         <script>
           (function() {
-            const allowedOrigins = ${JSON.stringify(allowedOrigins)};
+            const allowedOrigins = ${escapedOrigins};
 
             function matchesPattern(origin, pattern) {
               if (!pattern.includes('*')) {
@@ -117,7 +136,7 @@ export default async function handler(req, res) {
               // Send token to validated origin only (no wildcard)
               window.opener.postMessage(
                 'authorization:github:success:' + JSON.stringify({
-                  token: '${data.access_token}',
+                  token: ${escapedToken},
                   provider: 'github'
                 }),
                 e.origin
@@ -137,6 +156,9 @@ export default async function handler(req, res) {
     `;
 
     res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Referrer-Policy', 'no-referrer');
     res.send(script);
   } catch (error) {
     console.error('Auth error:', error);

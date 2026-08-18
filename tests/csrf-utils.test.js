@@ -37,7 +37,7 @@ describe('setSecureStateCookie', () => {
     expect(mockRes.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.any(String));
     const cookieValue = mockRes.setHeader.mock.calls[0][1];
 
-    expect(cookieValue).toContain('oauth_state=test_state_value');
+    expect(cookieValue).toContain('__Host-oauth_state=test_state_value');
     expect(cookieValue).toContain('HttpOnly');
     expect(cookieValue).toContain('Secure');
     expect(cookieValue).toContain('SameSite=Lax');
@@ -52,7 +52,7 @@ describe('setSecureStateCookie', () => {
 
     setSecureStateCookie(mockRes, '');
 
-    expect(mockRes.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('oauth_state='));
+    expect(mockRes.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('__Host-oauth_state='));
   });
 
   it('should handle state with special characters', () => {
@@ -63,7 +63,7 @@ describe('setSecureStateCookie', () => {
 
     setSecureStateCookie(mockRes, specialState);
 
-    expect(mockRes.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('oauth_state=abc=123;def'));
+    expect(mockRes.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('__Host-oauth_state=abc=123;def'));
   });
 });
 
@@ -96,7 +96,7 @@ describe('clearStateCookie', () => {
     expect(cookieValue).toContain('Path=/api/auth');
   });
 
-  it('should set empty oauth_state value', () => {
+  it('should set empty __Host-oauth_state value', () => {
     const mockRes = {
       setHeader: vi.fn()
     };
@@ -104,7 +104,7 @@ describe('clearStateCookie', () => {
     clearStateCookie(mockRes);
 
     const cookieValue = mockRes.setHeader.mock.calls[0][1];
-    expect(cookieValue).toContain('oauth_state=');
+    expect(cookieValue).toContain('__Host-oauth_state=');
   });
 });
 
@@ -126,7 +126,7 @@ describe('validateCSRFState', () => {
 
   describe('validation logic', () => {
     it('should return true when state matches cookie', () => {
-      const req = createMockRequest('abc123', 'oauth_state=abc123');
+      const req = createMockRequest('abc123', '__Host-oauth_state=abc123');
       const res = createMockResponse();
 
       const result = validateCSRFState(req, res);
@@ -136,7 +136,7 @@ describe('validateCSRFState', () => {
     });
 
     it('should clear cookie after successful validation', () => {
-      const req = createMockRequest('abc123', 'oauth_state=abc123');
+      const req = createMockRequest('abc123', '__Host-oauth_state=abc123');
       const res = createMockResponse();
 
       validateCSRFState(req, res);
@@ -145,7 +145,7 @@ describe('validateCSRFState', () => {
     });
 
     it('should return false when state is missing', () => {
-      const req = createMockRequest(undefined, 'oauth_state=abc123');
+      const req = createMockRequest(undefined, '__Host-oauth_state=abc123');
       const res = createMockResponse();
 
       const result = validateCSRFState(req, res);
@@ -167,7 +167,7 @@ describe('validateCSRFState', () => {
     });
 
     it('should return false when state does not match cookie', () => {
-      const req = createMockRequest('abc123', 'oauth_state=xyz789');
+      const req = createMockRequest('abc123', '__Host-oauth_state=xyz789');
       const res = createMockResponse();
 
       const result = validateCSRFState(req, res);
@@ -179,8 +179,8 @@ describe('validateCSRFState', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle multiple oauth_state cookies (uses first match)', () => {
-      const req = createMockRequest('abc123', 'oauth_state=abc123; other=value; oauth_state=xyz789');
+    it('should handle multiple __Host-oauth_state cookies (uses first match)', () => {
+      const req = createMockRequest('abc123', '__Host-oauth_state=abc123; other=value; __Host-oauth_state=xyz789');
       const res = createMockResponse();
 
       const result = validateCSRFState(req, res);
@@ -209,7 +209,7 @@ describe('validateCSRFState', () => {
 
     it('should handle very long state values', () => {
       const longState = 'a'.repeat(1000);
-      const req = createMockRequest(longState, `oauth_state=${longState}`);
+      const req = createMockRequest(longState, `__Host-oauth_state=${longState}`);
       const res = createMockResponse();
 
       const result = validateCSRFState(req, res);
@@ -219,7 +219,7 @@ describe('validateCSRFState', () => {
 
     it('should handle state with URL-encoded characters', () => {
       const encodedState = 'abc%20123';
-      const req = createMockRequest(encodedState, `oauth_state=${encodedState}`);
+      const req = createMockRequest(encodedState, `__Host-oauth_state=${encodedState}`);
       const res = createMockResponse();
 
       const result = validateCSRFState(req, res);
@@ -229,7 +229,7 @@ describe('validateCSRFState', () => {
 
     it('should handle state with special regex characters', () => {
       const regexState = 'abc.+*?[]{}()';
-      const req = createMockRequest(regexState, `oauth_state=${regexState}`);
+      const req = createMockRequest(regexState, `__Host-oauth_state=${regexState}`);
       const res = createMockResponse();
 
       const result = validateCSRFState(req, res);
@@ -240,7 +240,7 @@ describe('validateCSRFState', () => {
 
   describe('error response', () => {
     it('should return 403 status code on validation failure', () => {
-      const req = createMockRequest('abc123', 'oauth_state=xyz789');
+      const req = createMockRequest('abc123', '__Host-oauth_state=xyz789');
       const res = createMockResponse();
 
       validateCSRFState(req, res);
@@ -249,7 +249,7 @@ describe('validateCSRFState', () => {
     });
 
     it('should send HTML error page on validation failure', () => {
-      const req = createMockRequest('abc123', 'oauth_state=xyz789');
+      const req = createMockRequest('abc123', '__Host-oauth_state=xyz789');
       const res = createMockResponse();
 
       validateCSRFState(req, res);
@@ -260,7 +260,7 @@ describe('validateCSRFState', () => {
     });
 
     it('should include role="alert" for accessibility', () => {
-      const req = createMockRequest('abc123', 'oauth_state=xyz789');
+      const req = createMockRequest('abc123', '__Host-oauth_state=xyz789');
       const res = createMockResponse();
 
       validateCSRFState(req, res);
