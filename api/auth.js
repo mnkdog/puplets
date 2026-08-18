@@ -94,18 +94,43 @@ export default async function handler(req, res) {
 
   // Step 3: Exchange code for access token
   try {
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        client_id: process.env.OAUTH_GITHUB_CLIENT_ID,
-        client_secret: process.env.OAUTH_GITHUB_CLIENT_SECRET,
-        code
-      })
-    });
+    // Security: Add timeout to prevent resource exhaustion if GitHub API is slow/unresponsive
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+    let tokenResponse;
+    try {
+      tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          client_id: process.env.OAUTH_GITHUB_CLIENT_ID,
+          client_secret: process.env.OAUTH_GITHUB_CLIENT_SECRET,
+          code
+        })
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('[SECURITY ALERT] GitHub OAuth API timeout after 10s');
+        return res.status(504).send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Authentication Timeout</title></head>
+          <body>
+            <h1 role="alert">Authentication timed out</h1>
+            <p>Please try again. If the problem persists, contact support.</p>
+          </body>
+          </html>
+        `);
+      }
+      throw fetchError;
+    }
 
     const data = await tokenResponse.json();
 
