@@ -56,7 +56,7 @@ export function validateCSRFState(req, res) {
   const cookieState = cookieMatch ? cookieMatch[1] : null;
 
   if (!callbackState || !cookieState || callbackState !== cookieState) {
-    res.send(`
+    res.status(403).send(`
       <!DOCTYPE html>
       <html>
       <head><title>Authentication Failed</title></head>
