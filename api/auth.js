@@ -93,9 +93,22 @@ export default async function handler(req, res) {
           (function() {
             const allowedOrigins = ${JSON.stringify(allowedOrigins)};
 
+            function matchesPattern(origin, pattern) {
+              if (!pattern.includes('*')) {
+                return origin === pattern;
+              }
+              // Escape regex metachars except *
+              const metachars = ['.', '+', '?', '^', '$', '{', '}', '(', ')', '|', '[', ']', '\\\\'];
+              let escaped = pattern
+                .split('').map(c => metachars.includes(c) ? '\\\\' + c : c).join('');
+              // Replace * with subdomain pattern
+              escaped = escaped.replace(/\\*/g, '[a-zA-Z0-9-]+');
+              return new RegExp('^' + escaped + '$').test(origin);
+            }
+
             function receiveMessage(e) {
-              // Validate origin before sending token
-              if (!allowedOrigins.includes(e.origin)) {
+              // Validate origin against patterns (supports wildcards)
+              if (!allowedOrigins.some(pattern => matchesPattern(e.origin, pattern))) {
                 document.body.innerHTML = '<h1 role="alert">Authentication failed due to a security policy. Please try again or contact support.</h1>';
                 console.error('Popup origin not allowed:', e.origin);
                 return;

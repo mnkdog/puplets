@@ -50,7 +50,7 @@ export function parseAllowedOrigins(envVar) {
  * @param {string} pattern - Pattern with optional * wildcard
  * @returns {boolean} True if origin matches pattern
  */
-function matchesPattern(origin, pattern) {
+export function matchesPattern(origin, pattern) {
   if (!pattern.includes('*')) {
     return origin === pattern;
   }
