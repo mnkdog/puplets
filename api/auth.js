@@ -27,7 +27,8 @@ export default async function handler(req, res) {
   if (!code) {
     const clientId = process.env.OAUTH_GITHUB_CLIENT_ID;
     const redirectUri = process.env.OAUTH_REDIRECT_URI || 'https://puplets.vercel.app/api/auth';
-    const scope = 'repo,user';
+    // Public repo + read-only user info (sufficient for Decap CMS on public repos)
+    const scope = 'public_repo,read:user';
 
     // Validate and store CMS origin if provided
     let allowedOrigins;
