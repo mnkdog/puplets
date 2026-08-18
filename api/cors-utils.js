@@ -3,6 +3,19 @@
  */
 
 /**
+ * Validate that origins have proper URL format
+ * @param {string[]} origins - Array of origin strings to validate
+ * @throws {Error} If any origin doesn't start with http:// or https://
+ */
+function validateOriginFormat(origins) {
+  for (const origin of origins) {
+    if (!origin.startsWith('http://') && !origin.startsWith('https://')) {
+      throw new Error(`Invalid origin format: ${origin}. Origins must start with http:// or https://`);
+    }
+  }
+}
+
+/**
  * Parse comma-separated ALLOWED_ORIGINS environment variable
  * @param {string} envVar - Comma-separated list of allowed origins (or patterns)
  * @returns {string[]} Array of trimmed origin URLs/patterns
@@ -26,12 +39,7 @@ export function parseAllowedOrigins(envVar) {
     throw new Error('ALLOWED_ORIGINS must contain at least one valid origin');
   }
 
-  // Validate format: each origin should start with http:// or https://
-  for (const origin of origins) {
-    if (!origin.startsWith('http://') && !origin.startsWith('https://')) {
-      throw new Error(`Invalid origin format: ${origin}. Origins must start with http:// or https://`);
-    }
-  }
+  validateOriginFormat(origins);
 
   return origins;
 }
