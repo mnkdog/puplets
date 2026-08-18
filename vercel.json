@@ -33,7 +33,7 @@
       ]
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!admin).*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
