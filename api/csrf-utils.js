@@ -19,12 +19,12 @@ export function generateCSRFState() {
  */
 export function setSecureStateCookie(res, state) {
   res.setHeader('Set-Cookie', [
-    `oauth_state=${state}`,
+    `__Host-oauth_state=${state}`,
     'HttpOnly',
     'Secure',
     'SameSite=Lax',
     `Max-Age=300`, // 5 minutes
-    'Path=/api/auth'
+    'Path=/'
   ].join('; '));
 }
 
@@ -34,12 +34,12 @@ export function setSecureStateCookie(res, state) {
  */
 export function clearStateCookie(res) {
   res.setHeader('Set-Cookie', [
-    'oauth_state=',
+    '__Host-oauth_state=',
     'HttpOnly',
     'Secure',
     'SameSite=Lax',
     'Max-Age=0',
-    'Path=/api/auth'
+    'Path=/'
   ].join('; '));
 }
 
@@ -52,11 +52,15 @@ export function clearStateCookie(res) {
 export function validateCSRFState(req, res) {
   const callbackState = req.query.state;
   const cookies = req.headers.cookie || '';
-  const cookieMatch = cookies.match(/oauth_state=([^;]+)/);
+  const cookieMatch = cookies.match(/(?:^|;\s*)__Host-oauth_state=([^;]*)/);
   const cookieState = cookieMatch ? cookieMatch[1] : null;
 
   if (!callbackState || !cookieState || callbackState !== cookieState) {
     console.error('[SECURITY ALERT] CSRF state validation failed for OAuth callback');
+    clearStateCookie(res);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Referrer-Policy', 'no-referrer');
     res.status(403).send(`
       <!DOCTYPE html>
       <html>

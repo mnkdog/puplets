@@ -69,7 +69,7 @@ describe('OAuth Authentication', () => {
 
       await handler(req, res);
 
-      expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('oauth_state='));
+      expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('__Host-oauth_state='));
       const cookieHeader = res.setHeader.mock.calls.find(call => call[0] === 'Set-Cookie')[1];
       expect(cookieHeader).toContain('HttpOnly');
       expect(cookieHeader).toContain('Secure');
@@ -135,7 +135,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123secure',
-        _cookie: 'oauth_state=abc123secure'
+        _cookie: '__Host-oauth_state=abc123secure'
       });
       const res = createMockResponse();
 
@@ -154,7 +154,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         // No state parameter
-        _cookie: 'oauth_state=abc123secure'
+        _cookie: '__Host-oauth_state=abc123secure'
       });
       const res = createMockResponse();
 
@@ -186,7 +186,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123secure',
-        _cookie: 'oauth_state=xyz456different'
+        _cookie: '__Host-oauth_state=xyz456different'
       });
       const res = createMockResponse();
 
@@ -206,7 +206,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123secure',
-        _cookie: 'oauth_state=abc123secure'
+        _cookie: '__Host-oauth_state=abc123secure'
       });
       const res = createMockResponse();
 
@@ -218,7 +218,7 @@ describe('OAuth Authentication', () => {
       // Check for cookie clearing (Max-Age=0)
       const clearCookie = setHeaderCalls.find(call => call[1].includes('Max-Age=0'));
       expect(clearCookie).toBeTruthy();
-      expect(clearCookie[1]).toContain('oauth_state=');
+      expect(clearCookie[1]).toContain('__Host-oauth_state=');
     });
   });
 
@@ -248,7 +248,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123',
-        _cookie: 'oauth_state=abc123'
+        _cookie: '__Host-oauth_state=abc123'
       });
       const res = createMockResponse();
 
@@ -268,14 +268,15 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123',
-        _cookie: 'oauth_state=abc123'
+        _cookie: '__Host-oauth_state=abc123'
       });
       const res = createMockResponse();
 
       await handler(req, res);
 
       const html = res.send.mock.calls[0][0];
-      expect(html).toContain('if (!allowedOrigins.includes(e.origin))');
+      expect(html).toContain('function matchesPattern(origin, pattern)');
+      expect(html).toContain('if (!allowedOrigins.some(pattern => matchesPattern(e.origin, pattern)))');
       expect(html).toContain('Authentication failed due to a security policy');
     });
 
@@ -287,7 +288,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123',
-        _cookie: 'oauth_state=abc123'
+        _cookie: '__Host-oauth_state=abc123'
       });
       const res = createMockResponse();
 
@@ -311,7 +312,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123',
-        _cookie: 'oauth_state=abc123'
+        _cookie: '__Host-oauth_state=abc123'
       });
       const res = createMockResponse();
 
@@ -321,6 +322,35 @@ describe('OAuth Authentication', () => {
       expect(res.send).toHaveBeenCalled();
       const html = res.send.mock.calls[0][0];
       expect(html).toContain('Configuration Error');
+    });
+
+    it('should support wildcard patterns in allowed origins', async () => {
+      // Set up with wildcard pattern for preview deployments
+      process.env.ALLOWED_ORIGINS = 'https://puplets-*.example.com';
+
+      const module = await import('../api/auth.js?t=' + Date.now());
+      const freshHandler = module.default;
+
+      global.fetch.mockResolvedValue({
+        json: async () => ({ access_token: 'test_token' })
+      });
+
+      const req = createMockRequest({
+        code: 'test_code',
+        state: 'abc123',
+        _cookie: '__Host-oauth_state=abc123'
+      });
+      const res = createMockResponse();
+
+      await freshHandler(req, res);
+
+      const html = res.send.mock.calls[0][0];
+      // Should inject the wildcard pattern
+      expect(html).toContain('https://puplets-*.example.com');
+      // Should include the matchesPattern function
+      expect(html).toContain('function matchesPattern(origin, pattern)');
+      // Should use pattern matching logic
+      expect(html).toContain('.replace(/\\*/g,');
     });
   });
 
@@ -333,7 +363,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123',
-        _cookie: 'oauth_state=abc123'
+        _cookie: '__Host-oauth_state=abc123'
       });
       const res = createMockResponse();
 
@@ -363,7 +393,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'bad_code',
         state: 'abc123',
-        _cookie: 'oauth_state=abc123'
+        _cookie: '__Host-oauth_state=abc123'
       });
       const res = createMockResponse();
 
@@ -381,7 +411,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123',
-        _cookie: 'oauth_state=abc123'
+        _cookie: '__Host-oauth_state=abc123'
       });
       const res = createMockResponse();
 
@@ -409,7 +439,7 @@ describe('OAuth Authentication', () => {
       const req = createMockRequest({
         code: 'test_code',
         state: 'abc123',
-        _cookie: 'oauth_state=abc123'
+        _cookie: '__Host-oauth_state=abc123'
       });
       const res = createMockResponse();
 

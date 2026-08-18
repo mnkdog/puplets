@@ -221,12 +221,15 @@ Then('both product types should be in the Stripe session', async function () {
 });
 
 Then('the pricing should be correct for each item type', async function () {
-  const items = await this.page.locator('.cart-item');
-  const count = await items.count();
-  expect(count).to.be.greaterThan(1, 'Should have multiple items');
+  // Check the cart state that was saved before checkout was clicked
+  const cart = this.cartBeforeCheckout || [];
+  expect(cart.length).to.be.greaterThan(1, 'Should have multiple items');
 
-  // Verify prices are displayed
-  const prices = await this.page.locator('.item-price .price');
-  const priceCount = await prices.count();
-  expect(priceCount).to.be.greaterThan(1);
+  // Verify each item has a price (either as a number or price object with amount)
+  cart.forEach((item, index) => {
+    const priceValue = typeof item.price === 'number' ? item.price : item.price?.amount;
+    expect(priceValue, `Item ${index} should have a price value`).to.not.be.undefined;
+    expect(priceValue, `Item ${index} price should be a number`).to.be.a('number');
+    expect(priceValue, `Item ${index} price should be positive`).to.be.greaterThan(0);
+  });
 });

@@ -81,14 +81,28 @@ describe('parseAllowedOrigins', () => {
     expect(result).toEqual(['https://a.com', 'https://b.com']);
   });
 
-  it('should parse wildcard patterns', () => {
-    const result = parseAllowedOrigins('https://puplets-*.vercel.app');
-    expect(result).toEqual(['https://puplets-*.vercel.app']);
+  it('should parse wildcard patterns on custom domains', () => {
+    const result = parseAllowedOrigins('https://puplets-*.example.com');
+    expect(result).toEqual(['https://puplets-*.example.com']);
   });
 
   it('should parse mix of exact origins and wildcard patterns', () => {
-    const result = parseAllowedOrigins('https://puplets.vercel.app,https://puplets-*.vercel.app');
-    expect(result).toEqual(['https://puplets.vercel.app', 'https://puplets-*.vercel.app']);
+    const result = parseAllowedOrigins('https://puplets.com,https://puplets-*.example.com');
+    expect(result).toEqual(['https://puplets.com', 'https://puplets-*.example.com']);
+  });
+
+  it('should reject wildcards on shared multi-tenant suffixes', () => {
+    expect(() => parseAllowedOrigins('https://puplets-*.vercel.app')).toThrow(
+      /Security error.*shared multi-tenant suffix/
+    );
+    expect(() => parseAllowedOrigins('https://app-*.herokuapp.com')).toThrow(
+      /Security error.*shared multi-tenant suffix/
+    );
+  });
+
+  it('should allow unsafe wildcards when explicitly enabled', () => {
+    const result = parseAllowedOrigins('https://puplets-*.vercel.app', { allowUnsafeWildcards: true });
+    expect(result).toEqual(['https://puplets-*.vercel.app']);
   });
 });
 
