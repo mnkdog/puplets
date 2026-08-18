@@ -82,11 +82,11 @@ In your Vercel project dashboard:
 
 - **Production + staging + preview deployments (wildcard):**
   ```
-  https://puplets.vercel.app,https://puplets-staging.vercel.app,https://puplets-*.vercel.app
+  https://puplets.vercel.app,https://puplets-staging.vercel.app,https://puplets-git-feature-x.vercel.app
   ```
 
 **Important:** 
-- The `*` wildcard in `https://puplets-*.vercel.app` matches any valid subdomain characters (preview deployments)
+- The `*` wildcard in `https://puplets-git-feature-x.vercel.app` matches any valid subdomain characters (preview deployments)
 - Malformed or missing `ALLOWED_ORIGINS` will cause the API to return 500 errors for all requests
 - This variable is REQUIRED for security - it prevents CORS attacks by restricting which origins can access your API
 
