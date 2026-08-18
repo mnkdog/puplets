@@ -45,7 +45,7 @@ function validateOriginFormat(origins) {
             `Security error: Wildcard pattern '${origin}' uses shared multi-tenant suffix '${suffix}'. ` +
             `Any third party can register a matching subdomain and bypass origin validation. ` +
             `Either: (1) enumerate preview origins explicitly, (2) use a custom domain you control, ` +
-            `or (3) set ALLOW_UNSAFE_WILDCARDS=true (development only, never in production).`
+            `or (3) set ALLOW_UNSAFE_WILDCARDS=true AND NODE_ENV=development or test (local development only, disabled in production).`
           );
         }
       }
