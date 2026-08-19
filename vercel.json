@@ -2,9 +2,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "src",
   "env": {
-    "ALLOWED_ORIGINS": "https://puplets.vercel.app,https://puplets-staging.vercel.app",
-    "PUBLIC_BASE_URL": "https://puplets.vercel.app",
-    "OAUTH_REDIRECT_URI": "https://puplets.vercel.app/api/auth"
+    "ALLOWED_ORIGINS": "https://puplets.co.uk,https://www.puplets.co.uk,https://puplets.vercel.app,https://puplets-staging.vercel.app",
+    "PUBLIC_BASE_URL": "https://puplets.co.uk",
+    "OAUTH_REDIRECT_URI": "https://puplets.co.uk/api/auth"
   },
   "headers": [
     {
