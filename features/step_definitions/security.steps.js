@@ -3,6 +3,24 @@ import { expect } from 'chai';
 
 const VERCEL_CONFIG_FILE = 'vercel.json';
 
+// Helper functions to reduce duplication in header verification steps
+async function getVercelConfig() {
+  const fs = await import('fs/promises');
+  return JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
+}
+
+function getMainSiteHeaders(vercelConfig) {
+  const headers = vercelConfig.headers.find(h => h.source === '/((?!admin).*)')?.headers;
+  expect(headers).to.exist;
+  return headers;
+}
+
+function getHeaderValue(headers, key) {
+  const header = headers?.find(h => h.key === key);
+  expect(header).to.exist;
+  return header.value;
+}
+
 Then('the marked.js script should be loaded from local vendor', async function () {
   const markedScript = await this.page.locator('script[src*="vendor"]').filter({ hasText: /marked/ });
   const count = await markedScript.count();
@@ -109,85 +127,72 @@ When('I request the about page', async function () {
 Then('the response should include a Content-Security-Policy header', async function () {
   // Note: In local dev, headers won't be set. This test validates vercel.json config exists
   // We check the config file rather than runtime headers in local environment
-  const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
+  const vercelConfig = await getVercelConfig();
 
   const headers = vercelConfig.headers;
   expect(headers).to.be.an('array');
   expect(headers.length).to.be.greaterThan(0);
 
-  const cspHeader = headers[0].headers.find(h => h.key === 'Content-Security-Policy');
-  expect(cspHeader).to.exist;
-  expect(cspHeader.value).to.be.a('string');
-  expect(cspHeader.value.length).to.be.greaterThan(0);
+  const mainSiteHeaders = getMainSiteHeaders(vercelConfig);
+  const cspValue = getHeaderValue(mainSiteHeaders, 'Content-Security-Policy');
+  expect(cspValue).to.be.a('string');
+  expect(cspValue.length).to.be.greaterThan(0);
 });
 
 Then('the response should include X-Frame-Options header', async function () {
-  const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
-
-  const xFrameOptions = vercelConfig.headers[0].headers.find(h => h.key === 'X-Frame-Options');
-  expect(xFrameOptions).to.exist;
-  expect(xFrameOptions.value).to.equal('SAMEORIGIN');
+  const vercelConfig = await getVercelConfig();
+  const mainSiteHeaders = getMainSiteHeaders(vercelConfig);
+  const xFrameOptionsValue = getHeaderValue(mainSiteHeaders, 'X-Frame-Options');
+  expect(xFrameOptionsValue).to.equal('SAMEORIGIN');
 });
 
 Then('the response should include X-Content-Type-Options header', async function () {
-  const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
-
-  const xContentType = vercelConfig.headers[0].headers.find(h => h.key === 'X-Content-Type-Options');
-  expect(xContentType).to.exist;
-  expect(xContentType.value).to.equal('nosniff');
+  const vercelConfig = await getVercelConfig();
+  const mainSiteHeaders = getMainSiteHeaders(vercelConfig);
+  const xContentTypeValue = getHeaderValue(mainSiteHeaders, 'X-Content-Type-Options');
+  expect(xContentTypeValue).to.equal('nosniff');
 });
 
 Then('the response should include Referrer-Policy header', async function () {
-  const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
-
-  const referrerPolicy = vercelConfig.headers[0].headers.find(h => h.key === 'Referrer-Policy');
-  expect(referrerPolicy).to.exist;
-  expect(referrerPolicy.value).to.equal('strict-origin-when-cross-origin');
+  const vercelConfig = await getVercelConfig();
+  const mainSiteHeaders = getMainSiteHeaders(vercelConfig);
+  const referrerPolicyValue = getHeaderValue(mainSiteHeaders, 'Referrer-Policy');
+  expect(referrerPolicyValue).to.equal('strict-origin-when-cross-origin');
 });
 
 Then('the response should include Permissions-Policy header', async function () {
-  const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
-
-  const permissionsPolicy = vercelConfig.headers[0].headers.find(h => h.key === 'Permissions-Policy');
-  expect(permissionsPolicy).to.exist;
-  expect(permissionsPolicy.value).to.include('camera=()');
-  expect(permissionsPolicy.value).to.include('microphone=()');
-  expect(permissionsPolicy.value).to.include('geolocation=()');
+  const vercelConfig = await getVercelConfig();
+  const mainSiteHeaders = getMainSiteHeaders(vercelConfig);
+  const permissionsPolicyValue = getHeaderValue(mainSiteHeaders, 'Permissions-Policy');
+  expect(permissionsPolicyValue).to.include('camera=()');
+  expect(permissionsPolicyValue).to.include('microphone=()');
+  expect(permissionsPolicyValue).to.include('geolocation=()');
 });
 
 Then('the CSP should allow scripts from self', async function () {
-  const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
-
-  const cspHeader = vercelConfig.headers[0].headers.find(h => h.key === 'Content-Security-Policy');
-  expect(cspHeader.value).to.include("script-src 'self'");
+  const vercelConfig = await getVercelConfig();
+  const mainSiteHeaders = getMainSiteHeaders(vercelConfig);
+  const cspValue = getHeaderValue(mainSiteHeaders, 'Content-Security-Policy');
+  expect(cspValue).to.include("script-src 'self'");
 });
 
 Then('the CSP should allow scripts from cdn.jsdelivr.net', async function () {
-  const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
-
-  const cspHeader = vercelConfig.headers[0].headers.find(h => h.key === 'Content-Security-Policy');
-  expect(cspHeader.value).to.include('https://cdn.jsdelivr.net');
+  const vercelConfig = await getVercelConfig();
+  const mainSiteHeaders = getMainSiteHeaders(vercelConfig);
+  const cspValue = getHeaderValue(mainSiteHeaders, 'Content-Security-Policy');
+  expect(cspValue).to.include('https://cdn.jsdelivr.net');
 });
 
 Then('the CSP should allow scripts from checkout.stripe.com', async function () {
-  const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
-
-  const cspHeader = vercelConfig.headers[0].headers.find(h => h.key === 'Content-Security-Policy');
-  expect(cspHeader.value).to.include('https://checkout.stripe.com');
+  const vercelConfig = await getVercelConfig();
+  const mainSiteHeaders = getMainSiteHeaders(vercelConfig);
+  const cspValue = getHeaderValue(mainSiteHeaders, 'Content-Security-Policy');
+  expect(cspValue).to.include('https://checkout.stripe.com');
 });
 
 Then('the CSP should allow connects to api.stripe.com', async function () {
-  const fs = await import('fs/promises');
-  const vercelConfig = JSON.parse(await fs.readFile(VERCEL_CONFIG_FILE, 'utf-8'));
-
-  const cspHeader = vercelConfig.headers[0].headers.find(h => h.key === 'Content-Security-Policy');
-  expect(cspHeader.value).to.include('https://api.stripe.com');
+  const vercelConfig = await getVercelConfig();
+  const mainSiteHeaders = getMainSiteHeaders(vercelConfig);
+  const cspValue = getHeaderValue(mainSiteHeaders, 'Content-Security-Policy');
+  expect(cspValue).to.include('https://api.stripe.com');
 });
