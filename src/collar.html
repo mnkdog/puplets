@@ -643,9 +643,6 @@
                         <label for="size">Size</label>
                         <select name="size" id="size" required>
                             <option value="">Select a size</option>
-                            <option value="xs" data-price="17.99">XS - 21-27 cm (8 5/16 - 10 5/8 in)</option>
-                            <option value="s" data-price="17.99">S - 26-32 cm (10 3/16 - 12 5/8 in)</option>
-                            <option value="m" data-price="20.99">M - 31-37 cm (12 3/16 - 14 5/8 in)</option>
                         </select>
                         <div class="size-guide">
                             Measure around your dog's neck where the collar would naturally sit
@@ -755,6 +752,33 @@
             collarPriceSource = appliedCount > 0 ? 'cms' : 'fallback';
         }
 
+        /**
+         * Populates size dropdown options from product data
+         */
+        async function populateSizeDropdown() {
+            const data = await fetchJSON('/config/products.json', null);
+            const sizeSelect = document.getElementById('size');
+
+            if (!data || !data.collar || !data.collar.sizes) {
+                console.warn('[SizeDropdown] Could not load size data from products.json');
+                return;
+            }
+
+            // Clear existing options except the placeholder
+            while (sizeSelect.options.length > 1) {
+                sizeSelect.remove(1);
+            }
+
+            // Add options from products.json
+            data.collar.sizes.forEach(sizeData => {
+                const option = document.createElement('option');
+                option.value = sizeData.size;
+                option.setAttribute('data-price', sizeData.price);
+                option.textContent = `${sizeData.size.toUpperCase()} - ${sizeData.measurements_cm} (${sizeData.measurements_in})`;
+                sizeSelect.appendChild(option);
+            });
+        }
+
         const FALLBACK_CHARM_PRICE = 3.99;
         let charmPrice = FALLBACK_CHARM_PRICE;
         let charmPriceSource = 'fallback';
@@ -812,6 +836,7 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             await loadProductPrices();
+            await populateSizeDropdown();
             await loadCharmPrice();
             await loadInventory();
             setupImageGallery();
