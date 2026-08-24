@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Size Guide - Puplets</title>
+    <style>
+        body {
+            background: #F5F1ED;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+        }
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+        .cart-button {
+            background: #101820;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .cart-button:hover {
+            transform: translateY(-2px);
+        }
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        .nav-links a {
+            color: #5A4A42;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #101820;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .mobile-menu.active {
+            display: block;
+        }
+        .mobile-menu-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background: white;
+            padding: 2rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+        .mobile-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .mobile-menu-links a {
+            color: #101820;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        .content {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .content h1 { color: #C1272D; margin-top: 0; }
+        .content h2 { color: #333; margin-top: 2rem; }
+        .content h3 { color: #666; margin-top: 1.5rem; }
+        .content a { color: #C1272D; }
+        footer {
+            background: #2D2D2D;
+            color: white;
+            padding: 3rem 2rem 2rem;
+            margin-top: 4rem;
+        }
+        footer .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        footer h3 { color: #C1272D; margin-top: 0; }
+        footer ul { list-style: none; padding: 0; }
+        footer a { color: #E5E5E5; text-decoration: none; }
+        footer a:hover { color: white; }
+        footer .bottom { text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #444; }
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem 1.5rem;
+            }
+            .hamburger {
+                display: flex;
+            }
+            .nav-links a:not(.cart-button) {
+                display: none;
+            }
+            .nav-links {
+                gap: 1rem;
+            }
+            .content { margin: 1rem; padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo-nav">
+                <img src="logo.png" alt="Puplets" class="logo-icon">
+                Puplets
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="products.html">Products</a>
+            <a href="blog.html">Blog</a>
+            <a href="about.html" id="aboutLinkDesktop">About</a>
+            <a href="cart.html" class="cart-button">
+                <span>🛒</span>
+                Cart
+                <span class="cart-count" id="cartCount" role="status" aria-live="polite" aria-atomic="true" style="display: none;">0</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="blog.html">Blog</a>
+                <a href="about.html" id="aboutLinkMobile">About</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="content"><h1>Dog Collar Size Guide</h1>
+<p>Choosing the right size collar is important for your dog&#39;s comfort and safety. Follow this guide to find the perfect fit!</p>
+<h2>How to Measure Your Dog&#39;s Neck</h2>
+<h3>What You&#39;ll Need</h3>
+<ul>
+<li>Soft measuring tape (or string + ruler)</li>
+<li>Your dog</li>
+<li>A treat for cooperation!</li>
+</ul>
+<h3>Step-by-Step</h3>
+<ol>
+<li><p><strong>Position the tape</strong> around your dog&#39;s neck where their collar normally sits</p>
+<ul>
+<li>This is typically the widest part of the neck</li>
+<li>Just above the shoulders</li>
+<li>Not too high (throat area) or too low (chest)</li>
+</ul>
+</li>
+<li><p><strong>Check the fit</strong></p>
+<ul>
+<li>Tape should be snug but comfortable</li>
+<li>You should fit <strong>two fingers</strong> between tape and neck</li>
+<li>Not tight (dog can breathe easily)</li>
+<li>Not loose (collar won&#39;t slip off)</li>
+</ul>
+</li>
+<li><p><strong>Note the measurement</strong></p>
+<ul>
+<li>Record in centimeters or inches</li>
+<li>Round up if between sizes</li>
+</ul>
+</li>
+</ol>
+<h3>Using String Instead?</h3>
+<p>If you don&#39;t have a measuring tape:</p>
+<ol>
+<li>Wrap string around dog&#39;s neck (two-finger rule)</li>
+<li>Mark where string meets</li>
+<li>Lay flat and measure with a ruler</li>
+</ol>
+<h2>Our Size Chart</h2>
+<table>
+<thead>
+<tr>
+<th>Size</th>
+<th>Neck Circumference (cm)</th>
+<th>Neck Circumference (inches)</th>
+<th>Typical Breeds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>XS</strong></td>
+<td>20-25cm</td>
+<td>8-10&quot;</td>
+<td>Chihuahua, Toy Poodle, Yorkshire Terrier, Papillon</td>
+</tr>
+<tr>
+<td><strong>S</strong></td>
+<td>25-35cm</td>
+<td>10-14&quot;</td>
+<td>Jack Russell, Miniature Poodle, Shih Tzu, Pug, Dachshund</td>
+</tr>
+<tr>
+<td><strong>M</strong></td>
+<td>35-45cm</td>
+<td>14-18&quot;</td>
+<td>Cocker Spaniel, Beagle, Border Collie, Springer Spaniel</td>
+</tr>
+</tbody></table>
+<p><strong>Important:</strong> Breed suggestions are guidelines only. Always measure your individual dog!</p>
+<h2>The Two-Finger Rule</h2>
+<p>✅ <strong>Perfect fit:</strong> You can comfortably fit two fingers between the collar and your dog&#39;s neck</p>
+<p>❌ <strong>Too tight:</strong> Can&#39;t fit two fingers, dog coughs, difficulty swallowing</p>
+<p>❌ <strong>Too loose:</strong> More than two fingers, collar spins around, could slip over head</p>
+<h2>Puppies &amp; Growing Dogs</h2>
+<h3>Adjustable Range</h3>
+<p>Our collars are adjustable within each size range:</p>
+<ul>
+<li>XS adjusts from 20-25cm</li>
+<li>S adjusts from 25-35cm</li>
+<li>M adjusts from 35-45cm</li>
+</ul>
+<h3>For Puppies</h3>
+<ul>
+<li>Measure now and allow room for growth</li>
+<li>Recheck fit every 2-4 weeks during growth spurts</li>
+<li>Order next size up if your puppy is near the upper limit</li>
+</ul>
+<h3>When to Size Up</h3>
+<p>Replace collar when:</p>
+<ul>
+<li>❌ At maximum adjustment and still tight</li>
+<li>❌ Can&#39;t fit two fingers underneath</li>
+<li>❌ Leaving marks on fur/skin</li>
+<li>❌ Dog seems uncomfortable</li>
+</ul>
+<h2>Special Considerations</h2>
+<h3>Fluffy Breeds</h3>
+<p>Dogs with thick fur (Huskies, Samoyeds, Pomeranians):</p>
+<ul>
+<li>Part the fur to measure skin level</li>
+<li>Check fit regularly - fur can compress over time</li>
+<li>May need larger size than expected</li>
+</ul>
+<h3>Greyhounds &amp; Sighthounds</h3>
+<p>Narrow heads, wide necks:</p>
+<ul>
+<li>Measure the widest part of neck</li>
+<li>Check collar can&#39;t slip over ears</li>
+<li>Consider next size up for security</li>
+</ul>
+<h3>Brachycephalic Breeds</h3>
+<p>Flat-faced dogs (Pugs, Bulldogs, French Bulldogs):</p>
+<ul>
+<li>Be extra careful not to measure too tight</li>
+<li>Leave more room for comfortable breathing</li>
+<li>Check regularly as these breeds can be sensitive</li>
+</ul>
+<h2>Waterproof Collar Notes</h2>
+<p>Our waterproof collars:</p>
+<ul>
+<li><strong>Won&#39;t shrink</strong> when wet</li>
+<li><strong>Won&#39;t stretch</strong> over time</li>
+<li><strong>Maintain size</strong> through washing</li>
+<li><strong>BioThane material</strong> stays consistent</li>
+</ul>
+<p>This means your size stays accurate long-term!</p>
+<h2>Still Unsure?</h2>
+<h3>Between Two Sizes?</h3>
+<p><strong>Always size up.</strong> It&#39;s safer for your dog and you can adjust tighter, but can&#39;t make a too-small collar bigger.</p>
+<h3>Unusual Neck Size?</h3>
+<p>Some dogs don&#39;t fit standard sizing:</p>
+<ul>
+<li><strong>Contact us:</strong> [<a href="mailto:your.email@puplets.co.uk">your.email@puplets.co.uk</a>]</li>
+<li>We&#39;ll help you find the best fit</li>
+<li>Custom sizing may be available</li>
+</ul>
+<h3>Need Help Measuring?</h3>
+<ul>
+<li>Email us your dog&#39;s breed, age, and approximate weight</li>
+<li>We&#39;ll suggest the most likely size</li>
+<li>Include a photo for best guidance</li>
+</ul>
+<h2>Check the Fit After Purchase</h2>
+<p>When your collar arrives:</p>
+<ol>
+<li><p><strong>Fit it on your dog</strong></p>
+</li>
+<li><p><strong>Check the two-finger rule</strong></p>
+</li>
+<li><p><strong>Watch your dog move around</strong></p>
+<ul>
+<li>Collar shouldn&#39;t slide over ears</li>
+<li>Shouldn&#39;t choke or restrict breathing</li>
+<li>Should sit comfortably at base of neck</li>
+</ul>
+</li>
+<li><p><strong>Not quite right?</strong></p>
+<ul>
+<li>See our <a href="/returns-policy.html">Returns Policy</a></li>
+<li>14-day return window</li>
+<li>Exchange for different size</li>
+</ul>
+</li>
+</ol>
+<h2>Safety Reminder</h2>
+<p>⚠️ <strong>Never leave a collar on unsupervised for extended periods</strong> (especially during sleep or play with other dogs)</p>
+<p>⚠️ <strong>Check fit weekly</strong> - dogs&#39; necks can change with weight, fur, or growth</p>
+<p>⚠️ <strong>Replace damaged collars immediately</strong> - wear and tear affects safety</p>
+<h2>Questions?</h2>
+<p>Still not sure about sizing? We&#39;re here to help!</p>
+<p><strong>Email:</strong> [<a href="mailto:your.email@puplets.co.uk">your.email@puplets.co.uk</a>]<br><strong>Include:</strong></p>
+<ul>
+<li>Your dog&#39;s breed and age</li>
+<li>Neck measurement</li>
+<li>Any special concerns</li>
+</ul>
+<p>We usually respond within a few hours!</p>
+</div>
+    <footer>
+        <div class="container">
+            <div><h3>Shop</h3><ul><li><a href="/collar.html">Waterproof Collars</a></li><li><a href="/charms.html">Charms</a></li><li><a href="/size-guide.html">Size Guide</a></li></ul></div>
+            <div><h3>Customer Service</h3><ul><li><a href="/faq.html">FAQ</a></li><li><a href="/contact.html">Contact Us</a></li><li><a href="/returns-policy.html">Returns</a></li></ul></div>
+            <div><h3>Legal</h3><ul><li><a href="/privacy-policy.html">Privacy Policy</a></li><li><a href="/terms-and-conditions.html">Terms &amp; Conditions</a></li><li><a href="/cookie-policy.html">Cookie Policy</a></li></ul></div>
+            <div><h3>About</h3><ul><li><a href="/about.html">Our Story</a></li></ul></div>
+        </div>
+        <div class="bottom"><p>&copy; 2026 Puplets. All rights reserved.</p></div>
+    </footer>
+    <script src="common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countElement = document.getElementById('cartCount');
+            if (cart.length > 0) {
+                countElement.textContent = cart.length;
+                countElement.style.display = 'flex';
+            }
+            await checkAboutPageVisibility();
+        });
+    </script>
+</body>
+</html>

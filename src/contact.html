@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Puplets</title>
+    <style>
+        body {
+            background: #F5F1ED;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+        }
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+        .cart-button {
+            background: #101820;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .cart-button:hover {
+            transform: translateY(-2px);
+        }
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        .nav-links a {
+            color: #5A4A42;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #101820;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .mobile-menu.active {
+            display: block;
+        }
+        .mobile-menu-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background: white;
+            padding: 2rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+        .mobile-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .mobile-menu-links a {
+            color: #101820;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        .content {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .content h1 { color: #C1272D; margin-top: 0; }
+        .content h2 { color: #333; margin-top: 2rem; }
+        .content h3 { color: #666; margin-top: 1.5rem; }
+        .content a { color: #C1272D; }
+        footer {
+            background: #2D2D2D;
+            color: white;
+            padding: 3rem 2rem 2rem;
+            margin-top: 4rem;
+        }
+        footer .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        footer h3 { color: #C1272D; margin-top: 0; }
+        footer ul { list-style: none; padding: 0; }
+        footer a { color: #E5E5E5; text-decoration: none; }
+        footer a:hover { color: white; }
+        footer .bottom { text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #444; }
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem 1.5rem;
+            }
+            .hamburger {
+                display: flex;
+            }
+            .nav-links a:not(.cart-button) {
+                display: none;
+            }
+            .nav-links {
+                gap: 1rem;
+            }
+            .content { margin: 1rem; padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo-nav">
+                <img src="logo.png" alt="Puplets" class="logo-icon">
+                Puplets
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="products.html">Products</a>
+            <a href="blog.html">Blog</a>
+            <a href="about.html" id="aboutLinkDesktop">About</a>
+            <a href="cart.html" class="cart-button">
+                <span>🛒</span>
+                Cart
+                <span class="cart-count" id="cartCount" role="status" aria-live="polite" aria-atomic="true" style="display: none;">0</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="blog.html">Blog</a>
+                <a href="about.html" id="aboutLinkMobile">About</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="content"><h1>Contact Us</h1>
+<p>We&#39;re here to help! Whether you have a question about our products, need help with an order, or just want to say hi, we&#39;d love to hear from you.</p>
+<h2>Get In Touch</h2>
+<p><strong>Email:</strong> [<a href="mailto:your.email@puplets.co.uk">your.email@puplets.co.uk</a>]<br><strong>Response time:</strong> Within 1 business day (usually faster!)</p>
+<p><strong>Business hours:</strong><br>Monday - Friday: 9:00 AM - 5:00 PM GMT<br>Saturday - Sunday: Closed</p>
+<h2>Our Address</h2>
+<p><strong>Puplets</strong><br>[Your Business Address Line 1]<br>[City, Postal Code]<br>[Country]</p>
+<h2>What Can We Help With?</h2>
+<h3>Orders &amp; Delivery</h3>
+<ul>
+<li>Track your order</li>
+<li>Change delivery address</li>
+<li>Delivery queries</li>
+<li>Order issues</li>
+</ul>
+<h3>Products</h3>
+<ul>
+<li>Size guidance</li>
+<li>Customization questions</li>
+<li>Product care</li>
+<li>Availability</li>
+</ul>
+<h3>Returns &amp; Refunds</h3>
+<ul>
+<li>Start a return</li>
+<li>Refund status</li>
+<li>Exchange information</li>
+</ul>
+<h3>General Inquiries</h3>
+<ul>
+<li>Wholesale opportunities</li>
+<li>Custom orders</li>
+<li>Press &amp; media</li>
+<li>Feedback &amp; suggestions</li>
+</ul>
+<h2>Before You Contact Us</h2>
+<p><strong>Check our FAQs</strong> - You might find your answer faster:</p>
+<ul>
+<li><a href="/faq.html">FAQ</a></li>
+<li><a href="/returns-policy.html">Returns Policy</a></li>
+<li><a href="/size-guide.html">Size Guide</a></li>
+</ul>
+<p><strong>Track your order</strong> - If you&#39;re asking about delivery, your tracking number is in your dispatch email</p>
+<p><strong>Have your order number ready</strong> - Helps us help you faster! Format: #12345</p>
+<h2>Social Media</h2>
+<p>Follow us for:</p>
+<ul>
+<li>New product launches</li>
+<li>Special offers</li>
+<li>Customer photos</li>
+<li>Behind-the-scenes</li>
+</ul>
+<p>[Add your social media links when ready]<br>📷 Instagram: @puplets<br>📘 Facebook: /puplets<br>🐦 Twitter: @puplets</p>
+<h2>Business Information</h2>
+<p><strong>Legal name:</strong> [Your registered business name]<br><strong>Trading as:</strong> Puplets<br><strong>Company number:</strong> [If registered company]<br><strong>VAT number:</strong> [If VAT registered]</p>
+<h2>Wholesale Inquiries</h2>
+<p>Interested in stocking Puplets products?</p>
+<p>Email: [<a href="mailto:wholesale@puplets.co.uk">wholesale@puplets.co.uk</a>] with:</p>
+<ul>
+<li>Your business name</li>
+<li>Website/store location</li>
+<li>Brief description of your business</li>
+</ul>
+<p>We&#39;ll send you our wholesale information pack.</p>
+<h2>Press &amp; Media</h2>
+<p>For media inquiries, product samples, or image requests:</p>
+<p>Email: [<a href="mailto:press@puplets.co.uk">press@puplets.co.uk</a>]</p>
+<p>Please include:</p>
+<ul>
+<li>Your publication name</li>
+<li>Article topic</li>
+<li>Deadline</li>
+</ul>
+<h2>Feedback</h2>
+<p>We love hearing what you think! Your feedback helps us improve.</p>
+<p><strong>Happy with your order?</strong> Leave us a review or tag us on social media<br><strong>Something not quite right?</strong> Tell us how we can do better</p>
+<h2>Found a Bug?</h2>
+<p>If you&#39;ve spotted a technical issue with our website:</p>
+<p>Email: [<a href="mailto:your.email@puplets.co.uk">your.email@puplets.co.uk</a>] with:</p>
+<ul>
+<li>What page you were on</li>
+<li>What you were trying to do</li>
+<li>What went wrong</li>
+<li>Browser you&#39;re using</li>
+</ul>
+<p>Screenshots are super helpful!</p>
+<h2>Privacy</h2>
+<p>Your personal information is handled according to our <a href="/privacy-policy.html">Privacy Policy</a>. We&#39;ll only use the details you provide to respond to your inquiry.</p>
+<hr>
+<p><strong>We typically respond within a few hours during business days. If you haven&#39;t heard from us within 24 hours, please check your spam folder or resend your message.</strong></p>
+</div>
+    <footer>
+        <div class="container">
+            <div><h3>Shop</h3><ul><li><a href="/collar.html">Waterproof Collars</a></li><li><a href="/charms.html">Charms</a></li><li><a href="/size-guide.html">Size Guide</a></li></ul></div>
+            <div><h3>Customer Service</h3><ul><li><a href="/faq.html">FAQ</a></li><li><a href="/contact.html">Contact Us</a></li><li><a href="/returns-policy.html">Returns</a></li></ul></div>
+            <div><h3>Legal</h3><ul><li><a href="/privacy-policy.html">Privacy Policy</a></li><li><a href="/terms-and-conditions.html">Terms &amp; Conditions</a></li><li><a href="/cookie-policy.html">Cookie Policy</a></li></ul></div>
+            <div><h3>About</h3><ul><li><a href="/about.html">Our Story</a></li></ul></div>
+        </div>
+        <div class="bottom"><p>&copy; 2026 Puplets. All rights reserved.</p></div>
+    </footer>
+    <script src="common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countElement = document.getElementById('cartCount');
+            if (cart.length > 0) {
+                countElement.textContent = cart.length;
+                countElement.style.display = 'flex';
+            }
+            await checkAboutPageVisibility();
+        });
+    </script>
+</body>
+</html>

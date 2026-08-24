@@ -50,7 +50,9 @@ class CustomWorld extends World {
 
   async openBrowser() {
     this.browser = await chromium.launch();
-    this.context = await this.browser.newContext();
+    this.context = await this.browser.newContext({
+      baseURL: 'http://localhost:8080'
+    });
     this.page = await this.context.newPage();
     // Set 8s timeout for page operations
     this.page.setDefaultTimeout(8000);

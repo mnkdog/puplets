@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Returns & Refunds - Puplets</title>
+    <style>
+        body {
+            background: #F5F1ED;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+        }
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+        .cart-button {
+            background: #101820;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .cart-button:hover {
+            transform: translateY(-2px);
+        }
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        .nav-links a {
+            color: #5A4A42;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #101820;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .mobile-menu.active {
+            display: block;
+        }
+        .mobile-menu-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background: white;
+            padding: 2rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+        .mobile-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .mobile-menu-links a {
+            color: #101820;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        .content {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .content h1 { color: #C1272D; margin-top: 0; }
+        .content h2 { color: #333; margin-top: 2rem; }
+        .content h3 { color: #666; margin-top: 1.5rem; }
+        .content a { color: #C1272D; }
+        footer {
+            background: #2D2D2D;
+            color: white;
+            padding: 3rem 2rem 2rem;
+            margin-top: 4rem;
+        }
+        footer .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        footer h3 { color: #C1272D; margin-top: 0; }
+        footer ul { list-style: none; padding: 0; }
+        footer a { color: #E5E5E5; text-decoration: none; }
+        footer a:hover { color: white; }
+        footer .bottom { text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #444; }
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem 1.5rem;
+            }
+            .hamburger {
+                display: flex;
+            }
+            .nav-links a:not(.cart-button) {
+                display: none;
+            }
+            .nav-links {
+                gap: 1rem;
+            }
+            .content { margin: 1rem; padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo-nav">
+                <img src="logo.png" alt="Puplets" class="logo-icon">
+                Puplets
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="products.html">Products</a>
+            <a href="blog.html">Blog</a>
+            <a href="about.html" id="aboutLinkDesktop">About</a>
+            <a href="cart.html" class="cart-button">
+                <span>🛒</span>
+                Cart
+                <span class="cart-count" id="cartCount" role="status" aria-live="polite" aria-atomic="true" style="display: none;">0</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="blog.html">Blog</a>
+                <a href="about.html" id="aboutLinkMobile">About</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="content"><h1>Returns &amp; Refunds Policy</h1>
+<p><strong>Last updated:</strong> August 2026</p>
+<h2>Your Right to Return</h2>
+<p>Under UK Consumer Rights, you have <strong>14 days</strong> from receiving your order to return items for any reason - no questions asked.</p>
+<p>This is called your &quot;cooling off period&quot; and is your legal right.</p>
+<h2>Standard Returns (Change of Mind)</h2>
+<h3>What You Can Return</h3>
+<ul>
+<li>Unworn, unused collars in original packaging</li>
+<li>Individual charms in original packaging</li>
+<li>Items that don&#39;t fit your dog</li>
+<li>Items you simply changed your mind about</li>
+</ul>
+<h3>What You Cannot Return</h3>
+<ul>
+<li><strong>Custom/personalized collars:</strong> If made to your specific color/size/charm combination and you ordered the wrong specification</li>
+<li><strong>Used or worn items:</strong> For hygiene reasons</li>
+<li><strong>Damaged packaging:</strong> Items removed from packaging and unable to be resold</li>
+</ul>
+<h3>Return Window</h3>
+<ul>
+<li><strong>14 days</strong> from delivery date</li>
+<li>We recommend returning within 7 days to ensure processing time</li>
+</ul>
+<h2>How to Return an Item</h2>
+<h3>Step 1: Contact Us</h3>
+<p>Email [your email] with:</p>
+<ul>
+<li>Your order number</li>
+<li>Item(s) you want to return</li>
+<li>Reason for return (helps us improve)</li>
+</ul>
+<h3>Step 2: We&#39;ll Respond</h3>
+<p>Within 1 business day, we&#39;ll send you:</p>
+<ul>
+<li>Return confirmation</li>
+<li>Return address</li>
+<li>Instructions</li>
+</ul>
+<h3>Step 3: Pack Your Item</h3>
+<ul>
+<li>Original packaging preferred</li>
+<li>Include all components (collar, charm, packaging)</li>
+<li>Securely packaged to prevent damage in transit</li>
+</ul>
+<h3>Step 4: Ship Your Return</h3>
+<ul>
+<li><strong>You pay return shipping</strong> for change-of-mind returns</li>
+<li>Keep proof of postage</li>
+<li>We recommend tracked shipping (not required but safer)</li>
+</ul>
+<p><strong>Return address:</strong> [Your returns address]</p>
+<h3>Step 5: We Process Your Return</h3>
+<ul>
+<li>Inspected within 2 business days of arrival</li>
+<li>Refund issued within 14 days of receiving return</li>
+<li>Email confirmation sent</li>
+</ul>
+<h2>Refund Method</h2>
+<ul>
+<li>Refunded to <strong>original payment method</strong> (same card you used)</li>
+<li>Appears in 5-10 business days depending on your bank</li>
+<li>Refund includes product price</li>
+<li><strong>Original shipping is free</strong> so nothing to refund there</li>
+<li><strong>Return shipping costs</strong> are not refunded (you pay those)</li>
+</ul>
+<h2>Faulty or Incorrect Items</h2>
+<p>Different rules apply if we made a mistake or sent a faulty item.</p>
+<h3>What Qualifies</h3>
+<ul>
+<li><strong>Faulty:</strong> Defective materials, broken on arrival, doesn&#39;t work as described</li>
+<li><strong>Damaged in transit:</strong> Arrived broken or damaged</li>
+<li><strong>Wrong item:</strong> We sent the wrong color, size, or product</li>
+<li><strong>Not as described:</strong> Significantly different from our website description</li>
+</ul>
+<h3>What We&#39;ll Do</h3>
+<ol>
+<li><strong>Free return shipping:</strong> We send you a prepaid label</li>
+<li><strong>Fast replacement or refund:</strong> Your choice</li>
+<li><strong>Processing:</strong> Within 3 business days of receiving return</li>
+</ol>
+<h3>How to Report</h3>
+<p>Contact us within <strong>48 hours of delivery</strong> with:</p>
+<ul>
+<li>Order number</li>
+<li>Photos of the fault/damage/incorrect item</li>
+<li>Description of the issue</li>
+</ul>
+<p>Email: [your email]</p>
+<h2>Partial Returns</h2>
+<p>Bought multiple items? You can return some and keep others:</p>
+<ul>
+<li>Each item qualifies for the 14-day return separately</li>
+<li>Refund is for returned items only</li>
+<li>Process is the same</li>
+</ul>
+<h2>Exchanges</h2>
+<p>We don&#39;t offer direct exchanges. To get a different size/color:</p>
+<ol>
+<li>Return the original item (follow standard return process)</li>
+<li>Place a new order for what you want</li>
+<li>We&#39;ll process your refund when we receive the return</li>
+</ol>
+<p>This ensures you get your new item faster than waiting for the exchange.</p>
+<h2>Return Inspection</h2>
+<p>When we receive your return, we check:</p>
+<ul>
+<li>✅ Returned within 14 days</li>
+<li>✅ Unused and in original condition</li>
+<li>✅ All components included</li>
+<li>✅ Original packaging intact</li>
+</ul>
+<p>If everything passes: <strong>Full refund</strong></p>
+<p>If condition issues are found:</p>
+<ul>
+<li>We&#39;ll email you with photos and options</li>
+<li>You can agree to partial refund, or we return item to you</li>
+<li>We never process disputed refunds without your approval</li>
+</ul>
+<h2>Late or Lost Returns</h2>
+<h3>If Your Return Gets Lost</h3>
+<ul>
+<li>Contact us with your proof of postage</li>
+<li>We&#39;ll investigate and work with you to resolve</li>
+<li>This is why we recommend tracked shipping</li>
+</ul>
+<h3>If You Miss the 14-Day Window</h3>
+<ul>
+<li>Contact us anyway - we may still accept it</li>
+<li>We&#39;re reasonable people and assess case-by-case</li>
+<li>Earlier than 30 days has better chance of acceptance</li>
+</ul>
+<h2>Refund Issues</h2>
+<h3>Refund Not Received?</h3>
+<p>If 14 days have passed and you haven&#39;t received your refund:</p>
+<ol>
+<li>Check your bank account (it might be pending)</li>
+<li>Contact your bank (can take 5-10 days to process)</li>
+<li>Still nothing? Email us at [your email]</li>
+</ol>
+<p>We&#39;ll investigate and provide proof of refund from our end.</p>
+<h2>Non-Returnable Situations</h2>
+<p>We cannot accept returns if:</p>
+<ul>
+<li>❌ Item shows signs of use or wear</li>
+<li>❌ Returned after 14 days (without our prior agreement)</li>
+<li>❌ Customized item (if you ordered wrong specs)</li>
+<li>❌ Missing original packaging or components</li>
+<li>❌ Item damaged due to misuse</li>
+</ul>
+<h2>International Returns</h2>
+<p>For customers outside the UK:</p>
+<ul>
+<li>Same 14-day return right applies</li>
+<li>You pay return shipping costs</li>
+<li>Return to: [Your returns address]</li>
+<li>Customs charges are not refunded</li>
+<li>Mark package as &quot;RETURNED GOODS&quot; to avoid import fees</li>
+</ul>
+<h2>Damaged in Transit to You</h2>
+<p>If your item arrives damaged:</p>
+<ol>
+<li><strong>Don&#39;t refuse the package</strong> - accept it so we can process claim</li>
+<li><strong>Take photos</strong> of packaging and damage</li>
+<li><strong>Contact us within 48 hours</strong> with photos</li>
+<li><strong>We&#39;ll arrange replacement</strong> or refund immediately</li>
+</ol>
+<h2>Contact for Returns</h2>
+<p><strong>Email:</strong> [your email]<br><strong>Response time:</strong> Within 1 business day<br><strong>Returns address:</strong> [Your returns address]</p>
+<h2>Your Statutory Rights</h2>
+<p>This policy doesn&#39;t affect your statutory rights under:</p>
+<ul>
+<li>Consumer Rights Act 2015</li>
+<li>Sale of Goods Act</li>
+<li>Consumer Protection regulations</li>
+</ul>
+<p>If a product is faulty, you have additional rights beyond this policy.</p>
+<h2>Questions?</h2>
+<p>Not sure if you can return something? Contact us first:</p>
+<ul>
+<li>Email: [your email]</li>
+<li>We&#39;ll clarify your specific situation</li>
+<li>We&#39;re here to help, not create barriers</li>
+</ul>
+<hr>
+<p><strong>Remember:</strong> 14 days from delivery, unused condition, original packaging = hassle-free refund.</p>
+</div>
+    <footer>
+        <div class="container">
+            <div><h3>Shop</h3><ul><li><a href="/collar.html">Waterproof Collars</a></li><li><a href="/charms.html">Charms</a></li><li><a href="/size-guide.html">Size Guide</a></li></ul></div>
+            <div><h3>Customer Service</h3><ul><li><a href="/faq.html">FAQ</a></li><li><a href="/contact.html">Contact Us</a></li><li><a href="/returns-policy.html">Returns</a></li></ul></div>
+            <div><h3>Legal</h3><ul><li><a href="/privacy-policy.html">Privacy Policy</a></li><li><a href="/terms-and-conditions.html">Terms &amp; Conditions</a></li><li><a href="/cookie-policy.html">Cookie Policy</a></li></ul></div>
+            <div><h3>About</h3><ul><li><a href="/about.html">Our Story</a></li></ul></div>
+        </div>
+        <div class="bottom"><p>&copy; 2026 Puplets. All rights reserved.</p></div>
+    </footer>
+    <script src="common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countElement = document.getElementById('cartCount');
+            if (cart.length > 0) {
+                countElement.textContent = cart.length;
+                countElement.style.display = 'flex';
+            }
+            await checkAboutPageVisibility();
+        });
+    </script>
+</body>
+</html>
