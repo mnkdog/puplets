@@ -46,7 +46,7 @@ Saturday - Sunday: Closed
 ## Before You Contact Us
 
 **Check our FAQs** - You might find your answer faster:
-- [Delivery Information](/delivery-info.html)
+- [FAQ](/faq.html)
 - [Returns Policy](/returns-policy.html)
 - [Size Guide](/size-guide.html)
 
