@@ -4,7 +4,7 @@
 
 ## Who We Are
 
-Puplets ("we", "us", "our") operates puplets.co.uk. This privacy policy explains how we collect, use, and protect your personal information when you use our website and purchase our products.
+Puplets ("we", "us", "our") operates puplets.co.uk. This privacy policy explains our data collection practices and how we collect, use, and protect your personal information when you use our website and purchase our products.
 
 **Contact:** [Your business email]  
 **Address:** [Your business address]
