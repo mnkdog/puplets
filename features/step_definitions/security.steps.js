@@ -10,7 +10,7 @@ async function getVercelConfig() {
 }
 
 function getMainSiteHeaders(vercelConfig) {
-  const headers = vercelConfig.headers.find(h => h.source === '/((?!admin).*)')?.headers;
+  const headers = vercelConfig.headers.find(h => h.source === '/(.*)')?.headers;
   expect(headers).to.exist;
   return headers;
 }

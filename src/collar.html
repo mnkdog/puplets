@@ -740,16 +740,16 @@
          * Fetches collar pricing from product data and transforms to prices object
          */
         async function loadProductPrices() {
-            const data = await fetchJSON('/products/collars/waterproof-collar.json', null);
+            const data = await fetchJSON('/config/products.json', null);
 
-            if (data === null) {
+            if (data === null || !data.collar) {
                 // fetchJSON already handles logging, use fallback prices
                 collarPriceSource = 'fallback';
                 return;
             }
 
             // Transform sizes array to prices object
-            const { prices: transformedPrices, appliedCount } = transformSizesToPrices(data.sizes, FALLBACK_PRICES);
+            const { prices: transformedPrices, appliedCount } = transformSizesToPrices(data.collar.sizes, FALLBACK_PRICES);
             prices = transformedPrices;
             // Set source based on whether any CMS prices were actually applied
             collarPriceSource = appliedCount > 0 ? 'cms' : 'fallback';
@@ -760,11 +760,11 @@
         let charmPriceSource = 'fallback';
 
         async function loadCharmPrice() {
-            const data = await fetchJSON('/products/charms/individual-charms.json', null);
-            if (data && isValidPrice(data.price)) {
-                charmPrice = data.price;
+            const data = await fetchJSON('/config/products.json', null);
+            if (data && data.charms && isValidPrice(data.charms.price)) {
+                charmPrice = data.charms.price;
                 charmPriceSource = 'cms';
-            } else if (data && !isValidPrice(data.price)) {
+            } else if (data && data.charms && !isValidPrice(data.charms.price)) {
                 console.warn('[PriceSync Error] Invalid charm price in CMS data');
             }
         }
