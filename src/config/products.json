@@ -4,11 +4,9 @@
     "basePrice": 17.99,
     "description": "Create a unique collar for your pup with your choice of colour, size, and charms. Each collar comes with one free charm!",
     "sizes": [
-      { "name": "XS", "measurements_cm": "20-25cm", "measurements_in": "8-10\"", "price": 17.99 },
-      { "name": "S", "measurements_cm": "25-35cm", "measurements_in": "10-14\"", "price": 17.99 },
-      { "name": "M", "measurements_cm": "35-45cm", "measurements_in": "14-18\"", "price": 19.99 },
-      { "name": "L", "measurements_cm": "45-55cm", "measurements_in": "18-22\"", "price": 21.99 },
-      { "name": "XL", "measurements_cm": "55-65cm", "measurements_in": "22-26\"", "price": 23.99 }
+      { "size": "xs", "measurements_cm": "20-25cm", "measurements_in": "8-10\"", "price": 17.99 },
+      { "size": "s", "measurements_cm": "25-35cm", "measurements_in": "10-14\"", "price": 17.99 },
+      { "size": "m", "measurements_cm": "35-45cm", "measurements_in": "14-18\"", "price": 20.99 }
     ],
     "colors": [
       { "name": "Chilli", "code": "#C1272D" },
