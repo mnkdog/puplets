@@ -1,6 +1,6 @@
 # Plan: Cart Styling and Product Accuracy
 
-**Status**: draft
+**Status**: approved
 **Created**: 2026-08-24
 **Gherkin persistence**: plan-file-only
 
