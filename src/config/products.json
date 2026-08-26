@@ -1,0 +1,34 @@
+{
+  "collar": {
+    "name": "Waterproof Dog Collar",
+    "basePrice": 17.99,
+    "description": "Create a unique collar for your pup with your choice of colour, size, and charms. Each collar comes with one free charm!",
+    "sizes": [
+      { "size": "xs", "measurements_cm": "20-25cm", "measurements_in": "8-10\"", "price": 17.99 },
+      { "size": "s", "measurements_cm": "25-35cm", "measurements_in": "10-14\"", "price": 17.99 },
+      { "size": "m", "measurements_cm": "35-45cm", "measurements_in": "14-18\"", "price": 20.99 }
+    ],
+    "colors": [
+      { "name": "Chilli", "code": "#C1272D" },
+      { "name": "Rose", "code": "#E75480" },
+      { "name": "Lilac", "code": "#C8A2C8" },
+      { "name": "Sky", "code": "#87CEEB" },
+      { "name": "Mint", "code": "#98FF98" },
+      { "name": "Mustard", "code": "#FFDB58" },
+      { "name": "Black", "code": "#000000" }
+    ],
+    "inStock": true
+  },
+  "charms": {
+    "name": "Individual Charms",
+    "price": 3.99,
+    "description": "Add extra personality to your dog's collar! Choose from our collection of 20 adorable charms.",
+    "items": [
+      "White paw", "Black paw", "Bone", "Heart", "Star",
+      "Rainbow", "Donut", "Pizza slice", "Taco", "Avocado",
+      "Strawberry", "Watermelon", "Crown", "Diamond", "Butterfly",
+      "Bee", "Ghost", "Lightning bolt", "Sun", "Moon"
+    ],
+    "inStock": true
+  }
+}

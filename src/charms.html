@@ -337,14 +337,14 @@
          * Updates price display when loading completes
          */
         async function loadCharmPrice() {
-            const data = await fetchJSON('/products/charms/individual-charms.json', null);
-            if (data && isValidPrice(data.price)) {
-                charmPrice = data.price;
+            const data = await fetchJSON('/config/products.json', null);
+            if (data && data.charms && isValidPrice(data.charms.price)) {
+                charmPrice = data.charms.price;
                 charmPriceSource = 'cms';
             } else {
                 charmPrice = 3.99;
                 charmPriceSource = 'fallback';
-                if (data && !isValidPrice(data.price)) {
+                if (data && data.charms && !isValidPrice(data.charms.price)) {
                     console.warn('[PriceSync Error] Invalid charm price in CMS data');
                 }
             }
@@ -583,5 +583,43 @@
         updateCartCount();
         updatePrice();
     </script>
+
+    <footer style="background: #2D2D2D; color: white; padding: 3rem 2rem 2rem; margin-top: 4rem;">
+        <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+            <div>
+                <h3 style="color: #C1272D; margin-top: 0;">Shop</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="/collar.html" style="color: #E5E5E5; text-decoration: none;">Waterproof Collars</a></li>
+                    <li><a href="/charms.html" style="color: #E5E5E5; text-decoration: none;">Charms</a></li>
+                    <li><a href="/size-guide.html" style="color: #E5E5E5; text-decoration: none;">Size Guide</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="color: #C1272D; margin-top: 0;">Customer Service</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="/faq.html" style="color: #E5E5E5; text-decoration: none;">FAQ</a></li>
+                    <li><a href="/contact.html" style="color: #E5E5E5; text-decoration: none;">Contact Us</a></li>
+                    <li><a href="/returns-policy.html" style="color: #E5E5E5; text-decoration: none;">Returns</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="color: #C1272D; margin-top: 0;">Legal</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="/privacy-policy.html" style="color: #E5E5E5; text-decoration: none;">Privacy Policy</a></li>
+                    <li><a href="/terms-and-conditions.html" style="color: #E5E5E5; text-decoration: none;">Terms &amp; Conditions</a></li>
+                    <li><a href="/cookie-policy.html" style="color: #E5E5E5; text-decoration: none;">Cookie Policy</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="color: #C1272D; margin-top: 0;">About</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="/about.html" style="color: #E5E5E5; text-decoration: none;">Our Story</a></li>
+                </ul>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #444;">
+            <p>&copy; 2026 Puplets. All rights reserved.</p>
+        </div>
+    </footer>
 </body>
 </html>

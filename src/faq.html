@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ - Puplets</title>
+    <style>
+        body {
+            background: #F5F1ED;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+        }
+        .logo-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #101820;
+            text-decoration: none;
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+        .cart-button {
+            background: #101820;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .cart-button:hover {
+            transform: translateY(-2px);
+        }
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #D6001C;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        .nav-links a {
+            color: #5A4A42;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #101820;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .mobile-menu.active {
+            display: block;
+        }
+        .mobile-menu-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background: white;
+            padding: 2rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+        .mobile-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .mobile-menu-links a {
+            color: #101820;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        .content {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .content h1 { color: #C1272D; margin-top: 0; }
+        .content h2 { color: #333; margin-top: 2rem; }
+        .content h3 { color: #666; margin-top: 1.5rem; }
+        .content a { color: #C1272D; }
+        footer {
+            background: #2D2D2D;
+            color: white;
+            padding: 3rem 2rem 2rem;
+            margin-top: 4rem;
+        }
+        footer .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        footer h3 { color: #C1272D; margin-top: 0; }
+        footer ul { list-style: none; padding: 0; }
+        footer a { color: #E5E5E5; text-decoration: none; }
+        footer a:hover { color: white; }
+        footer .bottom { text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #444; }
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem 1.5rem;
+            }
+            .hamburger {
+                display: flex;
+            }
+            .nav-links a:not(.cart-button) {
+                display: none;
+            }
+            .nav-links {
+                gap: 1rem;
+            }
+            .content { margin: 1rem; padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo-nav">
+                <img src="logo.png" alt="Puplets" class="logo-icon">
+                Puplets
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="products.html">Products</a>
+            <a href="blog.html">Blog</a>
+            <a href="about.html" id="aboutLinkDesktop">About</a>
+            <a href="cart.html" class="cart-button">
+                <span>🛒</span>
+                Cart
+                <span class="cart-count" id="cartCount" role="status" aria-live="polite" aria-atomic="true" style="display: none;">0</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenu(event)">
+        <div class="mobile-menu-content" onclick="event.stopPropagation()">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            <div class="mobile-menu-links">
+                <a href="/">Home</a>
+                <a href="products.html">Products</a>
+                <a href="blog.html">Blog</a>
+                <a href="about.html" id="aboutLinkMobile">About</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="content"><h1>Frequently Asked Questions</h1>
+<p>Quick answers to common questions about Puplets collars and charms!</p>
+<h2>Orders &amp; Purchasing</h2>
+<h3>How do I place an order?</h3>
+<ol>
+<li>Choose your collar color and size</li>
+<li>Select your free included charm</li>
+<li>Add extra charms if you want (£3.99 each)</li>
+<li>Add to cart and proceed to checkout</li>
+<li>Enter delivery details and pay securely via Stripe</li>
+</ol>
+<h3>What payment methods do you accept?</h3>
+<p>We accept all major credit and debit cards through Stripe:</p>
+<ul>
+<li>Visa</li>
+<li>Mastercard</li>
+<li>American Express</li>
+<li>Apple Pay / Google Pay</li>
+</ul>
+<h3>Is it safe to use my card?</h3>
+<p>Yes! We use Stripe for payment processing - one of the world&#39;s most trusted payment platforms. We never see or store your full card details.</p>
+<h3>Can I change my order after placing it?</h3>
+<p><strong>Before dispatch:</strong> Email us immediately at [<a href="mailto:your.email@puplets.co.uk">your.email@puplets.co.uk</a>] - we&#39;ll try to catch it!</p>
+<p><strong>After dispatch:</strong> You can return it when it arrives using our 14-day return policy.</p>
+<h3>Do you offer gift cards?</h3>
+<p>Not currently, but it&#39;s on our roadmap! For now, you could order and have it shipped to the recipient&#39;s address with a gift note (contact us to arrange).</p>
+<h2>Products</h2>
+<h3>What are the collars made from?</h3>
+<p>Our collars are made from <strong>BioThane</strong> - a durable, waterproof material that&#39;s:</p>
+<ul>
+<li>✅ Waterproof &amp; weatherproof</li>
+<li>✅ Easy to clean (wipe with damp cloth)</li>
+<li>✅ Doesn&#39;t absorb odors</li>
+<li>✅ Won&#39;t crack or peel</li>
+<li>✅ Vegan-friendly</li>
+<li>✅ Available in vibrant colors that won&#39;t fade</li>
+</ul>
+<h3>Are the collars really waterproof?</h3>
+<p>Yes! Your dog can swim, play in puddles, get caught in rain - the collar stays waterproof and won&#39;t smell or deteriorate.</p>
+<h3>How do I clean the collar?</h3>
+<p>Super easy:</p>
+<ol>
+<li>Wipe with a damp cloth</li>
+<li>For stubborn dirt: mild soap + water</li>
+<li>Rinse and dry with a towel</li>
+<li>Done!</li>
+</ol>
+<p>No machine washing needed (though it would survive it).</p>
+<h3>What&#39;s included with a collar?</h3>
+<p>Every collar includes:</p>
+<ul>
+<li>The adjustable BioThane collar</li>
+<li><strong>One free charm</strong> of your choice</li>
+<li>Secure hardware and D-ring</li>
+</ul>
+<p>Extra charms are £3.99 each.</p>
+<h3>How many charms can I add?</h3>
+<p>We recommend:</p>
+<ul>
+<li><strong>XS/S collars:</strong> 1-3 charms</li>
+<li><strong>M collars:</strong> 1-4 charms</li>
+</ul>
+<p>Too many charms can be heavy or uncomfortable for small dogs.</p>
+<h3>Can I buy just charms?</h3>
+<p>Yes! Individual charms are £3.99 each. They slide onto our collars but may fit other slide-charm compatible collars too.</p>
+<h3>What charm options are available?</h3>
+<p>We have 20 designs:</p>
+<ul>
+<li>Paws (white, black)</li>
+<li>Shapes (heart, star, bone, crown, diamond)</li>
+<li>Food (donut, pizza, taco, avocado, strawberry, watermelon)</li>
+<li>Nature (rainbow, butterfly, bee, sun, moon)</li>
+<li>Fun (ghost, lightning bolt)</li>
+</ul>
+<p>See the full collection on our <a href="/collar.html">product pages</a>.</p>
+<h2>Sizing &amp; Fit</h2>
+<h3>How do I know what size to order?</h3>
+<p>Measure your dog&#39;s neck where their collar sits:</p>
+<ul>
+<li>Wrap a soft tape measure around their neck</li>
+<li>Use the &quot;two finger rule&quot; (should fit two fingers between tape and neck)</li>
+<li>Check our <a href="/size-guide.html">Size Guide</a> for measurements</li>
+</ul>
+<h3>What if I order the wrong size?</h3>
+<p>No problem! You have 14 days to return for a different size:</p>
+<ul>
+<li>See our <a href="/returns-policy.html">Returns Policy</a></li>
+<li>Unused collars in original packaging</li>
+<li>We&#39;ll refund when we receive it</li>
+<li>Place a new order for the correct size</li>
+</ul>
+<h3>My dog is between sizes - which should I choose?</h3>
+<p><strong>Always size up.</strong> A slightly loose collar can be adjusted tighter, but a too-small collar can&#39;t be made bigger.</p>
+<h3>Do the collars adjust?</h3>
+<p>Yes! Each size has an adjustable range:</p>
+<ul>
+<li>XS: 20-25cm</li>
+<li>S: 25-35cm</li>
+<li>M: 35-45cm</li>
+</ul>
+<h2>Shipping &amp; Delivery</h2>
+<h3>How much is shipping?</h3>
+<p><strong>FREE!</strong> All orders ship free worldwide to our delivery countries.</p>
+<h3>Where do you ship?</h3>
+<p>We currently ship to:</p>
+<ul>
+<li>🇬🇧 United Kingdom</li>
+<li>🇺🇸 United States</li>
+<li>🇨🇦 Canada</li>
+<li>🇦🇺 Australia</li>
+<li>🇳🇿 New Zealand</li>
+<li>🇮🇪 Ireland</li>
+</ul>
+<h3>How long does delivery take?</h3>
+<p><strong>3-7 business days</strong> for most locations (estimate, not guarantee)</p>
+<p>Tracking information is provided when available.</p>
+<h3>Can I track my order?</h3>
+<p>Yes! You&#39;ll receive:</p>
+<ol>
+<li>Order confirmation email (when you order)</li>
+<li>Dispatch confirmation email (when we ship)</li>
+<li>Tracking number (if available for your delivery method)</li>
+</ol>
+<h3>I haven&#39;t received my order</h3>
+<p>If it&#39;s been more than 7 business days:</p>
+<ol>
+<li>Check your tracking (if provided)</li>
+<li>Check with neighbors/safe places</li>
+<li>Contact us at [<a href="mailto:your.email@puplets.co.uk">your.email@puplets.co.uk</a>]</li>
+</ol>
+<p>We&#39;ll investigate and send replacement or refund if lost.</p>
+<h2>Returns &amp; Refunds</h2>
+<h3>Can I return my order?</h3>
+<p>Yes! You have <strong>14 days</strong> from delivery to return items for any reason:</p>
+<ul>
+<li>Must be unused and in original packaging</li>
+<li>Return shipping cost is your responsibility (for change-of-mind returns)</li>
+<li>Full refund when we receive it</li>
+</ul>
+<p>See our full <a href="/returns-policy.html">Returns Policy</a>.</p>
+<h3>How do I start a return?</h3>
+<p>Email [<a href="mailto:your.email@puplets.co.uk">your.email@puplets.co.uk</a>] with:</p>
+<ul>
+<li>Your order number</li>
+<li>What you want to return</li>
+<li>Reason (helps us improve)</li>
+</ul>
+<p>We&#39;ll send you return instructions.</p>
+<h3>How long do refunds take?</h3>
+<ul>
+<li>We process your return within 2 business days of receiving it</li>
+<li>Refund issued within 14 days</li>
+<li>Appears in your account 5-10 business days after issue (depending on your bank)</li>
+</ul>
+<h3>What if my item arrived damaged?</h3>
+<p>Contact us within <strong>48 hours</strong> with:</p>
+<ul>
+<li>Photos of damage</li>
+<li>Your order number</li>
+</ul>
+<p>We&#39;ll send a <strong>prepaid return label</strong> and either:</p>
+<ul>
+<li>Send a replacement, or</li>
+<li>Refund you immediately</li>
+</ul>
+<p>Your choice!</p>
+<h2>Care &amp; Maintenance</h2>
+<h3>How do I attach/remove charms?</h3>
+<p>Our charms slide on and off the collar:</p>
+<ol>
+<li>Unbuckle the collar</li>
+<li>Slide charm onto the collar strap</li>
+<li>Rebuckle</li>
+</ol>
+<p>They stay in place when buckled but slide freely when unbuckled.</p>
+<h3>Will the colors fade?</h3>
+<p>No! BioThane is colorfast and UV-resistant. Your vibrant collar stays vibrant.</p>
+<h3>How long will my collar last?</h3>
+<p>With proper care:</p>
+<ul>
+<li><strong>Years!</strong> BioThane is incredibly durable</li>
+<li>Won&#39;t crack, peel, or deteriorate like leather</li>
+<li>Outlasts traditional nylon collars</li>
+</ul>
+<h3>Can the collar go in the washing machine?</h3>
+<p>It would survive it, but it&#39;s not necessary! Just wipe clean with a damp cloth.</p>
+<h2>Safety</h2>
+<h3>Are these collars safe for puppies?</h3>
+<p>Yes, but:</p>
+<ul>
+<li>✅ Choose correct size (use our size guide)</li>
+<li>✅ Check fit regularly as puppy grows</li>
+<li>✅ Never leave unsupervised with collar on</li>
+<li>✅ Size up when at maximum adjustment</li>
+</ul>
+<h3>Is BioThane safe if chewed?</h3>
+<p>BioThane is non-toxic, but collars are not chew toys. If your dog chews their collar:</p>
+<ul>
+<li>Supervise collar wearing</li>
+<li>Remove when unsupervised</li>
+<li>Replace if damaged</li>
+</ul>
+<h3>Should my dog wear the collar 24/7?</h3>
+<p>We recommend:</p>
+<ul>
+<li>✅ During walks and supervised time</li>
+<li>❌ Remove during sleep</li>
+<li>❌ Remove during rough play with other dogs</li>
+<li>❌ Remove if left home alone unsupervised</li>
+</ul>
+<h2>About Puplets</h2>
+<h3>Where are you based?</h3>
+<p>We&#39;re a UK-based small business passionate about making quality, stylish accessories for dogs!</p>
+<p><strong>Contact:</strong> [Your business address]</p>
+<h3>Do you have a physical store?</h3>
+<p>We&#39;re online-only currently, which helps us keep prices low and shipping free!</p>
+<h3>Can I follow you on social media?</h3>
+<p>Yes! We&#39;d love to see photos of your dog in their Puplets collar:</p>
+<p>[Add links when ready]</p>
+<ul>
+<li>Instagram: @puplets</li>
+<li>Facebook: /puplets</li>
+<li>Tag us: #puplets</li>
+</ul>
+<h3>Do you offer wholesale?</h3>
+<p>Yes! For wholesale inquiries:</p>
+<ul>
+<li>Email: [<a href="mailto:wholesale@puplets.co.uk">wholesale@puplets.co.uk</a>]</li>
+<li>Include your business details</li>
+<li>We&#39;ll send our wholesale pack</li>
+</ul>
+<h2>Still Have Questions?</h2>
+<p>Can&#39;t find your answer here?</p>
+<p><strong>Email us:</strong> [<a href="mailto:your.email@puplets.co.uk">your.email@puplets.co.uk</a>]<br><strong>Response time:</strong> Usually within a few hours (1 business day maximum)</p>
+<p>We&#39;re friendly and here to help!</p>
+</div>
+    <footer>
+        <div class="container">
+            <div><h3>Shop</h3><ul><li><a href="/collar.html">Waterproof Collars</a></li><li><a href="/charms.html">Charms</a></li><li><a href="/size-guide.html">Size Guide</a></li></ul></div>
+            <div><h3>Customer Service</h3><ul><li><a href="/faq.html">FAQ</a></li><li><a href="/contact.html">Contact Us</a></li><li><a href="/returns-policy.html">Returns</a></li></ul></div>
+            <div><h3>Legal</h3><ul><li><a href="/privacy-policy.html">Privacy Policy</a></li><li><a href="/terms-and-conditions.html">Terms &amp; Conditions</a></li><li><a href="/cookie-policy.html">Cookie Policy</a></li></ul></div>
+            <div><h3>About</h3><ul><li><a href="/about.html">Our Story</a></li></ul></div>
+        </div>
+        <div class="bottom"><p>&copy; 2026 Puplets. All rights reserved.</p></div>
+    </footer>
+    <script src="common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countElement = document.getElementById('cartCount');
+            if (cart.length > 0) {
+                countElement.textContent = cart.length;
+                countElement.style.display = 'flex';
+            }
+            await checkAboutPageVisibility();
+        });
+    </script>
+</body>
+</html>
