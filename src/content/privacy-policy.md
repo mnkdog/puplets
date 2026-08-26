@@ -72,7 +72,7 @@ To exercise these rights, contact us at [your email].
 
 ## International Transfers
 
-We ship to UK, US, Canada, Australia, New Zealand, and Ireland. Your data may be transferred outside the UK/EEA when processing payments through Stripe. Stripe is certified under appropriate data protection frameworks.
+We currently ship to the UK only. Your data may be transferred outside the UK/EEA when processing payments through Stripe. Stripe is certified under appropriate data protection frameworks.
 
 ## Data Security
 

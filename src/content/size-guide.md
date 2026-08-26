@@ -97,7 +97,7 @@ Our waterproof collars:
 - **Won't shrink** when wet
 - **Won't stretch** over time
 - **Maintain size** through washing
-- **BioThane material** stays consistent
+- **PVC coated nylon webbing** stays consistent
 
 This means your size stays accurate long-term!
 

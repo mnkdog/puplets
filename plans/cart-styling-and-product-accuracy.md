@@ -226,11 +226,11 @@ None - all work items deliver user-visible accuracy fixes.
 - [x] 1. Add green color styling to collar modal heading
 
 **Slice 2: Update shipping policy to UK-only**
-- [ ] 1. Update privacy policy shipping text
-- [ ] 2. Update FAQ shipping section
+- [x] 1. Update privacy policy shipping text
+- [x] 2. Update FAQ shipping section
 
 **Slice 3: Correct material description**
-- [ ] 1. Replace BioThane with PVC coated nylon webbing across all content files
+- [x] 1. Replace BioThane with PVC coated nylon webbing across all content files
 
 ---
 
