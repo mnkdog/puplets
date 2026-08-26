@@ -13,19 +13,24 @@ Fix three product page inaccuracies to ensure customers see correct, consistent 
 
 ## Acceptance Criteria
 
+**Scope:** All user-facing HTML files in `src/` and `src/content/` directories, excluding code comments and build artifacts. Requirements apply to all current and future product pages.
+
 1. **Cart success message consistency**
-   - Cart modal heading is green on collar.html, matching charms.html
-   - Visual confirmation uses same success color across all product types
+   - Cart modal heading on collar.html uses #00AD50 (brand success green), identical to the computed color value of charms.html modal heading
+   - All product type modals (collar, charms, and any future products) display success confirmation with #00AD50 text in the modal heading
+   - Success confirmation includes both color and text content (✓ icon and "Added to Cart!" text) for non-visual accessibility
 
 2. **Shipping policy accuracy**
-   - Privacy policy states UK-only shipping
+   - Privacy policy states UK-only shipping (United Kingdom mainland)
    - FAQ shipping section lists only UK
-   - Product pages (collar.html, charms.html) contain no conflicting shipping information
-   - No mentions of international shipping (US, Canada, Australia, NZ, Ireland) on any page
+   - Product pages (collar.html, charms.html, and any future product pages) contain no mentions of shipping to US, Canada, Australia, NZ, Ireland, or any country other than UK
+   - Case-insensitive grep across all active HTML and Markdown content files in `src/` and `src/content/` finds no international shipping mentions (excluding code comments and disabled code)
 
 3. **Material specification correctness**
-   - FAQ and size guide describe "PVC coated nylon webbing" with accurate properties (waterproof, durable, easy to clean)
-   - No remaining mentions of "BioThane" (case-insensitive) across any page
+   - FAQ primary material description (first mention) states "PVC coated nylon webbing" with all three properties: waterproof, durable, easy to clean
+   - Size guide describes material as "PVC coated nylon webbing" (properties may be omitted if context is clear)
+   - Product pages may reference material but must use "PVC coated nylon webbing" terminology (no property list required for product pages)
+   - Case-insensitive grep for "biothane" across all active HTML and Markdown content files in `src/` and `src/content/` returns zero matches (excluding code comments and disabled code)
 
 ## Slices
 
@@ -218,7 +223,7 @@ None - all work items deliver user-visible accuracy fixes.
 ## Build Progress
 
 **Slice 1: Standardize cart success modal styling**
-- [ ] 1. Add green color styling to collar modal heading
+- [x] 1. Add green color styling to collar modal heading
 
 **Slice 2: Update shipping policy to UK-only**
 - [ ] 1. Update privacy policy shipping text
