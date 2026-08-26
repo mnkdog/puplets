@@ -68,7 +68,7 @@ A contract forms when we dispatch your order and send a dispatch confirmation em
 ### Shipping Policy
 - **Shipping cost:** FREE on all orders
 - **Delivery time:** 3-7 business days (estimate, not guarantee)
-- **Delivery areas:** UK, US, Canada, Australia, New Zealand, Ireland
+- **Delivery areas:** UK only
 - **Tracking:** Provided where available
 
 ### Delivery Address
