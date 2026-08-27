@@ -212,6 +212,11 @@ When('I navigate to the about page', async function () {
   await this.page.waitForLoadState('networkidle');
 });
 
+When('I navigate to the products page', async function () {
+  await this.page.goto('http://localhost:8080/collar.html');
+  await this.page.waitForLoadState('networkidle');
+});
+
 When('I add another item to the cart', async function () {
   await this.page.goto('http://localhost:8080/collar.html');
   await this.page.selectOption('#color', { index: 1 });
