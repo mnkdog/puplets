@@ -504,12 +504,14 @@
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             cart.splice(index, 1);
             localStorage.setItem('cart', JSON.stringify(cart));
+            localStorage.removeItem('editingItem');
             renderCart();
         }
 
         function clearCart() {
             if (confirm('Are you sure you want to clear your entire cart?')) {
                 localStorage.setItem('cart', '[]');
+                localStorage.removeItem('editingItem');
                 renderCart();
             }
         }

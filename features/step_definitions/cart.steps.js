@@ -237,3 +237,41 @@ Then('the subtotal should be the sum of both items', async function () {
     expect(subtotal).to.be.greaterThan(20); // At least 2 items worth
   }
 });
+
+Given('I have {int} items in the cart', async function (count) {
+  for (let i = 0; i < count; i++) {
+    await this.page.goto('http://localhost:8080/collar.html');
+    await this.page.waitForLoadState('networkidle');
+
+    await this.page.selectOption('#color', 'ocean');
+    await this.page.selectOption('#size', 's');
+    await this.page.selectOption('#charm', 'star');
+    await this.page.click('#addToBasket');
+
+    const continueButton = await this.page.locator('button:has-text("Continue Shopping")');
+    await continueButton.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+    const buttonCount = await continueButton.count();
+    if (buttonCount > 0) {
+      await continueButton.click();
+      await continueButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
+    }
+  }
+});
+
+When('I click edit on item {int}', async function (itemNumber) {
+  const editButtons = await this.page.locator('.remove:has-text("Edit")').all();
+  expect(editButtons.length).to.be.at.least(itemNumber);
+  await editButtons[itemNumber - 1].click();
+});
+
+When('I remove item {int}', async function (itemNumber) {
+  const removeButtons = await this.page.locator('.remove:has-text("Remove")').all();
+  expect(removeButtons.length).to.be.at.least(itemNumber);
+  await removeButtons[itemNumber - 1].click();
+});
+
+Then('the cart should not have null entries', async function () {
+  const cart = await this.page.evaluate(() => JSON.parse(localStorage.getItem('cart') || '[]'));
+  const hasNull = cart.some(item => item === null || item === undefined);
+  expect(hasNull).to.be.false;
+});
