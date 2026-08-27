@@ -1110,6 +1110,9 @@
             if (colorSelect.value) {
                 populateSizeOptions(colorSelect.value);
             }
+
+            // Expose validateForm for loadEditingItem() to call
+            window.validateForm = validateForm;
         }
 
         // Dynamic pricing

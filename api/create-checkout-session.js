@@ -175,7 +175,7 @@ export default async (req, res) => {
       ],
       billing_address_collection: 'required',
       shipping_address_collection: {
-        allowed_countries: ['GB', 'US', 'CA', 'AU', 'NZ', 'IE'],
+        allowed_countries: ['GB'],
       },
     });
 
