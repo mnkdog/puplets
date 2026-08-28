@@ -151,15 +151,6 @@ We cannot accept returns if:
 - ❌ Missing original packaging or components
 - ❌ Item damaged due to misuse
 
-## International Returns
-
-For customers outside the UK:
-- Same 14-day return right applies
-- You pay return shipping costs
-- Return to: [Your returns address]
-- Customs charges are not refunded
-- Mark package as "RETURNED GOODS" to avoid import fees
-
 ## Damaged in Transit to You
 
 If your item arrives damaged:

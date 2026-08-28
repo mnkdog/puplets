@@ -70,3 +70,16 @@ Feature: Shopping Cart
     And I navigate to the cart page
     Then I should see 2 items
     And the subtotal should be the sum of both items
+
+  Scenario: Bug reproduction - cart corruption when removing item during edit
+    Given I have 3 items in the cart
+    When I navigate to the cart page
+    And I click edit on item 3
+    And I navigate to the cart page
+    And I remove item 1
+    And I navigate to the products page
+    And I change the size
+    And I click "Update Basket"
+    And I navigate to the cart page
+    Then the cart should not have null entries
+    And I should see 3 items

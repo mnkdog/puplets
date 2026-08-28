@@ -38,7 +38,7 @@ Not currently, but it's on our roadmap! For now, you could order and have it shi
 
 ### What are the collars made from?
 
-Our collars are made from **BioThane** - a durable, waterproof material that's:
+Our collars are made from **PVC coated nylon webbing** - a durable, waterproof material that's:
 - ✅ Waterproof & weatherproof
 - ✅ Easy to clean (wipe with damp cloth)
 - ✅ Doesn't absorb odors
@@ -63,7 +63,7 @@ No machine washing needed (though it would survive it).
 ### What's included with a collar?
 
 Every collar includes:
-- The adjustable BioThane collar
+- The adjustable PVC coated nylon webbing collar
 - **One free charm** of your choice
 - Secure hardware and D-ring
 
@@ -124,17 +124,11 @@ Yes! Each size has an adjustable range:
 
 ### How much is shipping?
 
-**FREE!** All orders ship free worldwide to our delivery countries.
+**FREE!** All orders ship free within the UK.
 
 ### Where do you ship?
 
-We currently ship to:
-- 🇬🇧 United Kingdom
-- 🇺🇸 United States
-- 🇨🇦 Canada
-- 🇦🇺 Australia
-- 🇳🇿 New Zealand
-- 🇮🇪 Ireland
+We currently ship to the United Kingdom only.
 
 ### How long does delivery take?
 
@@ -209,12 +203,12 @@ They stay in place when buckled but slide freely when unbuckled.
 
 ### Will the colors fade?
 
-No! BioThane is colorfast and UV-resistant. Your vibrant collar stays vibrant.
+No! PVC coated nylon webbing is colorfast and UV-resistant. Your vibrant collar stays vibrant.
 
 ### How long will my collar last?
 
 With proper care:
-- **Years!** BioThane is incredibly durable
+- **Years!** PVC coated nylon webbing is incredibly durable
 - Won't crack, peel, or deteriorate like leather
 - Outlasts traditional nylon collars
 
@@ -232,9 +226,9 @@ Yes, but:
 - ✅ Never leave unsupervised with collar on
 - ✅ Size up when at maximum adjustment
 
-### Is BioThane safe if chewed?
+### Is PVC coated nylon webbing safe if chewed?
 
-BioThane is non-toxic, but collars are not chew toys. If your dog chews their collar:
+PVC coated nylon webbing is non-toxic, but collars are not chew toys. If your dog chews their collar:
 - Supervise collar wearing
 - Remove when unsupervised
 - Replace if damaged

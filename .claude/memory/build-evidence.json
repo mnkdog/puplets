@@ -1,0 +1,32 @@
+{
+  "build_id": "cart-styling-and-product-accuracy",
+  "timestamp": "2026-08-26T06:05:00Z",
+  "branch": "claude/setup-tdd-bdd-testing-01Vq8gwo8QZcg9PePRtShTak",
+  "plan": "plans/cart-styling-and-product-accuracy.md",
+  "checks_run": {
+    "tests": {
+      "command": "npm test",
+      "status": "pass",
+      "unit": "92 passed",
+      "bdd": "71 scenarios (407 steps) passed"
+    },
+    "code_review": {
+      "command": "/code-review --since 7751b62 --json",
+      "status": "pass",
+      "findings": "2 warnings (auto-fixed)"
+    },
+    "farley_score": {
+      "status": "skipped",
+      "reason": "No new tests written - build modified content files only"
+    }
+  },
+  "scope_notes": [
+    "Wave 1: Slices 1-2 (cart styling, shipping policy) - content changes only",
+    "Wave 2: Slice 3 (material description) - content changes only",
+    "Code review auto-fixed 2 stale documentation references",
+    "Acceptance criteria revised and verified before implementation",
+    "Content duplication: .md and .html files manually synchronized"
+  ],
+  "untested_regions": "Not applicable - content-only changes (CSS styling, text updates)",
+  "residual_risks": []
+}

@@ -168,7 +168,7 @@
         }
 
         .modal-content h3 {
-            color: #101820;
+            color: #00AD50;
             margin-bottom: 1rem;
             font-size: 1.5rem;
         }
@@ -1110,6 +1110,9 @@
             if (colorSelect.value) {
                 populateSizeOptions(colorSelect.value);
             }
+
+            // Expose validateForm for loadEditingItem() to call
+            window.validateForm = validateForm;
         }
 
         // Dynamic pricing
@@ -1218,8 +1221,13 @@
             // Check if editing an existing item
             const editingData = localStorage.getItem('editingItem');
             if (editingData) {
-                const { index } = JSON.parse(editingData);
-                cart[index] = cartItem;
+                const { item } = JSON.parse(editingData);
+                const existingIndex = cart.findIndex(c => c.id === item.id);
+                if (existingIndex >= 0) {
+                    cart[existingIndex] = cartItem;
+                } else {
+                    cart.push(cartItem);  // Edit target was removed, add as new
+                }
                 localStorage.removeItem('editingItem');
             } else {
                 cart.push(cartItem);
