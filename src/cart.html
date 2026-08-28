@@ -502,9 +502,19 @@
 
         function removeItem(index) {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const removedItem = cart[index];
+
+            // Only clear editingItem if we're removing the item being edited
+            const editingData = localStorage.getItem('editingItem');
+            if (editingData) {
+                const { item: editingItem } = JSON.parse(editingData);
+                if (removedItem && editingItem && removedItem.id === editingItem.id) {
+                    localStorage.removeItem('editingItem');
+                }
+            }
+
             cart.splice(index, 1);
             localStorage.setItem('cart', JSON.stringify(cart));
-            localStorage.removeItem('editingItem');
             renderCart();
         }
 
