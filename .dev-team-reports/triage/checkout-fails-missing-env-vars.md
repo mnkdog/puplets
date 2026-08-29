@@ -56,9 +56,9 @@ The API was designed to fail-closed for security: when CORS configuration is mis
 
 ## Acceptance Criteria
 
-- [ ] ALLOWED_ORIGINS environment variable is configured (either in vercel.json or Vercel dashboard)
-- [ ] STRIPE_SECRET_KEY environment variable is configured securely (Vercel dashboard)
-- [ ] PUBLIC_BASE_URL environment variable is configured
+- [x] ALLOWED_ORIGINS environment variable is configured (either in vercel.json or Vercel dashboard)
+- [x] STRIPE_SECRET_KEY environment variable is configured securely (Vercel dashboard)
+- [x] PUBLIC_BASE_URL environment variable is configured
 - [ ] Checkout API returns valid Stripe session URL for valid requests
 - [ ] Frontend successfully redirects to Stripe checkout page
 - [ ] No "Server configuration error" responses from API
