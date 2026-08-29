@@ -1,6 +1,10 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "src",
+  "env": {
+    "ALLOWED_ORIGINS": "https://puplets.co.uk,https://www.puplets.co.uk,https://puplets.vercel.app,https://puplets-staging.vercel.app",
+    "PUBLIC_BASE_URL": "https://puplets.co.uk"
+  },
   "headers": [
     {
       "source": "/(.*)",

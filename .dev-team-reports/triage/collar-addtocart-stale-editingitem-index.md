@@ -1,7 +1,7 @@
 ---
 id: collar-addtocart-stale-editingitem-index
 created: 2026-08-27T15:15:00Z
-status: open
+status: resolved
 confidence: confirmed
 ---
 
@@ -62,8 +62,28 @@ Each cart item already has a stable `id: Date.now()` field (collar.html:1204) th
 
 ## Acceptance Criteria
 
-- [ ] Root cause is addressed (id-based lookup, not index-based)
-- [ ] editingItem is cleared on all cart modifications (remove, clear)
-- [ ] All new tests pass
-- [ ] Existing tests still pass
-- [ ] No regressions introduced
+- [x] Root cause is addressed (id-based lookup, not index-based)
+- [x] editingItem is cleared on all cart modifications (remove, clear)
+- [x] All new tests pass
+- [x] Existing tests still pass
+- [x] No regressions introduced
+
+## Resolution
+
+**Fixed in PR #56** (merged 2026-08-29)
+
+The fix implemented ID-based cart item lookup and selective editingItem clearing:
+
+1. **collar.html addToCart()**: Changed from index-based to ID-based lookup using `cart.findIndex(c => c.id === item.id)`. If the edited item is found, it updates it; if removed, adds as new item.
+
+2. **cart.html removeItem()**: Only clears editingItem when removing the specific item being edited (by comparing item IDs), not on any removal.
+
+3. **cart.html clearCart()**: Always clears editingItem when clearing entire cart.
+
+4. **BDD test coverage**: Added bug reproduction scenario in `features/shopping-cart.feature` with full step definitions.
+
+**Files changed:**
+- src/collar.html (ID-based lookup)
+- src/cart.html (selective editingItem clearing)
+- features/shopping-cart.feature (test scenario)
+- features/step_definitions/cart.steps.js (step definitions)
