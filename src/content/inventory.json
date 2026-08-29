@@ -3,47 +3,47 @@
     {
       "color": "chilli",
       "size": "xs",
-      "quantity": 1000
+      "quantity": 200
     },
     {
       "color": "chilli",
       "size": "s",
-      "quantity": 1000
+      "quantity": 200
     },
     {
       "color": "chilli",
       "size": "m",
-      "quantity": 1000
+      "quantity": 200
     },
     {
       "color": "ocean",
       "size": "xs",
-      "quantity": 1000
+      "quantity": 200
     },
     {
       "color": "ocean",
       "size": "s",
-      "quantity": 10
+      "quantity": 200
     },
     {
       "color": "ocean",
       "size": "m",
-      "quantity": 1000
+      "quantity": 200
     },
     {
       "color": "fern",
       "size": "xs",
-      "quantity": 1000
+      "quantity": 200
     },
     {
       "color": "fern",
       "size": "s",
-      "quantity": 1000
+      "quantity": 200
     },
     {
       "color": "fern",
       "size": "m",
-      "quantity": 1000
+      "quantity": 200
     }
   ],
   "charms": [
