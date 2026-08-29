@@ -139,3 +139,89 @@ async function fetchJSON(url, fallback) {
         return fallback;
     }
 }
+
+/**
+ * Current cart schema version
+ * Increment when cart structure changes to trigger migration
+ */
+const CART_SCHEMA_VERSION = 1;
+
+/**
+ * Migrate legacy cart items to current schema
+ *
+ * Performs one-shot migration of cart items that lack required fields.
+ * Uses structural analysis (not display text) to infer item type:
+ * - Items with size/color/extraCharms → collar
+ * - Items with charm slug + quantity (no size) → charm
+ * - Unclassifiable items → dropped (logged as warning)
+ *
+ * Also ensures all items have identity (id field) and normalizes
+ * price to Money value object {amount, currency}.
+ *
+ * Migration runs once per schema version and is idempotent.
+ */
+function migrateCart() {
+    try {
+        const raw = localStorage.getItem('cart');
+        if (!raw) return; // No cart to migrate
+
+        const cart = JSON.parse(raw);
+        const currentVersion = parseInt(localStorage.getItem('cartSchemaVersion') || '0');
+
+        // Already migrated to current version
+        if (currentVersion >= CART_SCHEMA_VERSION) return;
+
+        let migrated = false;
+        const migratedCart = [];
+
+        for (const item of cart) {
+            // Skip items that already have required fields
+            if (item.type && item.id != null) {
+                migratedCart.push(item);
+                continue;
+            }
+
+            migrated = true;
+
+            // Infer type from structural domain fields, not display text
+            let type = null;
+            if ((item.size != null || item.color != null || item.extraCharms != null)) {
+                type = 'collar';
+            } else if (item.charm != null && item.quantity != null && item.size == null) {
+                type = 'charm';
+            }
+
+            // Drop unclassifiable items rather than guessing
+            if (!type) {
+                console.warn('Cart migration: dropping unclassifiable item', item);
+                continue;
+            }
+
+            // Ensure item has identity
+            const id = item.id ?? item.timestamp ?? crypto.randomUUID();
+
+            // Normalize price to Money value object
+            let price = item.price;
+            if (typeof price === 'number') {
+                price = { amount: price, currency: 'GBP' };
+            } else if (!price || typeof price !== 'object') {
+                price = { amount: 0, currency: 'GBP' };
+            }
+
+            migratedCart.push({
+                ...item,
+                type,
+                id,
+                price
+            });
+        }
+
+        if (migrated) {
+            localStorage.setItem('cart', JSON.stringify(migratedCart));
+            localStorage.setItem('cartSchemaVersion', String(CART_SCHEMA_VERSION));
+            console.log(`Cart migrated to schema v${CART_SCHEMA_VERSION}: ${cart.length - migratedCart.length} items dropped, ${migratedCart.length} items migrated`);
+        }
+    } catch (error) {
+        console.error('Cart migration failed:', error);
+    }
+}

@@ -327,35 +327,8 @@
         <div id="cartContent"></div>
     </div>
 
+    <script src="common.js"></script>
     <script>
-        // Cart migration for legacy items without type field
-        function migrateCart() {
-            try {
-                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                let migrated = false;
-
-                const migratedCart = cart.map(item => {
-                    // Skip items that already have type field
-                    if (item.type) return item;
-
-                    migrated = true;
-                    // Infer type from product name
-                    const isCollar = item.product && item.product.toLowerCase().includes('collar');
-                    return {
-                        ...item,
-                        type: isCollar ? 'collar' : 'charm'
-                    };
-                });
-
-                if (migrated) {
-                    localStorage.setItem('cart', JSON.stringify(migratedCart));
-                    console.log('Cart migrated: added type field to legacy items');
-                }
-            } catch (error) {
-                console.error('Cart migration failed:', error);
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', async () => {
             migrateCart(); // Migrate legacy cart items first
 
@@ -373,31 +346,6 @@
             renderCart();
             await checkAboutPageVisibility();
         });
-
-        async function checkAboutPageVisibility() {
-            try {
-                const response = await fetch('/content/about.md');
-                if (response.ok) {
-                    const content = await response.text();
-                    // Extract frontmatter
-                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-                    if (frontmatterMatch) {
-                        const frontmatter = frontmatterMatch[1];
-                        // Check if published is false
-                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
-                        if (publishedMatch && publishedMatch[1] === 'false') {
-                            // Hide About links
-                            const desktopLink = document.getElementById('aboutLinkDesktop');
-                            const mobileLink = document.getElementById('aboutLinkMobile');
-                            if (desktopLink) desktopLink.style.display = 'none';
-                            if (mobileLink) mobileLink.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load about page status:', error);
-            }
-        }
 
         function renderCart() {
             try {
@@ -607,19 +555,6 @@
                 alert('Sorry, there was an error processing your checkout. Please try again.');
                 checkoutButton.textContent = originalText;
                 checkoutButton.disabled = false;
-            }
-        }
-
-        // Mobile menu toggle
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('active');
-        }
-
-        function closeMobileMenu(event) {
-            if (!event || event.target === event.currentTarget) {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.remove('active');
             }
         }
     </script>

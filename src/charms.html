@@ -544,7 +544,7 @@
                         source: charmPriceSource
                     },
                     quantity: quantity,
-                    timestamp: Date.now()
+                    id: Date.now()
                 });
             }
 
@@ -559,53 +559,6 @@
 
         function closeAddedModal() {
             document.getElementById('addedModal').classList.remove('active');
-        }
-
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const cartCount = document.getElementById('cartCount');
-            if (cartCount) {
-                cartCount.textContent = cart.length;
-                cartCount.style.display = cart.length > 0 ? 'flex' : 'none';
-            }
-        }
-
-        function toggleMobileMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
-        }
-
-        function closeMobileMenu(event) {
-            if (!event || event.target === event.currentTarget) {
-                document.getElementById('mobileMenu').classList.remove('active');
-            }
-        }
-
-        // Cart migration for legacy items without type field
-        function migrateCart() {
-            try {
-                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                let migrated = false;
-
-                const migratedCart = cart.map(item => {
-                    // Skip items that already have type field
-                    if (item.type) return item;
-
-                    migrated = true;
-                    // Infer type from product name
-                    const isCollar = item.product && item.product.toLowerCase().includes('collar');
-                    return {
-                        ...item,
-                        type: isCollar ? 'collar' : 'charm'
-                    };
-                });
-
-                if (migrated) {
-                    localStorage.setItem('cart', JSON.stringify(migratedCart));
-                    console.log('Cart migrated: added type field to legacy items');
-                }
-            } catch (error) {
-                console.error('Cart migration failed:', error);
-            }
         }
 
         migrateCart(); // Migrate legacy cart items first
