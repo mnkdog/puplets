@@ -11,11 +11,13 @@ spec: docs/specs/post-order-processing.md
 
 ## Goal
 
-Implement a complete post-order processing system that captures orders in Airtable, sends confirmation emails to customers and shop owners, updates inventory, and provides shipping notification capability.
+**Problem**: Checkout success page promises confirmation emails and tracking information that aren't delivered. Shop owner has zero visibility into orders. Customers receive no confirmation, and there's no way to update them when orders ship.
+
+**Solution**: Implement post-order processing that fulfills these promises - capture orders in Airtable for visibility, send confirmations to customers and shop owner, update inventory automatically, and provide shipping notification capability.
 
 **Spec**: `docs/specs/post-order-processing.md`
 
-**Strategy**: Build webhook infrastructure first (Slice 1), then parallelize order processing features (Slices 2-4), and finally add shipping updates (Slice 5).
+**Strategy**: Extract service abstractions first (Slice 1), build webhook infrastructure (Slice 2), add order processing features (Slices 3-5), then shipping updates (Slice 6).
 
 **Decision stances** (per `knowledge/decision-defaults.md`):
 - **Integration**: auto-merge (default) - PR opens with auto-merge enabled, lands on green checks
@@ -29,7 +31,7 @@ From spec - verify at PR review:
 - [ ] Shop owner receives order notification email at stephenmbrown@gmail.com within 1 minute
 - [ ] Order appears in Airtable Orders table within 10 seconds of checkout
 - [ ] Inventory quantity decrements by purchased amount immediately after checkout
-- [ ] Shop owner can send shipping update via `POST /api/send-shipping-update`
+- [ ] POST /api/send-shipping-update with valid order ID returns 200 with success JSON, sends customer shipping email, and updates order status to "shipped" within 60 seconds
 - [ ] Each order processed exactly once (webhook idempotency)
 - [ ] Order ID format is `PUP-{last-8-chars-of-stripe-session-id}`
 - [ ] Email sender is "Puplets <hello@puplets.co.uk>" or verified domain
@@ -37,15 +39,124 @@ From spec - verify at PR review:
 
 ## Slices
 
-### Slice 1: Webhook Infrastructure & Order Capture
+### Slice 1: Service Layer Extraction
+
+**Goal**: Extract service abstractions for Airtable, email, and templates to prevent god object and enable clean testing.
+
+**Files**:
+- services/airtable-client.js (new)
+- services/email-client.js (new)
+- templates/email-templates.js (new)
+- package.json (modified - add airtable, resend dependencies)
+
+**Depends-on**: none
+
+**Scenarios**:
+
+```gherkin
+Feature: Service Layer Abstractions
+
+  Scenario: Airtable client creates order record
+    Given Airtable client is initialized with base ID "appTest123"
+    And Orders table schema is configured
+    When createOrder is called with order data:
+      | orderId      | PUP-abc123                  |
+      | sessionId    | cs_test_xyz789              |
+      | customerEmail| customer@example.com        |
+      | total        | 19.99                       |
+    Then Airtable base receives create request to Orders table
+    And created record contains Order ID "PUP-abc123"
+    And client returns record with Airtable record ID
+
+  Scenario: Airtable client finds order by session ID
+    Given Orders table contains record with Stripe Session ID "cs_test_xyz789"
+    When findOrderBySessionId is called with "cs_test_xyz789"
+    Then client returns matching order record
+    And record contains Order ID "PUP-abc123"
+
+  Scenario: Email client sends customer confirmation
+    Given Resend client is initialized with API key
+    When sendCustomerConfirmation is called with:
+      | to      | customer@example.com  |
+      | subject | Order Confirmation... |
+      | html    | <html>Order details   |
+    Then Resend API receives send request
+    And email sender is "Puplets <hello@puplets.co.uk>"
+    And client returns message ID
+
+  Scenario: Email template generates customer confirmation HTML
+    Given order data:
+      | orderId      | PUP-abc123                        |
+      | items        | Blue Waterproof Collar - Medium (1)|
+      | total        | £19.99                            |
+      | address      | 123 Main St, London SW1A 1AA, UK |
+    When generateCustomerConfirmation is called
+    Then template returns object with subject, html, text fields
+    And subject is "Order Confirmation - Puplets Order PUP-abc123"
+    And html contains order ID, itemized products, total, address
+    And html contains "Free delivery in 3-7 business days"
+```
+
+**Steps**:
+
+1.1. **RED**: Test Airtable client createOrder maps data to table schema
+     **GREEN**: Implement services/airtable-client.js with createOrder method
+     **REFACTOR**: Extract common field mapping logic
+     **Complexity**: Standard (data transformation, SDK integration)
+     **Files**: services/airtable-client.js, tests/airtable-client.test.js
+
+1.2. **RED**: Test Airtable client findOrderBySessionId queries with filterByFormula
+     **GREEN**: Add findOrderBySessionId method with Airtable query
+     **REFACTOR**: Extract query builder helper
+     **Complexity**: Trivial (query method)
+     **Files**: services/airtable-client.js, tests/airtable-client.test.js
+
+1.3. **RED**: Test Airtable client updateInventory decrements quantity
+     **GREEN**: Add updateInventory method with lookup and update
+     **REFACTOR**: Consolidate error handling
+     **Complexity**: Standard (lookup + update transaction)
+     **Files**: services/airtable-client.js, tests/airtable-client.test.js
+
+1.4. **RED**: Test email client sendCustomerConfirmation formats sender correctly
+     **GREEN**: Implement services/email-client.js with sendCustomerConfirmation
+     **REFACTOR**: Extract sender configuration
+     **Complexity**: Trivial (Resend SDK wrapper)
+     **Files**: services/email-client.js, tests/email-client.test.js
+
+1.5. **RED**: Test email client sendShopOwnerNotification includes recipient from env
+     **GREEN**: Add sendShopOwnerNotification method reading SHOP_OWNER_EMAIL
+     **REFACTOR**: Consolidate email sending logic
+     **Complexity**: Trivial (similar to 1.4)
+     **Files**: services/email-client.js, tests/email-client.test.js
+
+1.6. **RED**: Test email template generateCustomerConfirmation includes all required fields
+     **GREEN**: Implement templates/email-templates.js with customer template
+     **REFACTOR**: Extract common HTML structure
+     **Complexity**: Standard (HTML template generation)
+     **Files**: templates/email-templates.js, tests/email-templates.test.js
+
+1.7. **RED**: Test email template generateShopOwnerNotification includes Airtable link
+     **GREEN**: Add shop owner template with Airtable URL construction
+     **REFACTOR**: Extract Airtable URL builder
+     **Complexity**: Trivial (template variation)
+     **Files**: templates/email-templates.js, tests/email-templates.test.js
+
+1.8. **RED**: Test email template generateShippingNotification conditionally includes tracking
+     **GREEN**: Add shipping template with optional tracking URL
+     **REFACTOR**: Extract conditional content helper
+     **Complexity**: Trivial (conditional template)
+     **Files**: templates/email-templates.js, tests/email-templates.test.js
+
+---
+
+### Slice 2: Webhook Infrastructure & Order Capture
 
 **Goal**: Create Stripe webhook endpoint that captures order details in Airtable with idempotency.
 
 **Files**:
 - api/webhook-stripe.js (new)
-- package.json (modified - add dependencies)
 
-**Depends-on**: none
+**Depends-on**: 1
 
 **Scenarios**:
 
@@ -101,46 +212,52 @@ Feature: Stripe Webhook Order Capture
 
 **Steps**:
 
-1.1. **RED**: Test webhook signature validation rejects invalid Stripe signature
+2.1. **RED**: Test webhook signature validation rejects invalid Stripe signature
      **GREEN**: Implement `api/webhook-stripe.js` with Stripe signature verification using `STRIPE_WEBHOOK_SECRET`
+     **REFACTOR**: Extract signature verification to helper function
      **Complexity**: Standard (signature verification, environment variable handling)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-1.2. **RED**: Test Order ID generation from Stripe session ID produces `PUP-{last-8-chars}` format
+2.2. **RED**: Test Order ID generation from Stripe session ID produces `PUP-{last-8-chars}` format
      **GREEN**: Add order ID extraction logic `session.id.slice(-8)` with `PUP-` prefix
+     **REFACTOR**: Inline function is sufficient, no extraction needed
      **Complexity**: Trivial (string manipulation)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-1.3. **RED**: Test order payload transformation from Stripe session to Airtable record structure
-     **GREEN**: Implement transformation function mapping session fields to Airtable schema
+2.3. **RED**: Test order payload transformation from Stripe session to service client format
+     **GREEN**: Implement transformation function using Airtable client from Slice 1
+     **REFACTOR**: Consolidate field mapping logic
      **Complexity**: Standard (data mapping, currency conversion from cents to pounds)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-1.4. **RED**: Test Airtable order creation with complete field population
-     **GREEN**: Integrate Airtable SDK, implement order creation with all required fields
-     **Complexity**: Standard (Airtable API integration, async/await)
-     **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js, package.json
-
-1.5. **RED**: Test idempotency - duplicate webhook does not create second order
-     **GREEN**: Implement idempotency check using Stripe session ID lookup before creating order
-     **Complexity**: Standard (query Airtable by session ID, conditional creation)
+2.4. **RED**: Test order creation delegates to Airtable client createOrder method
+     **GREEN**: Call airtableClient.createOrder() with transformed order data
+     **REFACTOR**: Extract error handling wrapper
+     **Complexity**: Trivial (service delegation)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-1.6. **RED**: Test Airtable failure returns 500 status and logs error with session ID
-     **GREEN**: Add try-catch error handling, log session ID on failure, return appropriate status codes
+2.5. **RED**: Test idempotency - duplicate webhook does not create second order
+     **GREEN**: Call airtableClient.findOrderBySessionId() before creating, skip if exists
+     **REFACTOR**: Consolidate idempotency check logic
+     **Complexity**: Standard (service query, conditional creation)
+     **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
+
+2.6. **RED**: Test Airtable client failure returns 500 status and logs error with session ID
+     **GREEN**: Add try-catch around airtableClient calls, log session ID on error, return 500
+     **REFACTOR**: Extract error response helper
      **Complexity**: Trivial (error handling, logging)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
 ---
 
-### Slice 2: Inventory Management
+### Slice 3: Inventory Management
 
 **Goal**: Update inventory quantities in Airtable when orders are placed, handling missing products gracefully.
 
 **Files**:
 - api/webhook-stripe.js (modified)
 
-**Depends-on**: 1
+**Depends-on**: 1, 2
 
 **Scenarios**:
 
@@ -179,29 +296,29 @@ Feature: Inventory Updates
 
 **Steps**:
 
-2.1. **RED**: Test inventory lookup finds product by description
+3.1. **RED**: Test inventory lookup finds product by description
      **GREEN**: Implement Airtable Inventory query filtering by Product field
      **Complexity**: Standard (Airtable filterByFormula, async query)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-2.2. **RED**: Test inventory quantity decrements by purchased amount
+3.2. **RED**: Test inventory quantity decrements by purchased amount
      **GREEN**: Calculate new quantity and update Inventory record with Last Updated timestamp
      **Complexity**: Trivial (arithmetic, field update)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-2.3. **RED**: Test multiple order items update multiple inventory records
+3.3. **RED**: Test multiple order items update multiple inventory records
      **GREEN**: Loop through line items, update each matching inventory record
      **Complexity**: Trivial (iteration, multiple updates)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-2.4. **RED**: Test missing inventory product logs error but does not fail webhook
+3.4. **RED**: Test missing inventory product logs error but does not fail webhook
      **GREEN**: Add conditional check, log warning on missing product, continue processing
      **Complexity**: Trivial (conditional, logging)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
 ---
 
-### Slice 3: Customer Email Notifications
+### Slice 4: Customer Email Notifications
 
 **Goal**: Send order confirmation emails to customers with complete order details.
 
@@ -209,7 +326,7 @@ Feature: Inventory Updates
 - api/webhook-stripe.js (modified)
 - package.json (modified - add resend dependency)
 
-**Depends-on**: 1, 2
+**Depends-on**: 1, 2, 3
 
 **Scenarios**:
 
@@ -246,31 +363,31 @@ Feature: Customer Confirmation Emails
 
 **Steps**:
 
-3.1. **RED**: Test email payload generation from order data
+4.1. **RED**: Test email payload generation from order data
      **GREEN**: Create email template function that formats order details into HTML email body
      **Complexity**: Standard (template formatting, data mapping)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-3.2. **RED**: Test customer email sends with correct subject, sender, and recipient
+4.2. **RED**: Test customer email sends with correct subject, sender, and recipient
      **GREEN**: Integrate Resend SDK, send email with order confirmation content
      **Complexity**: Standard (Resend API integration, async email send)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js, package.json
 
-3.3. **RED**: Test email failure logs error but returns 200 to Stripe
+4.3. **RED**: Test email failure logs error but returns 200 to Stripe
      **GREEN**: Wrap email send in try-catch, log error, don't propagate to webhook response
      **Complexity**: Trivial (error handling, logging)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
 ---
 
-### Slice 4: Shop Owner Email Notifications
+### Slice 5: Shop Owner Email Notifications
 
 **Goal**: Send order notifications to shop owner with Airtable link to order record.
 
 **Files**:
 - api/webhook-stripe.js (modified)
 
-**Depends-on**: 1, 3
+**Depends-on**: 1, 2, 4
 
 **Scenarios**:
 
@@ -278,42 +395,47 @@ Feature: Customer Confirmation Emails
 Feature: Shop Owner Notifications
 
   Scenario: Shop owner receives notification for each new order
-    Given order "PUP-xyz123" was created in Airtable
+    Given order "PUP-xyz123" was created in Airtable with:
+      | Customer Email   | customer@example.com                  |
+      | Customer Name    | Jane Smith                            |
+      | Shipping Address | 123 Main St, London SW1A 1AA, UK      |
+      | Items            | [{"description":"Blue Waterproof Collar - Medium","quantity":1,"price":1999}] |
+      | Total            | 19.99                                 |
     And order has Airtable record ID "recABC123"
     And SHOP_OWNER_EMAIL is "stephenmbrown@gmail.com"
     When webhook processes the order
     Then shop owner receives email at "stephenmbrown@gmail.com" within 60 seconds
     And email subject is "New Order - PUP-xyz123"
-    And email body contains customer email "customer@example.com"
-    And email body contains customer name "Jane Smith"
-    And email body contains full shipping address
-    And email body contains itemized products and quantities
-    And email body contains total "£19.99"
+    And email body contains "Customer Email: customer@example.com"
+    And email body contains "Customer Name: Jane Smith"
+    And email body contains "Shipping Address: 123 Main St, London SW1A 1AA, UK"
+    And email body contains "Blue Waterproof Collar - Medium (1)"
+    And email body contains "Total: £19.99"
     And email body contains clickable Airtable link "https://airtable.com/.../recABC123"
 ```
 
 **Steps**:
 
-4.1. **RED**: Test shop owner email payload includes all order details and Airtable link
+5.1. **RED**: Test shop owner email payload includes all order details and Airtable link
      **GREEN**: Create shop owner email template with order summary and Airtable record URL
      **Complexity**: Trivial (template variation, Airtable URL construction)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-4.2. **RED**: Test shop owner email sends to SHOP_OWNER_EMAIL environment variable
+5.2. **RED**: Test shop owner email sends to SHOP_OWNER_EMAIL environment variable
      **GREEN**: Send email to process.env.SHOP_OWNER_EMAIL with order notification content
      **Complexity**: Trivial (environment variable, email send)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
 ---
 
-### Slice 5: Shipping Updates
+### Slice 6: Shipping Updates
 
 **Goal**: Provide endpoint for shop owner to send shipping notifications to customers.
 
 **Files**:
 - api/send-shipping-update.js (new)
 
-**Depends-on**: 1, 3
+**Depends-on**: 1, 2
 
 **Scenarios**:
 
@@ -359,37 +481,37 @@ Feature: Shipping Notifications
 
 **Steps**:
 
-5.1. **RED**: Test endpoint parses orderId and optional trackingUrl from request body
+6.1. **RED**: Test endpoint parses orderId and optional trackingUrl from request body
      **GREEN**: Create `api/send-shipping-update.js`, parse JSON body, extract fields
      **Complexity**: Trivial (body parsing, field extraction)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-5.2. **RED**: Test order lookup by Order ID finds existing order
+6.2. **RED**: Test order lookup by Order ID finds existing order
      **GREEN**: Query Airtable Orders table filtering by Order ID field
      **Complexity**: Standard (Airtable query, error handling for not found)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-5.3. **RED**: Test non-existent order returns 404 status
+6.3. **RED**: Test non-existent order returns 404 status
      **GREEN**: Return 404 response when order lookup returns no results
      **Complexity**: Trivial (conditional, status code)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-5.4. **RED**: Test order status updates to "shipped" in Airtable
+6.4. **RED**: Test order status updates to "shipped" in Airtable
      **GREEN**: Update order record Status field to "shipped", set Tracking URL if provided
      **Complexity**: Trivial (Airtable update)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-5.5. **RED**: Test shipping notification email sends with tracking URL when provided
+6.5. **RED**: Test shipping notification email sends with tracking URL when provided
      **GREEN**: Send email to customer with shipping template, conditionally include tracking URL
      **Complexity**: Standard (email template, conditional content)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-5.6. **RED**: Test shipping notification email sends without tracking URL when omitted
+6.6. **RED**: Test shipping notification email sends without tracking URL when omitted
      **GREEN**: Email template omits tracking section when trackingUrl not in request
      **Complexity**: Trivial (conditional template)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-5.7. **RED**: Test endpoint returns 200 with success message on completion
+6.7. **RED**: Test endpoint returns 200 with success message on completion
      **GREEN**: Return JSON response `{"success": true, "message": "Shipping notification sent"}`
      **Complexity**: Trivial (response formatting)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
@@ -398,27 +520,32 @@ Feature: Shipping Notifications
 
 ```mermaid
 graph TD
-    S1[Slice 1: Webhook Infrastructure]
-    S2[Slice 2: Inventory Management]
-    S3[Slice 3: Customer Emails]
-    S4[Slice 4: Shop Owner Emails]
-    S5[Slice 5: Shipping Updates]
+    S1[Slice 1: Service Layer]
+    S2[Slice 2: Webhook Infrastructure]
+    S3[Slice 3: Inventory]
+    S4[Slice 4: Customer Emails]
+    S5[Slice 5: Shop Owner Emails]
+    S6[Slice 6: Shipping Updates]
     
     S1 --> S2
-    S2 --> S3
     S1 --> S3
-    S3 --> S4
-    S3 --> S5
+    S2 --> S3
     S1 --> S4
+    S2 --> S4
+    S3 --> S4
     S1 --> S5
+    S2 --> S5
+    S4 --> S5
+    S1 --> S6
+    S2 --> S6
 ```
 
-| Wave | Slices (parallel) |
-|------|-------------------|
-| 1    | 1                 |
-| 2    | 2                 |
-| 3    | 3                 |
-| 4    | 4, 5              |
+Wave structure (to be computed by `plan_waves.py` after approval):
+- Wave 1: Slice 1 (Service Layer)
+- Wave 2: Slice 2 (Webhook Infrastructure)
+- Wave 3: Slice 3 (Inventory)
+- Wave 4: Slice 4 (Customer Emails)
+- Wave 5: Slice 5 (Shop Owner Emails), Slice 6 (Shipping Updates)
 
 ## Pre-PR Gate
 
@@ -449,38 +576,46 @@ None - all spec acceptance criteria are in scope.
 
 ## Build Progress
 
-#### Wave 1
-- [ ] Slice 1: Webhook Infrastructure & Order Capture
-  - [ ] Step 1.1: Webhook signature validation
-  - [ ] Step 1.2: Order ID generation
-  - [ ] Step 1.3: Order payload transformation
-  - [ ] Step 1.4: Airtable order creation
-  - [ ] Step 1.5: Idempotency check
-  - [ ] Step 1.6: Error handling
+_Note: Wave structure to be recomputed by `plan_waves.py` after approval_
 
-#### Wave 2
-- [ ] Slice 2: Inventory Management
-  - [ ] Step 2.1: Inventory lookup
-  - [ ] Step 2.2: Quantity decrement
-  - [ ] Step 2.3: Multiple items update
-  - [ ] Step 2.4: Missing product handling
+- [ ] Slice 1: Service Layer Extraction
+  - [ ] Step 1.1: Airtable client createOrder
+  - [ ] Step 1.2: Airtable client findOrderBySessionId
+  - [ ] Step 1.3: Airtable client updateInventory
+  - [ ] Step 1.4: Email client sendCustomerConfirmation
+  - [ ] Step 1.5: Email client sendShopOwnerNotification
+  - [ ] Step 1.6: Email template generateCustomerConfirmation
+  - [ ] Step 1.7: Email template generateShopOwnerNotification
+  - [ ] Step 1.8: Email template generateShippingNotification
 
-#### Wave 3
-- [ ] Slice 3: Customer Email Notifications
-  - [ ] Step 3.1: Email payload generation
-  - [ ] Step 3.2: Resend integration
-  - [ ] Step 3.3: Email failure handling
+- [ ] Slice 2: Webhook Infrastructure & Order Capture
+  - [ ] Step 2.1: Webhook signature validation
+  - [ ] Step 2.2: Order ID generation
+  - [ ] Step 2.3: Order payload transformation
+  - [ ] Step 2.4: Order creation via Airtable client
+  - [ ] Step 2.5: Idempotency check
+  - [ ] Step 2.6: Error handling
 
-#### Wave 4
-- [ ] Slice 4: Shop Owner Email Notifications
-  - [ ] Step 4.1: Shop owner email template
-  - [ ] Step 4.2: Send to SHOP_OWNER_EMAIL
+- [ ] Slice 3: Inventory Management
+  - [ ] Step 3.1: Inventory lookup
+  - [ ] Step 3.2: Quantity decrement
+  - [ ] Step 3.3: Multiple items update
+  - [ ] Step 3.4: Missing product handling
 
-- [ ] Slice 5: Shipping Updates
-  - [ ] Step 5.1: Request body parsing
-  - [ ] Step 5.2: Order lookup
-  - [ ] Step 5.3: 404 handling
-  - [ ] Step 5.4: Status update
-  - [ ] Step 5.5: Email with tracking
-  - [ ] Step 5.6: Email without tracking
-  - [ ] Step 5.7: Success response
+- [ ] Slice 4: Customer Email Notifications
+  - [ ] Step 4.1: Email payload generation
+  - [ ] Step 4.2: Send via email client
+  - [ ] Step 4.3: Email failure handling
+
+- [ ] Slice 5: Shop Owner Email Notifications
+  - [ ] Step 5.1: Shop owner email payload
+  - [ ] Step 5.2: Send to SHOP_OWNER_EMAIL
+
+- [ ] Slice 6: Shipping Updates
+  - [ ] Step 6.1: Request body parsing
+  - [ ] Step 6.2: Order lookup
+  - [ ] Step 6.3: 404 handling
+  - [ ] Step 6.4: Status update
+  - [ ] Step 6.5: Email with tracking
+  - [ ] Step 6.6: Email without tracking
+  - [ ] Step 6.7: Success response
