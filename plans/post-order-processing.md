@@ -625,6 +625,7 @@ None - all spec acceptance criteria are in scope.
 4. **Stripe webhook registration**: After deployment, webhook URL must be registered in Stripe dashboard with `checkout.session.completed` event
 5. **Initial inventory data**: Airtable Inventory table needs to be manually populated with product list matching Stripe product descriptions before first order
 6. **Email template HTML**: Spec doesn't specify HTML vs plain text emails - assume HTML for better formatting, test rendering in common email clients
+7. **Directory structure change**: Introduces services/ and templates/ directories to separate infrastructure and presentation concerns from API endpoints - establishes layered architecture pattern for future features (diverges from current flat api/ structure)
 
 ## Build Progress
 
