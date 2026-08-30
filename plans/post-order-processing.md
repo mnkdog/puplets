@@ -498,46 +498,73 @@ Feature: Shipping Notifications
     Then endpoint responds with status 404
     And response body contains error message "Order not found"
     And no email is sent
+
+  Scenario: Request without bearer token returns 401
+    When request is sent without Authorization header
+    Then endpoint responds with status 401
+    And response body contains error message "Unauthorized"
+    And no order is updated
+
+  Scenario: Request with invalid bearer token returns 401
+    When request is sent with Authorization header "Bearer invalid-token"
+    Then endpoint responds with status 401
+    And response body contains error message "Unauthorized"
+    And no order is updated
 ```
 
 **Steps**:
 
-6.1. **RED**: Test endpoint parses orderId and optional trackingUrl from request body
-     **GREEN**: Create `api/send-shipping-update.js`, parse JSON body, extract fields
+6.1. **RED**: Test endpoint rejects requests without valid bearer token
+     **GREEN**: Validate Authorization header against SHIPPING_UPDATE_TOKEN env var, return 401 if missing/invalid
+     **REFACTOR**: Extract auth validation helper for reuse
+     **Complexity**: Trivial (header parsing, string comparison)
+     **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
+
+6.2. **RED**: Test endpoint parses orderId and optional trackingUrl from request body
+     **GREEN**: Parse JSON body, extract fields
+     **REFACTOR**: Extract field extraction logic
      **Complexity**: Trivial (body parsing, field extraction)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-6.2. **RED**: Test order lookup by Order ID finds existing order
+6.3. **RED**: Test order lookup by Order ID finds existing order
      **GREEN**: Call airtableClient.findOrderById(orderId) to retrieve order record
      **REFACTOR**: Extract error handling for missing order
      **Complexity**: Trivial (service delegation)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-6.3. **RED**: Test non-existent order returns 404 status
+6.4. **RED**: Test non-existent order returns 404 status
      **GREEN**: Return 404 response when order lookup returns no results
+     **REFACTOR**: Consolidate error response pattern
      **Complexity**: Trivial (conditional, status code)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-6.4. **RED**: Test order status updates to "shipped" in Airtable
+6.5. **RED**: Test order status updates to "shipped" in Airtable
      **GREEN**: Call airtableClient.updateOrder(orderId, {Status: "shipped", "Tracking URL": trackingUrl}) 
      **REFACTOR**: Consolidate update field mapping
      **Complexity**: Trivial (service delegation)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-6.5. **RED**: Test shipping notification email sends with tracking URL when provided
+6.6. **RED**: Test shipping notification email sends with tracking URL when provided
      **GREEN**: Call emailTemplates.generateShippingNotification(orderData, trackingUrl) to get {subject, html, text}, then emailClient.sendShippingNotification(customerEmail, subject, html, text)
      **REFACTOR**: Extract order data extraction for template
      **Complexity**: Trivial (service delegation)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-6.6. **RED**: Test shipping notification email sends without tracking URL when omitted
-     **GREEN**: Same delegation as 6.5 with trackingUrl=null - template handles conditional tracking URL rendering
+6.7. **RED**: Test shipping notification email sends without tracking URL when omitted
+     **GREEN**: Same delegation as 6.6 with trackingUrl=null - template handles conditional tracking URL rendering
      **REFACTOR**: Consolidate email send flow
      **Complexity**: Trivial (template conditionally omits tracking section)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-6.7. **RED**: Test endpoint returns 200 with success message on completion
+6.8. **RED**: Test shipping email failure logs error but returns 200
+     **GREEN**: Wrap email calls in try-catch, log error with order ID, continue to success response
+     **REFACTOR**: Reuse non-fatal error handling pattern from step 4.3
+     **Complexity**: Trivial (error handling, logging)
+     **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
+
+6.9. **RED**: Test endpoint returns 200 with success message on completion
      **GREEN**: Return JSON response `{"success": true, "message": "Shipping notification sent"}`
+     **REFACTOR**: Consolidate response formatting
      **Complexity**: Trivial (response formatting)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
@@ -594,7 +621,7 @@ None - all spec acceptance criteria are in scope.
 
 1. **Airtable account setup**: User has existing Airtable account from years ago - may need to verify it's still accessible and create new base
 2. **Resend domain verification**: Email sender "Puplets <hello@puplets.co.uk>" requires domain verification in Resend, or use sandbox during testing
-3. **Environment variable setup**: Six environment variables needed in Vercel - coordinate with user to set these up before deployment
+3. **Environment variable setup**: Seven environment variables needed in Vercel (AIRTABLE_API_KEY, AIRTABLE_BASE_ID, RESEND_API_KEY, SHOP_OWNER_EMAIL, STRIPE_WEBHOOK_SECRET, STRIPE_SECRET_KEY, SHIPPING_UPDATE_TOKEN) - coordinate with user to set these up before deployment
 4. **Stripe webhook registration**: After deployment, webhook URL must be registered in Stripe dashboard with `checkout.session.completed` event
 5. **Initial inventory data**: Airtable Inventory table needs to be manually populated with product list matching Stripe product descriptions before first order
 6. **Email template HTML**: Spec doesn't specify HTML vs plain text emails - assume HTML for better formatting, test rendering in common email clients
