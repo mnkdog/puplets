@@ -123,32 +123,44 @@ Feature: Service Layer Abstractions
      **Complexity**: Standard (batch lookup + update with error collection)
      **Files**: services/airtable-client.js, tests/airtable-client.test.js
 
-1.4. **RED**: Test email client sendCustomerConfirmation formats sender correctly
+1.4. **RED**: Test Airtable client updateOrder modifies record fields
+     **GREEN**: Add updateOrder(orderId, updates) method that finds order by Order ID field and patches specified fields
+     **REFACTOR**: Extract field update logic
+     **Complexity**: Trivial (query + update)
+     **Files**: services/airtable-client.js, tests/airtable-client.test.js
+
+1.5. **RED**: Test email client sendCustomerConfirmation formats sender correctly
      **GREEN**: Implement services/email-client.js with sendCustomerConfirmation
      **REFACTOR**: Extract sender configuration
      **Complexity**: Trivial (Resend SDK wrapper)
      **Files**: services/email-client.js, tests/email-client.test.js
 
-1.5. **RED**: Test email client sendShopOwnerNotification includes recipient from env
+1.6. **RED**: Test email client sendShopOwnerNotification includes recipient from env
      **GREEN**: Add sendShopOwnerNotification method reading SHOP_OWNER_EMAIL
      **REFACTOR**: Consolidate email sending logic
-     **Complexity**: Trivial (similar to 1.4)
+     **Complexity**: Trivial (similar to 1.5)
      **Files**: services/email-client.js, tests/email-client.test.js
 
-1.6. **RED**: Test email template generateCustomerConfirmation includes all required fields
-     **GREEN**: Implement templates/email-templates.js with customer template
+1.7. **RED**: Test email client sendShippingNotification sends to customer email
+     **GREEN**: Add sendShippingNotification(customerEmail, subject, html) method
+     **REFACTOR**: Extract email send helper shared across all three methods
+     **Complexity**: Trivial (similar to 1.5 and 1.6)
+     **Files**: services/email-client.js, tests/email-client.test.js
+
+1.8. **RED**: Test email template generateCustomerConfirmation includes all required fields and returns {subject, html, text}
+     **GREEN**: Implement templates/email-templates.js with customer template returning structured object
      **REFACTOR**: Extract common HTML structure
      **Complexity**: Standard (HTML template generation)
      **Files**: templates/email-templates.js, tests/email-templates.test.js
 
-1.7. **RED**: Test email template generateShopOwnerNotification includes Airtable link
-     **GREEN**: Add shop owner template with Airtable URL construction
+1.9. **RED**: Test email template generateShopOwnerNotification includes Airtable link and returns {subject, html, text}
+     **GREEN**: Add shop owner template with Airtable URL construction, return structured object
      **REFACTOR**: Extract Airtable URL builder
      **Complexity**: Trivial (template variation)
      **Files**: templates/email-templates.js, tests/email-templates.test.js
 
-1.8. **RED**: Test email template generateShippingNotification conditionally includes tracking
-     **GREEN**: Add shipping template with optional tracking URL
+1.10. **RED**: Test email template generateShippingNotification conditionally includes tracking and returns {subject, html, text}
+     **GREEN**: Add shipping template with optional tracking URL, return structured object
      **REFACTOR**: Extract conditional content helper
      **Complexity**: Trivial (conditional template)
      **Files**: templates/email-templates.js, tests/email-templates.test.js
@@ -497,8 +509,9 @@ Feature: Shipping Notifications
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
 6.2. **RED**: Test order lookup by Order ID finds existing order
-     **GREEN**: Query Airtable Orders table filtering by Order ID field
-     **Complexity**: Standard (Airtable query, error handling for not found)
+     **GREEN**: Call airtableClient.findOrderById(orderId) to retrieve order record
+     **REFACTOR**: Extract error handling for missing order
+     **Complexity**: Trivial (service delegation)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
 6.3. **RED**: Test non-existent order returns 404 status
@@ -507,18 +520,21 @@ Feature: Shipping Notifications
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
 6.4. **RED**: Test order status updates to "shipped" in Airtable
-     **GREEN**: Update order record Status field to "shipped", set Tracking URL if provided
-     **Complexity**: Trivial (Airtable update)
+     **GREEN**: Call airtableClient.updateOrder(orderId, {Status: "shipped", "Tracking URL": trackingUrl}) 
+     **REFACTOR**: Consolidate update field mapping
+     **Complexity**: Trivial (service delegation)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
 6.5. **RED**: Test shipping notification email sends with tracking URL when provided
-     **GREEN**: Send email to customer with shipping template, conditionally include tracking URL
-     **Complexity**: Standard (email template, conditional content)
+     **GREEN**: Call emailTemplates.generateShippingNotification(orderData, trackingUrl) then emailClient.sendShippingNotification(customerEmail, subject, html)
+     **REFACTOR**: Extract order data extraction for template
+     **Complexity**: Trivial (service delegation)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
 6.6. **RED**: Test shipping notification email sends without tracking URL when omitted
-     **GREEN**: Email template omits tracking section when trackingUrl not in request
-     **Complexity**: Trivial (conditional template)
+     **GREEN**: Same delegation as 6.5 - template handles conditional tracking URL rendering
+     **REFACTOR**: Consolidate email send flow
+     **Complexity**: Trivial (template conditionally omits tracking section)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
 6.7. **RED**: Test endpoint returns 200 with success message on completion
@@ -591,12 +607,15 @@ _Note: Wave structure to be recomputed by `plan_waves.py` after approval_
 - [ ] Slice 1: Service Layer Extraction
   - [ ] Step 1.1: Airtable client createOrder
   - [ ] Step 1.2: Airtable client findOrderBySessionId
-  - [ ] Step 1.3: Airtable client updateInventory
-  - [ ] Step 1.4: Email client sendCustomerConfirmation
-  - [ ] Step 1.5: Email client sendShopOwnerNotification
-  - [ ] Step 1.6: Email template generateCustomerConfirmation
-  - [ ] Step 1.7: Email template generateShopOwnerNotification
-  - [ ] Step 1.8: Email template generateShippingNotification
+  - [ ] Step 1.2b: Airtable client findOrderById
+  - [ ] Step 1.3: Airtable client updateInventoryForOrder
+  - [ ] Step 1.4: Airtable client updateOrder
+  - [ ] Step 1.5: Email client sendCustomerConfirmation
+  - [ ] Step 1.6: Email client sendShopOwnerNotification
+  - [ ] Step 1.7: Email client sendShippingNotification
+  - [ ] Step 1.8: Email template generateCustomerConfirmation
+  - [ ] Step 1.9: Email template generateShopOwnerNotification
+  - [ ] Step 1.10: Email template generateShippingNotification
 
 - [ ] Slice 2: Webhook Infrastructure & Order Capture
   - [ ] Step 2.1: Webhook signature validation
