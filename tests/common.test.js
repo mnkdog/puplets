@@ -309,3 +309,142 @@ describe('fetchJSON', () => {
         expect(global.clearTimeout).toHaveBeenCalledWith(expect.any(Number));
     });
 });
+
+describe('migrateCart', () => {
+    let storage;
+    let migrateCart;
+
+    beforeEach(() => {
+        // Mock localStorage
+        storage = new Map();
+        global.localStorage = {
+            getItem: (key) => storage.get(key) || null,
+            setItem: (key, value) => storage.set(key, value),
+            removeItem: (key) => storage.delete(key)
+        };
+
+        // Mock crypto.randomUUID
+        vi.spyOn(global.crypto, 'randomUUID').mockReturnValue('test-uuid-123');
+
+        // Mock console methods
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        // Load migrateCart from common.js
+        const script = new Function(commonJsCode + '\nreturn { migrateCart };');
+        const exports = script();
+        migrateCart = exports.migrateCart;
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('should migrate legacy collar items to current schema', () => {
+        const legacyCart = [{
+            product: 'Collar',
+            size: 'M',
+            color: 'red',
+            timestamp: 1234567890,
+            price: 17.99
+        }];
+        storage.set('cart', JSON.stringify(legacyCart));
+
+        migrateCart();
+
+        const migratedCart = JSON.parse(storage.get('cart'));
+        expect(migratedCart[0]).toMatchObject({
+            type: 'collar',
+            id: 1234567890,
+            price: { amount: 17.99, currency: 'GBP' }
+        });
+        expect(storage.get('cartSchemaVersion')).toBe('1');
+    });
+
+    it('should migrate legacy charm items to current schema', () => {
+        const legacyCart = [{
+            charm: 'star',
+            quantity: 2,
+            timestamp: 1234567890,
+            price: 3.99
+        }];
+        storage.set('cart', JSON.stringify(legacyCart));
+
+        migrateCart();
+
+        const migratedCart = JSON.parse(storage.get('cart'));
+        expect(migratedCart[0]).toMatchObject({
+            type: 'charm',
+            id: 1234567890,
+            price: { amount: 3.99, currency: 'GBP' }
+        });
+    });
+
+    it('should skip already migrated items', () => {
+        const currentCart = [{
+            type: 'collar',
+            id: 123,
+            price: { amount: 17.99, currency: 'GBP' }
+        }];
+        storage.set('cart', JSON.stringify(currentCart));
+        storage.set('cartSchemaVersion', '1');
+
+        migrateCart();
+
+        // Should not modify already migrated cart
+        const cart = JSON.parse(storage.get('cart'));
+        expect(cart).toEqual(currentCart);
+    });
+
+    it('should drop unclassifiable items with warning', () => {
+        const mixedCart = [
+            { size: 'M', price: 17.99, id: 1 }, // Valid collar
+            { foo: 'bar', price: 10 } // Unclassifiable
+        ];
+        storage.set('cart', JSON.stringify(mixedCart));
+
+        migrateCart();
+
+        const migratedCart = JSON.parse(storage.get('cart'));
+        expect(migratedCart).toHaveLength(1);
+        expect(migratedCart[0].type).toBe('collar');
+        expect(console.warn).toHaveBeenCalledWith(
+            'Cart migration: dropping unclassifiable item',
+            expect.objectContaining({ foo: 'bar' })
+        );
+    });
+
+    it('should handle non-array cart gracefully', () => {
+        storage.set('cart', JSON.stringify('not-an-array'));
+
+        migrateCart();
+
+        expect(console.warn).toHaveBeenCalledWith(
+            'Cart migration: unexpected cart shape, skipping'
+        );
+    });
+
+    it('should stamp version for empty cart', () => {
+        // No cart in storage
+
+        migrateCart();
+
+        expect(storage.get('cartSchemaVersion')).toBe('1');
+    });
+
+    it('should trust existing type field', () => {
+        const cart = [{
+            type: 'charm',
+            charmName: 'star',
+            timestamp: 123,
+            price: 3.99
+        }];
+        storage.set('cart', JSON.stringify(cart));
+
+        migrateCart();
+
+        const migratedCart = JSON.parse(storage.get('cart'));
+        expect(migratedCart[0].type).toBe('charm');
+    });
+});
