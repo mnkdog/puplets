@@ -111,10 +111,16 @@ Feature: Service Layer Abstractions
      **Complexity**: Trivial (query method)
      **Files**: services/airtable-client.js, tests/airtable-client.test.js
 
-1.3. **RED**: Test Airtable client updateInventory decrements quantity
-     **GREEN**: Add updateInventory method with lookup and update
-     **REFACTOR**: Consolidate error handling
-     **Complexity**: Standard (lookup + update transaction)
+1.2b. **RED**: Test Airtable client findOrderById queries by Order ID field
+     **GREEN**: Add findOrderById method that queries Orders table by Order ID
+     **REFACTOR**: Reuse query builder from step 1.2
+     **Complexity**: Trivial (similar to findOrderBySessionId)
+     **Files**: services/airtable-client.js, tests/airtable-client.test.js
+
+1.3. **RED**: Test Airtable client updateInventoryForOrder handles array of line items
+     **GREEN**: Add updateInventoryForOrder(lineItems) that accepts [{description, quantity}], loops to find each product, decrements quantities, logs warnings for missing products
+     **REFACTOR**: Consolidate error handling for missing products and failed updates
+     **Complexity**: Standard (batch lookup + update with error collection)
      **Files**: services/airtable-client.js, tests/airtable-client.test.js
 
 1.4. **RED**: Test email client sendCustomerConfirmation formats sender correctly
@@ -296,24 +302,22 @@ Feature: Inventory Updates
 
 **Steps**:
 
-3.1. **RED**: Test inventory lookup finds product by description
-     **GREEN**: Implement Airtable Inventory query filtering by Product field
-     **Complexity**: Standard (Airtable filterByFormula, async query)
+3.1. **RED**: Test webhook delegates inventory updates to Airtable client
+     **GREEN**: Call airtableClient.updateInventoryForOrder(session.line_items) from webhook
+     **REFACTOR**: Extract line items transformation if needed
+     **Complexity**: Trivial (service delegation)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-3.2. **RED**: Test inventory quantity decrements by purchased amount
-     **GREEN**: Calculate new quantity and update Inventory record with Last Updated timestamp
-     **Complexity**: Trivial (arithmetic, field update)
+3.2. **RED**: Test inventory updates for multiple items in one order
+     **GREEN**: Service method already handles arrays (from Slice 1.3), verify webhook passes full line items array
+     **REFACTOR**: No refactoring needed - service handles iteration
+     **Complexity**: Trivial (verification of array passing)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-3.3. **RED**: Test multiple order items update multiple inventory records
-     **GREEN**: Loop through line items, update each matching inventory record
-     **Complexity**: Trivial (iteration, multiple updates)
-     **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
-
-3.4. **RED**: Test missing inventory product logs error but does not fail webhook
-     **GREEN**: Add conditional check, log warning on missing product, continue processing
-     **Complexity**: Trivial (conditional, logging)
+3.3. **RED**: Test missing inventory product logs warning but allows order creation
+     **GREEN**: Service logs warnings (from Slice 1.3), webhook continues on errors
+     **REFACTOR**: Consolidate error handling pattern
+     **Complexity**: Trivial (error handling)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
 ---
@@ -363,18 +367,21 @@ Feature: Customer Confirmation Emails
 
 **Steps**:
 
-4.1. **RED**: Test email payload generation from order data
-     **GREEN**: Create email template function that formats order details into HTML email body
-     **Complexity**: Standard (template formatting, data mapping)
+4.1. **RED**: Test webhook generates customer email using template service
+     **GREEN**: Call emailTemplates.generateCustomerConfirmation(orderData) to get {subject, html, text}
+     **REFACTOR**: Extract order data transformation for template
+     **Complexity**: Trivial (service delegation)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-4.2. **RED**: Test customer email sends with correct subject, sender, and recipient
-     **GREEN**: Integrate Resend SDK, send email with order confirmation content
-     **Complexity**: Standard (Resend API integration, async email send)
-     **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js, package.json
+4.2. **RED**: Test webhook sends customer email via email client
+     **GREEN**: Call emailClient.sendCustomerConfirmation(customerEmail, subject, html) with template output
+     **REFACTOR**: Extract email orchestration logic
+     **Complexity**: Trivial (service delegation)
+     **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-4.3. **RED**: Test email failure logs error but returns 200 to Stripe
-     **GREEN**: Wrap email send in try-catch, log error, don't propagate to webhook response
+4.3. **RED**: Test email failure logs error but webhook returns 200 to Stripe
+     **GREEN**: Wrap email calls in try-catch, log error with order ID, continue processing
+     **REFACTOR**: Consolidate non-fatal error handling pattern
      **Complexity**: Trivial (error handling, logging)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
@@ -416,13 +423,16 @@ Feature: Shop Owner Notifications
 
 **Steps**:
 
-5.1. **RED**: Test shop owner email payload includes all order details and Airtable link
-     **GREEN**: Create shop owner email template with order summary and Airtable record URL
-     **Complexity**: Trivial (template variation, Airtable URL construction)
+5.1. **RED**: Test webhook generates shop owner email using template service
+     **GREEN**: Call emailTemplates.generateShopOwnerNotification(orderData, airtableRecordId) to get {subject, html}
+     **REFACTOR**: Reuse order data transformation from Slice 4
+     **Complexity**: Trivial (service delegation)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
-5.2. **RED**: Test shop owner email sends to SHOP_OWNER_EMAIL environment variable
-     **GREEN**: Send email to process.env.SHOP_OWNER_EMAIL with order notification content
+5.2. **RED**: Test webhook sends shop owner email via email client
+     **GREEN**: Call emailClient.sendShopOwnerNotification(subject, html) which reads SHOP_OWNER_EMAIL internally
+     **REFACTOR**: Consolidate email sending pattern
+     **Complexity**: Trivial (service delegation)
      **Complexity**: Trivial (environment variable, email send)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
