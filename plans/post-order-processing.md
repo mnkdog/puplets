@@ -129,21 +129,21 @@ Feature: Service Layer Abstractions
      **Complexity**: Trivial (query + update)
      **Files**: services/airtable-client.js, tests/airtable-client.test.js
 
-1.5. **RED**: Test email client sendCustomerConfirmation formats sender correctly
-     **GREEN**: Implement services/email-client.js with sendCustomerConfirmation
+1.5. **RED**: Test email client sendCustomerConfirmation accepts all template fields
+     **GREEN**: Implement services/email-client.js with sendCustomerConfirmation(customerEmail, subject, html, text) using Resend multipart email
      **REFACTOR**: Extract sender configuration
      **Complexity**: Trivial (Resend SDK wrapper)
      **Files**: services/email-client.js, tests/email-client.test.js
 
-1.6. **RED**: Test email client sendShopOwnerNotification includes recipient from env
-     **GREEN**: Add sendShopOwnerNotification method reading SHOP_OWNER_EMAIL
-     **REFACTOR**: Consolidate email sending logic
+1.6. **RED**: Test email client sendShopOwnerNotification accepts recipient email parameter
+     **GREEN**: Add sendShopOwnerNotification(shopOwnerEmail, subject, html, text) method
+     **REFACTOR**: Consolidate email sending logic (all three methods now take recipient as parameter)
      **Complexity**: Trivial (similar to 1.5)
      **Files**: services/email-client.js, tests/email-client.test.js
 
-1.7. **RED**: Test email client sendShippingNotification sends to customer email
-     **GREEN**: Add sendShippingNotification(customerEmail, subject, html) method
-     **REFACTOR**: Extract email send helper shared across all three methods
+1.7. **RED**: Test email client sendShippingNotification sends multipart email
+     **GREEN**: Add sendShippingNotification(customerEmail, subject, html, text) method
+     **REFACTOR**: Extract email send helper shared across all three methods (all use multipart emails)
      **Complexity**: Trivial (similar to 1.5 and 1.6)
      **Files**: services/email-client.js, tests/email-client.test.js
 
@@ -386,7 +386,7 @@ Feature: Customer Confirmation Emails
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
 4.2. **RED**: Test webhook sends customer email via email client
-     **GREEN**: Call emailClient.sendCustomerConfirmation(customerEmail, subject, html) with template output
+     **GREEN**: Call emailClient.sendCustomerConfirmation(customerEmail, subject, html, text) with all template fields
      **REFACTOR**: Extract email orchestration logic
      **Complexity**: Trivial (service delegation)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
@@ -436,16 +436,15 @@ Feature: Shop Owner Notifications
 **Steps**:
 
 5.1. **RED**: Test webhook generates shop owner email using template service
-     **GREEN**: Call emailTemplates.generateShopOwnerNotification(orderData, airtableRecordId) to get {subject, html}
+     **GREEN**: Call emailTemplates.generateShopOwnerNotification(orderData, airtableRecordId) to get {subject, html, text}
      **REFACTOR**: Reuse order data transformation from Slice 4
      **Complexity**: Trivial (service delegation)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
 5.2. **RED**: Test webhook sends shop owner email via email client
-     **GREEN**: Call emailClient.sendShopOwnerNotification(subject, html) which reads SHOP_OWNER_EMAIL internally
+     **GREEN**: Call emailClient.sendShopOwnerNotification(shopOwnerEmail, subject, html, text) with SHOP_OWNER_EMAIL from env and all template fields
      **REFACTOR**: Consolidate email sending pattern
      **Complexity**: Trivial (service delegation)
-     **Complexity**: Trivial (environment variable, email send)
      **Files**: api/webhook-stripe.js, tests/webhook-stripe.test.js
 
 ---
@@ -526,13 +525,13 @@ Feature: Shipping Notifications
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
 6.5. **RED**: Test shipping notification email sends with tracking URL when provided
-     **GREEN**: Call emailTemplates.generateShippingNotification(orderData, trackingUrl) then emailClient.sendShippingNotification(customerEmail, subject, html)
+     **GREEN**: Call emailTemplates.generateShippingNotification(orderData, trackingUrl) to get {subject, html, text}, then emailClient.sendShippingNotification(customerEmail, subject, html, text)
      **REFACTOR**: Extract order data extraction for template
      **Complexity**: Trivial (service delegation)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
 6.6. **RED**: Test shipping notification email sends without tracking URL when omitted
-     **GREEN**: Same delegation as 6.5 - template handles conditional tracking URL rendering
+     **GREEN**: Same delegation as 6.5 with trackingUrl=null - template handles conditional tracking URL rendering
      **REFACTOR**: Consolidate email send flow
      **Complexity**: Trivial (template conditionally omits tracking section)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
