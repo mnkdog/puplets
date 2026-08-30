@@ -544,7 +544,7 @@
                         source: charmPriceSource
                     },
                     quantity: quantity,
-                    timestamp: Date.now()
+                    id: Date.now()
                 });
             }
 
@@ -561,25 +561,7 @@
             document.getElementById('addedModal').classList.remove('active');
         }
 
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const cartCount = document.getElementById('cartCount');
-            if (cartCount) {
-                cartCount.textContent = cart.length;
-                cartCount.style.display = cart.length > 0 ? 'flex' : 'none';
-            }
-        }
-
-        function toggleMobileMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
-        }
-
-        function closeMobileMenu(event) {
-            if (!event || event.target === event.currentTarget) {
-                document.getElementById('mobileMenu').classList.remove('active');
-            }
-        }
-
+        migrateCart(); // Migrate legacy cart items first
         updateCartCount();
         updatePrice();
     </script>

@@ -139,3 +139,143 @@ async function fetchJSON(url, fallback) {
         return fallback;
     }
 }
+
+/**
+ * Current cart schema version
+ * Increment when cart structure changes to trigger migration
+ */
+const CART_SCHEMA_VERSION = 1;
+
+/**
+ * Migrate legacy cart items to current schema
+ *
+ * Performs one-shot migration of cart items that lack required fields.
+ * Uses structural analysis (not display text) to infer item type:
+ * - Items with size/color/extraCharms → collar
+ * - Items with charm slug + quantity (no size) → charm
+ * - Unclassifiable items → dropped (logged as warning)
+ *
+ * Also ensures all items have identity (id field) and normalizes
+ * price to Money value object {amount, currency}.
+ *
+ * Migration runs once per schema version and is idempotent.
+ */
+function migrateCart() {
+    const LOCK_KEY = 'cartMigrationLock';
+    const LOCK_TIMEOUT_MS = 5000;
+
+    try {
+        // Check version BEFORE attempting lock for performance
+        const currentVersion = parseInt(localStorage.getItem('cartSchemaVersion') || '0');
+        if (currentVersion >= CART_SCHEMA_VERSION) return;
+
+        // Acquire lock to prevent concurrent migration attempts
+        const now = Date.now();
+        const lockTimestamp = localStorage.getItem(LOCK_KEY);
+
+        if (lockTimestamp) {
+            const lockAge = now - parseInt(lockTimestamp);
+            if (lockAge < LOCK_TIMEOUT_MS) {
+                // Another migration is in progress, skip this attempt
+                return;
+            }
+            // Stale lock (timeout exceeded), proceed to acquire
+        }
+
+        // Set lock with current timestamp
+        localStorage.setItem(LOCK_KEY, String(now));
+
+        // Double-check version after acquiring lock (another thread might have finished)
+        const versionAfterLock = parseInt(localStorage.getItem('cartSchemaVersion') || '0');
+        if (versionAfterLock >= CART_SCHEMA_VERSION) {
+            localStorage.removeItem(LOCK_KEY);
+            return;
+        }
+
+        const raw = localStorage.getItem('cart');
+        if (!raw) {
+            // Stamp version even for empty cart
+            localStorage.setItem('cartSchemaVersion', String(CART_SCHEMA_VERSION));
+            localStorage.removeItem(LOCK_KEY);
+            return;
+        }
+
+        const cart = JSON.parse(raw);
+
+        // Guard against non-array cart data
+        if (!Array.isArray(cart)) {
+            console.warn('Cart migration: unexpected cart shape, skipping');
+            localStorage.removeItem(LOCK_KEY);
+            return;
+        }
+
+        let migrated = false;
+        const migratedCart = [];
+
+        for (const item of cart) {
+            // Skip items that already have required fields
+            if (item.type && item.id != null) {
+                migratedCart.push(item);
+                continue;
+            }
+
+            migrated = true;
+
+            // Trust existing type first, then infer from structure
+            let type = (item.type === 'collar' || item.type === 'charm') ? item.type : null;
+
+            if (!type) {
+                // Infer type from structural domain fields, not display text
+                if ((item.size != null || item.color != null || item.extraCharms != null)) {
+                    type = 'collar';
+                } else if ((item.charm != null || item.charmName != null) && item.size == null) {
+                    type = 'charm';
+                }
+            }
+
+            // Drop unclassifiable items rather than guessing
+            if (!type) {
+                console.warn('Cart migration: dropping unclassifiable item', item);
+                continue;
+            }
+
+            // Ensure item has identity (with crypto fallback guard)
+            const id = item.id ?? item.timestamp ?? (crypto?.randomUUID ? crypto.randomUUID() : `mig-${Date.now()}-${migratedCart.length}`);
+
+            // Normalize price to Money value object
+            let price = item.price;
+            if (typeof price === 'number') {
+                price = { amount: price, currency: 'GBP' };
+            } else if (!price || typeof price !== 'object') {
+                console.warn('Cart migration: invalid price for item, defaulting to £0', item);
+                price = { amount: 0, currency: 'GBP' };
+            }
+
+            migratedCart.push({
+                ...item,
+                type,
+                id,
+                price
+            });
+        }
+
+        if (migrated) {
+            localStorage.setItem('cart', JSON.stringify(migratedCart));
+            console.log(`Cart migrated to schema v${CART_SCHEMA_VERSION}: ${cart.length - migratedCart.length} items dropped, ${migratedCart.length} migrated`);
+        }
+
+        // Always stamp version after successful migration pass
+        localStorage.setItem('cartSchemaVersion', String(CART_SCHEMA_VERSION));
+
+        // Release lock
+        localStorage.removeItem(LOCK_KEY);
+    } catch (error) {
+        console.error('Cart migration failed:', error);
+        // Clean up lock on error to prevent deadlock
+        try {
+            localStorage.removeItem(LOCK_KEY);
+        } catch (e) {
+            // Ignore cleanup errors
+        }
+    }
+}

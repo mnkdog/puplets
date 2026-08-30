@@ -754,6 +754,7 @@
 
         /**
          * Populates size dropdown options from product data
+         * Uses the prices object loaded by loadProductPrices() to ensure fallback prices work
          */
         async function populateSizeDropdown() {
             const data = await fetchJSON('/config/products.json', null);
@@ -769,11 +770,13 @@
                 sizeSelect.remove(1);
             }
 
-            // Add options from products.json
+            // Add options from products.json, using prices object for price values
             data.collar.sizes.forEach(sizeData => {
                 const option = document.createElement('option');
                 option.value = sizeData.size;
-                option.setAttribute('data-price', sizeData.price);
+                // Use the prices object which has fallback values, not the raw JSON price field
+                const price = prices[sizeData.size.toLowerCase()];
+                option.setAttribute('data-price', price);
                 option.textContent = `${sizeData.size.toUpperCase()} - ${sizeData.measurements_cm} (${sizeData.measurements_in})`;
                 sizeSelect.appendChild(option);
             });
@@ -835,6 +838,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            migrateCart(); // Migrate legacy cart items first
             await loadProductPrices();
             await populateSizeDropdown();
             await loadCharmPrice();
@@ -847,31 +851,6 @@
             loadEditingItem();
             await checkAboutPageVisibility();
         });
-
-        async function checkAboutPageVisibility() {
-            try {
-                const response = await fetch('/content/about.md');
-                if (response.ok) {
-                    const content = await response.text();
-                    // Extract frontmatter
-                    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-                    if (frontmatterMatch) {
-                        const frontmatter = frontmatterMatch[1];
-                        // Check if published is false
-                        const publishedMatch = frontmatter.match(/published:\s*(true|false)/);
-                        if (publishedMatch && publishedMatch[1] === 'false') {
-                            // Hide About links
-                            const desktopLink = document.getElementById('aboutLinkDesktop');
-                            const mobileLink = document.getElementById('aboutLinkMobile');
-                            if (desktopLink) desktopLink.style.display = 'none';
-                            if (mobileLink) mobileLink.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load about page status:', error);
-            }
-        }
 
         // Image gallery
         let currentImageIndex = 0;
@@ -1248,30 +1227,6 @@
         function closeAddedModal() {
             const modal = document.getElementById('addedModal');
             modal.classList.remove('active');
-        }
-
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const countElement = document.querySelector('.cart-count');
-            if (cart.length > 0) {
-                countElement.textContent = cart.length;
-                countElement.style.display = 'flex';
-            } else {
-                countElement.style.display = 'none';
-            }
-        }
-
-        // Mobile menu toggle
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('active');
-        }
-
-        function closeMobileMenu(event) {
-            if (!event || event.target === event.currentTarget) {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.remove('active');
-            }
         }
 
         function loadEditingItem() {
