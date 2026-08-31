@@ -170,4 +170,113 @@ describe('send-shipping-update authentication', () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
     });
   });
+
+  describe('request body validation', () => {
+    it('should return 400 Bad Request when request body is missing', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = undefined;
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Missing request body' });
+    });
+
+    it('should return 400 Bad Request when request body is null', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = null;
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Missing request body' });
+    });
+
+    it('should return 400 Bad Request when orderId is missing', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = {};
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Missing required field: orderId' });
+    });
+
+    it('should return 400 Bad Request when orderId is empty string', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: '' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Missing required field: orderId' });
+    });
+
+    it('should return 400 Bad Request when orderId is not a string', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 123 };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Missing required field: orderId' });
+    });
+
+    it('should return 400 Bad Request when trackingUrl does not start with http:// or https://', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'order123', trackingUrl: 'not-a-url' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid trackingUrl format' });
+    });
+
+    it('should return 400 Bad Request when trackingUrl is not a string', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'order123', trackingUrl: 123 };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid trackingUrl format' });
+    });
+
+    it('should accept valid request with orderId only', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'order123' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should accept valid request with orderId and http trackingUrl', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'order123', trackingUrl: 'http://tracking.example.com/123' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should accept valid request with orderId and https trackingUrl', async () => {
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'order123', trackingUrl: 'https://tracking.example.com/123' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
 });

@@ -36,6 +36,24 @@ export default async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  // Validate request body exists and is an object
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return res.status(400).json({ error: 'Missing request body' });
+  }
+
+  // Validate orderId is present and is a non-empty string
+  if (!req.body.orderId || typeof req.body.orderId !== 'string' || req.body.orderId.trim() === '') {
+    return res.status(400).json({ error: 'Missing required field: orderId' });
+  }
+
+  // If trackingUrl is provided, validate it's a string starting with http:// or https://
+  if (req.body.trackingUrl !== undefined) {
+    if (typeof req.body.trackingUrl !== 'string' ||
+        (!req.body.trackingUrl.startsWith('http://') && !req.body.trackingUrl.startsWith('https://'))) {
+      return res.status(400).json({ error: 'Invalid trackingUrl format' });
+    }
+  }
+
   // TODO: Implement shipping notification logic in subsequent steps
   return res.status(200).json({ message: 'Authenticated' });
 };
