@@ -12,6 +12,7 @@ describe('send-shipping-update authentication', () => {
     process.env.SHIPPING_UPDATE_TOKEN = 'test-secret-token-123';
     process.env.AIRTABLE_API_KEY = 'test-api-key';
     process.env.AIRTABLE_BASE_ID = 'test-base-id';
+    process.env.RESEND_API_KEY = 'test-resend-key';
 
     // Clear all mocks
     vi.clearAllMocks();
@@ -41,6 +42,7 @@ describe('send-shipping-update authentication', () => {
     }
     delete process.env.AIRTABLE_API_KEY;
     delete process.env.AIRTABLE_BASE_ID;
+    delete process.env.RESEND_API_KEY;
 
     // Restore all mocks
     vi.restoreAllMocks();
@@ -278,6 +280,10 @@ describe('send-shipping-update authentication', () => {
     });
 
     it('should accept valid request with orderId and http trackingUrl', async () => {
+      // Mock EmailClient to avoid sending real emails
+      const { EmailClient } = await import('../services/email-client.js');
+      vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockResolvedValue({ id: 'email123' });
+
       const req = createMockRequest('POST', 'Bearer test-secret-token-123');
       req.body = { orderId: 'order123', trackingUrl: 'http://tracking.example.com/123' };
       const res = createMockResponse();
@@ -288,6 +294,10 @@ describe('send-shipping-update authentication', () => {
     });
 
     it('should accept valid request with orderId and https trackingUrl', async () => {
+      // Mock EmailClient to avoid sending real emails
+      const { EmailClient } = await import('../services/email-client.js');
+      vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockResolvedValue({ id: 'email123' });
+
       const req = createMockRequest('POST', 'Bearer test-secret-token-123');
       req.body = { orderId: 'order123', trackingUrl: 'https://tracking.example.com/123' };
       const res = createMockResponse();
@@ -429,6 +439,74 @@ describe('send-shipping-update authentication', () => {
       await handler(req, res);
 
       expect(mockUpdateOrder).toHaveBeenCalledWith('rec123', { Status: 'shipped' });
+    });
+  });
+
+  describe('send shipping notification with tracking URL', () => {
+    it('should send shipping notification email with tracking URL when trackingUrl is provided', async () => {
+      // Import modules for mocking
+      const { AirtableClient } = await import('../services/airtable-client.js');
+      const { EmailClient } = await import('../services/email-client.js');
+      const emailTemplates = await import('../templates/email-templates.js');
+
+      // Mock AirtableClient.findOrderById to return order with customer email and name
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
+        id: 'rec123',
+        fields: {
+          'Order ID': 'PUP-xyz789',
+          'Customer Email': 'customer@example.com',
+          'Customer Name': 'Jane Smith'
+        }
+      });
+
+      // Mock AirtableClient.updateOrder
+      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
+        id: 'rec123',
+        fields: {
+          'Order ID': 'PUP-xyz789',
+          'Status': 'shipped',
+          'Customer Email': 'customer@example.com',
+          'Customer Name': 'Jane Smith'
+        }
+      });
+
+      // Mock generateShippingNotification to return template data
+      const mockTemplateData = {
+        subject: 'Your Puplets order PUP-xyz789 has been dispatched',
+        html: '<html>Your order has been shipped</html>',
+        text: 'Your order has been shipped'
+      };
+      vi.spyOn(emailTemplates, 'generateShippingNotification').mockReturnValue(mockTemplateData);
+
+      // Mock EmailClient.sendShippingNotification
+      const mockSendShippingNotification = vi.fn().mockResolvedValue({ id: 'email123' });
+      vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockImplementation(mockSendShippingNotification);
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = {
+        orderId: 'PUP-xyz789',
+        trackingUrl: 'https://track.example.com/123'
+      };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      // Verify generateShippingNotification was called with orderId and trackingUrl
+      expect(emailTemplates.generateShippingNotification).toHaveBeenCalledWith(
+        {
+          orderId: 'PUP-xyz789',
+          customerName: 'Jane Smith'
+        },
+        'https://track.example.com/123'
+      );
+
+      // Verify EmailClient.sendShippingNotification was called with customer email and template data
+      expect(mockSendShippingNotification).toHaveBeenCalledWith(
+        'customer@example.com',
+        'Your Puplets order PUP-xyz789 has been dispatched',
+        '<html>Your order has been shipped</html>',
+        'Your order has been shipped'
+      );
     });
   });
 });

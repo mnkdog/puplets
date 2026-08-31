@@ -4,6 +4,8 @@
  */
 
 import { AirtableClient } from '../services/airtable-client.js';
+import { EmailClient } from '../services/email-client.js';
+import { generateShippingNotification } from '../templates/email-templates.js';
 
 export default async (req, res) => {
   // Only allow POST method
@@ -71,6 +73,27 @@ export default async (req, res) => {
   // Update order status to "shipped"
   const updatedOrder = await airtableClient.updateOrder(order.id, { Status: 'shipped' });
 
-  // TODO: Implement shipping notification logic in subsequent steps
+  // Send shipping notification email when trackingUrl is provided
+  if (req.body.trackingUrl) {
+    const emailClient = new EmailClient(process.env.RESEND_API_KEY);
+    const customerEmail = order.fields['Customer Email'];
+    const customerName = order.fields['Customer Name'];
+
+    const emailData = generateShippingNotification(
+      {
+        orderId: req.body.orderId,
+        customerName
+      },
+      req.body.trackingUrl
+    );
+
+    await emailClient.sendShippingNotification(
+      customerEmail,
+      emailData.subject,
+      emailData.html,
+      emailData.text
+    );
+  }
+
   return res.status(200).json({ message: 'Authenticated' });
 };
