@@ -170,6 +170,19 @@ async function runNonFatalOperation(operation, warningTag, orderId) {
 }
 
 /**
+ * Generic email sending helper - logs subject and sends email
+ * @param {string} recipientEmail - Recipient email address
+ * @param {object} emailData - Email data with subject, html, text
+ * @param {Function} sendFn - Email client send function to call
+ * @param {string} logPrefix - Prefix for console log
+ * @returns {Promise<void>}
+ */
+async function sendEmail(recipientEmail, emailData, sendFn, logPrefix) {
+  console.log(logPrefix, emailData.subject);
+  await sendFn(recipientEmail, emailData.subject, emailData.html, emailData.text);
+}
+
+/**
  * Send customer confirmation email
  * @param {object} orderData - Order data from transformSessionToOrder
  * @returns {Promise<void>}
@@ -177,13 +190,12 @@ async function runNonFatalOperation(operation, warningTag, orderId) {
 async function sendCustomerEmail(orderData) {
   const emailOrderData = transformOrderDataForEmail(orderData);
   const emailData = generateCustomerConfirmation(emailOrderData);
-  console.log('Customer confirmation email generated:', emailData.subject);
 
-  await emailClient.sendCustomerConfirmation(
+  await sendEmail(
     orderData.customerEmail,
-    emailData.subject,
-    emailData.html,
-    emailData.text
+    emailData,
+    emailClient.sendCustomerConfirmation.bind(emailClient),
+    'Customer confirmation email generated:'
   );
 }
 
@@ -207,13 +219,12 @@ async function sendShopOwnerEmail(orderData, airtableRecordId) {
   const airtableLink = constructAirtableLink(airtableRecordId);
   const shopOwnerData = transformOrderDataForShopOwner(orderData);
   const emailData = generateShopOwnerNotification(shopOwnerData, airtableLink);
-  console.log('Shop owner notification email generated:', emailData.subject);
 
-  await emailClient.sendCustomerConfirmation(
+  await sendEmail(
     process.env.SHOP_OWNER_EMAIL,
-    emailData.subject,
-    emailData.html,
-    emailData.text
+    emailData,
+    emailClient.sendShopOwnerNotification.bind(emailClient),
+    'Shop owner notification email generated:'
   );
 }
 

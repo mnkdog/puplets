@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock Stripe webhooks, AirtableClient, email templates, and email client using vi.hoisted to ensure proper initialization
-const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInventoryForOrder, mockGenerateCustomerConfirmation, mockGenerateShopOwnerNotification, mockSendCustomerConfirmation } = vi.hoisted(() => {
+const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInventoryForOrder, mockGenerateCustomerConfirmation, mockGenerateShopOwnerNotification, mockSendCustomerConfirmation, mockSendShopOwnerNotification } = vi.hoisted(() => {
   return {
     mockWebhooks: {
       constructEvent: vi.fn()
@@ -11,7 +11,8 @@ const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInven
     mockUpdateInventoryForOrder: vi.fn(),
     mockGenerateCustomerConfirmation: vi.fn(),
     mockGenerateShopOwnerNotification: vi.fn(),
-    mockSendCustomerConfirmation: vi.fn()
+    mockSendCustomerConfirmation: vi.fn(),
+    mockSendShopOwnerNotification: vi.fn()
   };
 });
 
@@ -47,7 +48,8 @@ vi.mock('../templates/email-templates.js', () => {
 vi.mock('../services/email-client.js', () => {
   return {
     createEmailClient: vi.fn(() => ({
-      sendCustomerConfirmation: mockSendCustomerConfirmation
+      sendCustomerConfirmation: mockSendCustomerConfirmation,
+      sendShopOwnerNotification: mockSendShopOwnerNotification
     }))
   };
 });
@@ -68,6 +70,7 @@ describe('Stripe Webhook Handler', () => {
     mockGenerateCustomerConfirmation.mockReset();
     mockGenerateShopOwnerNotification.mockReset();
     mockSendCustomerConfirmation.mockReset();
+    mockSendShopOwnerNotification.mockReset();
 
     // Set default mock return value for email generation
     mockGenerateCustomerConfirmation.mockReturnValue({
@@ -86,6 +89,9 @@ describe('Stripe Webhook Handler', () => {
     // Set default mock return value for email sending
     mockSendCustomerConfirmation.mockResolvedValue({
       id: 'msg_test123'
+    });
+    mockSendShopOwnerNotification.mockResolvedValue({
+      id: 'msg_shop_owner123'
     });
 
     // Spy on console.error
@@ -1132,12 +1138,11 @@ describe('Stripe Webhook Handler', () => {
 
       await webhookHandler(req, res);
 
-      // Verify sendCustomerConfirmation was called twice: once for customer, once for shop owner
-      expect(mockSendCustomerConfirmation).toHaveBeenCalledTimes(2);
+      // Verify sendCustomerConfirmation was called once for customer
+      expect(mockSendCustomerConfirmation).toHaveBeenCalledTimes(1);
 
-      // Verify second call is for shop owner with correct parameters
-      expect(mockSendCustomerConfirmation).toHaveBeenNthCalledWith(
-        2,
+      // Verify sendShopOwnerNotification was called once for shop owner with correct parameters
+      expect(mockSendShopOwnerNotification).toHaveBeenCalledWith(
         'stephenmbrown@gmail.com',
         'New Order - PUP-e5f6g7h8',
         '<html>Shop owner notification email body</html>',
@@ -1194,10 +1199,9 @@ describe('Stripe Webhook Handler', () => {
         text: 'Shop owner notification'
       });
 
-      // First call (customer email) succeeds, second call (shop owner email) fails
-      mockSendCustomerConfirmation
-        .mockResolvedValueOnce({ id: 'msg_customer123' })
-        .mockRejectedValueOnce(new Error('Shop owner email service error'));
+      // Customer email succeeds, shop owner email fails
+      mockSendCustomerConfirmation.mockResolvedValue({ id: 'msg_customer123' });
+      mockSendShopOwnerNotification.mockRejectedValue(new Error('Shop owner email service error'));
 
       process.env.AIRTABLE_BASE_ID = 'appXYZ123';
       process.env.SHOP_OWNER_EMAIL = 'stephenmbrown@gmail.com';
