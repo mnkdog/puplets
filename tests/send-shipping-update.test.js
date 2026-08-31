@@ -716,6 +716,84 @@ describe('send-shipping-update authentication', () => {
     });
   });
 
+  describe('successful shipping update response', () => {
+    it('should return 200 OK with success message when shipping update completes with tracking URL', async () => {
+      const { AirtableClient } = await import('../services/airtable-client.js');
+      const { EmailClient } = await import('../services/email-client.js');
+
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
+        id: 'rec123',
+        fields: {
+          'Order ID': 'PUP-success-001',
+          'Customer Email': 'customer@example.com',
+          'Customer Name': 'Happy Customer'
+        }
+      });
+
+      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
+        id: 'rec123',
+        fields: {
+          'Order ID': 'PUP-success-001',
+          'Status': 'shipped',
+          'Customer Email': 'customer@example.com',
+          'Customer Name': 'Happy Customer'
+        }
+      });
+
+      vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockResolvedValue({ id: 'email123' });
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = {
+        orderId: 'PUP-success-001',
+        trackingUrl: 'https://track.example.com/12345'
+      };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Shipping update processed successfully' });
+    });
+
+    it('should return 200 OK with success message when shipping update completes without tracking URL', async () => {
+      const { AirtableClient } = await import('../services/airtable-client.js');
+      const { EmailClient } = await import('../services/email-client.js');
+
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
+        id: 'rec456',
+        fields: {
+          'Order ID': 'PUP-success-002',
+          'Customer Email': 'another@example.com',
+          'Customer Name': 'Another Customer'
+        }
+      });
+
+      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
+        id: 'rec456',
+        fields: {
+          'Order ID': 'PUP-success-002',
+          'Status': 'shipped',
+          'Customer Email': 'another@example.com',
+          'Customer Name': 'Another Customer'
+        }
+      });
+
+      vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockResolvedValue({ id: 'email456' });
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = {
+        orderId: 'PUP-success-002'
+        // No trackingUrl provided
+      };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Shipping update processed successfully' });
+    });
+  });
+
   describe('email failure handling (non-fatal)', () => {
     it('should log warning with [SHIPPING EMAIL FAILED] prefix when email sending fails', async () => {
       // Import modules for mocking
