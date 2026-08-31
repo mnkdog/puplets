@@ -879,6 +879,80 @@ describe('Stripe Webhook Handler', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ received: true });
     });
+
+    it('logs warning and continues when customer email sending fails', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_email_fail',
+            customer_email: 'fail@example.com',
+            amount_total: 1999,
+            line_items: {
+              data: [
+                {
+                  description: 'Blue Waterproof Collar - Medium',
+                  quantity: 1,
+                  price: { unit_amount: 1999 }
+                }
+              ]
+            }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recEMAIL123',
+        fields: { 'Order ID': 'PUP-ail_fail' }
+      });
+
+      mockGenerateCustomerConfirmation.mockReturnValue({
+        subject: 'Order Confirmation',
+        html: '<html>Test</html>',
+        text: 'Test'
+      });
+
+      mockSendCustomerConfirmation.mockRejectedValue(new Error('Resend API error'));
+
+      await webhookHandler(req, res);
+
+      // Verify order was still created
+      expect(mockCreateOrder).toHaveBeenCalledWith({
+        orderId: 'PUP-ail_fail',
+        sessionId: 'cs_test_email_fail',
+        customerEmail: 'fail@example.com',
+        customerName: '',
+        shippingAddress: '',
+        items: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: 1999
+          }
+        ],
+        total: 19.99
+      });
+
+      // Verify warning was logged with order ID
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[CUSTOMER EMAIL FAILED]',
+        'Order:',
+        'PUP-ail_fail',
+        'Error:',
+        'Resend API error'
+      );
+
+      // Verify webhook still responds with 200
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+
+      consoleWarnSpy.mockRestore();
+    });
   });
 
   describe('Inventory Update Integration', () => {

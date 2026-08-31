@@ -143,6 +143,21 @@ function logWarning(warningTag, orderId, error) {
 }
 
 /**
+ * Run a non-fatal operation (logs warning on failure but doesn't throw)
+ * @param {Function} operation - Async function to execute
+ * @param {string} warningTag - Warning classification tag for logging
+ * @param {string} orderId - Order ID for correlation
+ * @returns {Promise<void>}
+ */
+async function runNonFatalOperation(operation, warningTag, orderId) {
+  try {
+    await operation();
+  } catch (err) {
+    logWarning(warningTag, orderId, err);
+  }
+}
+
+/**
  * Send customer confirmation email
  * @param {object} orderData - Order data from transformSessionToOrder
  * @returns {Promise<void>}
@@ -223,21 +238,24 @@ const webhookHandler = async (req, res) => {
       return handleAirtableError(res, session.id, 'ORDER CREATION FAILED', err, 'Failed to create order');
     }
 
-    // Send customer confirmation email
-    await sendCustomerEmail(orderData);
+    // Send customer confirmation email (non-fatal)
+    await runNonFatalOperation(
+      () => sendCustomerEmail(orderData),
+      'CUSTOMER EMAIL FAILED',
+      orderId
+    );
 
-    // Update inventory for order items
+    // Update inventory for order items (non-fatal)
     const inventoryLineItems = session.line_items?.data?.map(item => ({
       description: item.description,
       quantity: item.quantity
     })) || [];
 
-    try {
-      await airtableClient.updateInventoryForOrder(inventoryLineItems, orderId);
-    } catch (err) {
-      // Log warning but don't fail the webhook - order was already created
-      logWarning('INVENTORY UPDATE FAILED', orderId, err);
-    }
+    await runNonFatalOperation(
+      () => airtableClient.updateInventoryForOrder(inventoryLineItems, orderId),
+      'INVENTORY UPDATE FAILED',
+      orderId
+    );
   }
 
   return res.status(200).json({ received: true });
