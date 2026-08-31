@@ -101,6 +101,20 @@ function transformSessionToOrder(session, orderId) {
 }
 
 /**
+ * Log error and return 500 response
+ * @param {object} res - Express response object
+ * @param {string} sessionId - Stripe session ID for correlation
+ * @param {string} errorTag - Error classification tag for logging (e.g., 'IDEMPOTENCY CHECK FAILED')
+ * @param {Error} error - The error object
+ * @param {string} clientMessage - User-facing error message
+ * @returns {object} Express response with 500 status
+ */
+function handleAirtableError(res, sessionId, errorTag, error, clientMessage) {
+  console.error(`[${errorTag}]`, 'Session:', sessionId, 'Error:', error.message);
+  return res.status(500).json({ error: clientMessage });
+}
+
+/**
  * Check if order already exists for given session (idempotency check)
  * @param {AirtableClient} client - Airtable client instance
  * @param {string} sessionId - Stripe session ID
@@ -146,8 +160,7 @@ const webhookHandler = async (req, res) => {
     try {
       existingOrder = await checkExistingOrder(airtableClient, session.id);
     } catch (err) {
-      console.error('[IDEMPOTENCY CHECK FAILED]', 'Session:', session.id, 'Error:', err.message);
-      return res.status(500).json({ error: 'Failed to check for existing order' });
+      return handleAirtableError(res, session.id, 'IDEMPOTENCY CHECK FAILED', err, 'Failed to check for existing order');
     }
 
     if (existingOrder) {
@@ -161,8 +174,7 @@ const webhookHandler = async (req, res) => {
     try {
       await airtableClient.createOrder(orderData);
     } catch (err) {
-      console.error('[ORDER CREATION FAILED]', 'Session:', session.id, 'Error:', err.message);
-      return res.status(500).json({ error: 'Failed to create order' });
+      return handleAirtableError(res, session.id, 'ORDER CREATION FAILED', err, 'Failed to create order');
     }
   }
 
