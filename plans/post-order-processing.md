@@ -41,15 +41,20 @@ While no-code tools could deliver Stripe → Airtable + Email integration faster
 
 From spec - verify at PR review:
 
-- [ ] Customer receives detailed confirmation email within 1 minute of checkout
-- [ ] Shop owner receives order notification email at stephenmbrown@gmail.com within 1 minute
-- [ ] Order appears in Airtable Orders table within 10 seconds of checkout
-- [ ] Inventory quantity decrements by purchased amount immediately after checkout
-- [ ] POST /api/send-shipping-update with valid order ID returns 200 with success JSON, sends customer shipping email, and updates order status to "shipped" within 60 seconds
-- [ ] Each order processed exactly once (webhook idempotency)
-- [ ] Order ID format is `PUP-{last-8-chars-of-stripe-session-id}`
-- [ ] Email sender is "Puplets <hello@puplets.co.uk>" or verified domain
-- [ ] All error scenarios handled per spec (email failures don't block orders, Airtable failures trigger Stripe retry)
+- [ ] Customer receives confirmation email at checkout email address within 60 seconds with subject `Order Confirmation - Puplets Order {Order ID}`, body includes Order ID (PUP-{last-8-chars} format), itemized products with quantities, total amount with £ symbol, full shipping address, text "Free delivery in 3-7 business days", and sender is `Puplets <hello@puplets.co.uk>`
+- [ ] Shop owner receives notification email at stephenmbrown@gmail.com within 60 seconds with subject `New Order - {Order ID}`, body includes customer email, customer name, shipping address, itemized products with quantities, total amount, and clickable Airtable link to order record
+- [ ] Order appears in Airtable Orders table within 10 seconds of checkout with all fields populated: Order ID in format `PUP-{last-8-chars-of-stripe-session-id}` (e.g., `cs_test_a1b2c3d4e5f6g7h8` → `PUP-e5f6g7h8`), Stripe Session ID, Customer Email, Customer Name, Shipping Address, Items (JSON array), Total (converted from cents to pounds), Status set to "pending", and Created timestamp
+- [ ] Inventory quantity decrements by purchased amount within 10 seconds of order capture (during webhook processing), matching products by exact product description, and when product not found in inventory table, logs warning with product description and order ID but order creation continues
+- [ ] POST /api/send-shipping-update with valid bearer token, valid orderId, and trackingUrl returns 200 with `{"success": true, "message": "Shipping notification sent"}`, updates order status to "shipped", updates Tracking URL field, and customer receives email within 60 seconds with tracking link
+- [ ] POST /api/send-shipping-update with valid bearer token and orderId but no trackingUrl returns 200, updates status to "shipped", and customer receives email stating order dispatched (no tracking link shown)
+- [ ] POST /api/send-shipping-update with non-existent orderId returns 404 with error message "Order not found"
+- [ ] POST /api/send-shipping-update without Authorization header returns 401 with error message "Unauthorized"
+- [ ] POST /api/send-shipping-update with invalid bearer token returns 401 with error message "Unauthorized"
+- [ ] POST /api/send-shipping-update with missing orderId field returns 400 with error message "Missing required field: orderId", and with invalid trackingUrl format returns 400 with error message "Invalid URL format for trackingUrl"
+- [ ] POST /api/webhook-stripe with invalid Stripe signature returns 401, logs authentication failure, and does not process order
+- [ ] Each order processed exactly once (webhook idempotency): when same checkout.session.completed webhook received twice, order is created exactly once, inventory decremented exactly once, customer confirmation email sent exactly once, and shop owner email sent exactly once
+- [ ] Email delivery failures: When Resend API returns error during customer confirmation email OR shop owner notification email send, order still saves to Airtable, inventory still updates, error is logged with order ID and email type, and webhook returns 200 to Stripe
+- [ ] Airtable failures: When Airtable API returns error, webhook logs full error including Stripe session ID, returns 500 status to Stripe (triggering automatic retry), and shop owner receives error notification email
 
 ## Slices
 
@@ -704,18 +709,18 @@ Plan tier: **complex** — reviewers: Acceptance, Design, Strategic, UX, Paralle
 
 _Note: Wave structure to be recomputed by `plan_waves.py` after approval_
 
-- [ ] Slice 1: Service Layer Extraction
-  - [ ] Step 1.1: Airtable client createOrder
-  - [ ] Step 1.2: Airtable client findOrderBySessionId
-  - [ ] Step 1.2b: Airtable client findOrderById
-  - [ ] Step 1.3: Airtable client updateInventoryForOrder
-  - [ ] Step 1.4: Airtable client updateOrder
-  - [ ] Step 1.5: Email client sendCustomerConfirmation
-  - [ ] Step 1.6: Email client sendShopOwnerNotification
-  - [ ] Step 1.7: Email client sendShippingNotification
-  - [ ] Step 1.8: Email template generateCustomerConfirmation
-  - [ ] Step 1.9: Email template generateShopOwnerNotification
-  - [ ] Step 1.10: Email template generateShippingNotification
+- [x] Slice 1: Service Layer Extraction
+  - [x] Step 1.1: Airtable client createOrder
+  - [x] Step 1.2: Airtable client findOrderBySessionId
+  - [x] Step 1.2b: Airtable client findOrderById
+  - [x] Step 1.3: Airtable client updateInventoryForOrder
+  - [x] Step 1.4: Airtable client updateOrder
+  - [x] Step 1.5: Email client sendCustomerConfirmation
+  - [x] Step 1.6: Email client sendShopOwnerNotification
+  - [x] Step 1.7: Email client sendShippingNotification
+  - [x] Step 1.8: Email template generateCustomerConfirmation
+  - [x] Step 1.9: Email template generateShopOwnerNotification
+  - [x] Step 1.10: Email template generateShippingNotification
 
 - [ ] Slice 2: Webhook Infrastructure & Order Capture
   - [ ] Step 2.1: Webhook signature validation
