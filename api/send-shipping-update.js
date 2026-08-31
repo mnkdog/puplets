@@ -70,8 +70,13 @@ export default async (req, res) => {
     return res.status(404).json({ error: 'Order not found' });
   }
 
-  // Update order status to "shipped"
-  const updatedOrder = await airtableClient.updateOrder(order.id, { Status: 'shipped' });
+  // Update order status to "shipped" using Order ID field (not record ID)
+  const updatedOrder = await airtableClient.updateOrder(order.fields['Order ID'], { Status: 'shipped' });
+
+  // Check if update succeeded
+  if (updatedOrder === null || updatedOrder === undefined) {
+    return res.status(500).json({ error: 'Failed to update order status' });
+  }
 
   // Send shipping notification email (with or without tracking URL)
   try {
@@ -79,23 +84,28 @@ export default async (req, res) => {
     const customerEmail = order.fields['Customer Email'];
     const customerName = order.fields['Customer Name'];
 
-    const emailData = generateShippingNotification(
-      {
-        orderId: req.body.orderId,
-        customerName
-      },
-      req.body.trackingUrl
-    );
+    // Validate Customer Email exists before sending
+    if (!customerEmail || customerEmail.trim() === '') {
+      console.warn('[NO CUSTOMER EMAIL]', `Order ${req.body.orderId} has no customer email, skipping notification`);
+    } else {
+      const emailData = generateShippingNotification(
+        {
+          orderId: req.body.orderId,
+          customerName
+        },
+        req.body.trackingUrl
+      );
 
-    await emailClient.sendShippingNotification(
-      customerEmail,
-      emailData.subject,
-      emailData.html,
-      emailData.text
-    );
+      await emailClient.sendShippingNotification(
+        customerEmail,
+        emailData.subject,
+        emailData.html,
+        emailData.text
+      );
+    }
   } catch (error) {
     console.warn('[SHIPPING EMAIL FAILED]', error.message);
   }
 
-  return res.status(200).json({ message: 'Authenticated' });
+  return res.status(200).json({ message: 'Shipping update processed successfully' });
 };
