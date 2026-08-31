@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateCustomerConfirmation } from '../templates/email-templates.js';
+import { generateCustomerConfirmation, generateShopOwnerNotification } from '../templates/email-templates.js';
 
 describe('generateCustomerConfirmation', () => {
   describe('return structure', () => {
@@ -372,6 +372,459 @@ describe('generateCustomerConfirmation', () => {
 
       expect(result.html).toContain('Apartment 42B');
       expect(result.text).toContain('Apartment 42B');
+    });
+  });
+});
+
+describe('generateShopOwnerNotification', () => {
+  describe('return structure', () => {
+    it('returns object with subject, html, and text fields', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Blue Waterproof Collar - Medium', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Main St, London SW1A 1AA, UK',
+        customerName: 'Jane Smith',
+        customerEmail: 'jane@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result).toHaveProperty('subject');
+      expect(result).toHaveProperty('html');
+      expect(result).toHaveProperty('text');
+      expect(typeof result.subject).toBe('string');
+      expect(typeof result.html).toBe('string');
+      expect(typeof result.text).toBe('string');
+    });
+  });
+
+  describe('subject line', () => {
+    it('formats subject as "New Order - {Order ID}"', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.subject).toBe('New Order - PUP-abc123');
+    });
+
+    it('handles different order ID formats', () => {
+      const orderData = {
+        orderId: 'PUP-xyz789',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£29.99',
+        address: '456 Test Ave',
+        customerName: 'Another User',
+        customerEmail: 'another@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recAAAAAA';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.subject).toBe('New Order - PUP-xyz789');
+    });
+  });
+
+  describe('HTML content', () => {
+    it('contains order ID', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('PUP-abc123');
+      expect(result.html).toContain('Order ID:');
+    });
+
+    it('contains customer name', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Jane Smith',
+        customerEmail: 'jane@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('Jane Smith');
+      expect(result.html).toContain('Name:');
+    });
+
+    it('contains customer email', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Jane Smith',
+        customerEmail: 'jane@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('jane@example.com');
+      expect(result.html).toContain('Email:');
+    });
+
+    it('contains itemized products with quantities', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [
+          { description: 'Blue Waterproof Collar - Medium', quantity: 1 },
+          { description: 'Red Waterproof Collar - Small', quantity: 2 }
+        ],
+        total: '£49.97',
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('Blue Waterproof Collar - Medium');
+      expect(result.html).toContain('(1)');
+      expect(result.html).toContain('Red Waterproof Collar - Small');
+      expect(result.html).toContain('(2)');
+    });
+
+    it('contains total amount with £ symbol', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('£19.99');
+      expect(result.html).toContain('Total:');
+    });
+
+    it('formats total with £ symbol when not prefixed', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: 19.99,
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('£19.99');
+    });
+
+    it('contains full shipping address', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Main St, London SW1A 1AA, UK',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('123 Main St, London SW1A 1AA, UK');
+      expect(result.html).toContain('Shipping Address:');
+    });
+
+    it('contains clickable Airtable link', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ');
+      expect(result.html).toContain('View in Airtable:');
+      expect(result.html).toContain(`<a href="${airtableLink}"`);
+    });
+  });
+
+  describe('text content', () => {
+    it('contains order ID', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.text).toContain('PUP-abc123');
+      expect(result.text).toContain('Order ID:');
+    });
+
+    it('contains customer name', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Jane Smith',
+        customerEmail: 'jane@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.text).toContain('Jane Smith');
+      expect(result.text).toContain('Name:');
+    });
+
+    it('contains customer email', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Jane Smith',
+        customerEmail: 'jane@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.text).toContain('jane@example.com');
+      expect(result.text).toContain('Email:');
+    });
+
+    it('contains itemized products with quantities', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [
+          { description: 'Blue Waterproof Collar - Medium', quantity: 1 },
+          { description: 'Red Waterproof Collar - Small', quantity: 2 }
+        ],
+        total: '£49.97',
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.text).toContain('Blue Waterproof Collar - Medium');
+      expect(result.text).toContain('(1)');
+      expect(result.text).toContain('Red Waterproof Collar - Small');
+      expect(result.text).toContain('(2)');
+    });
+
+    it('contains total amount with £ symbol', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.text).toContain('£19.99');
+      expect(result.text).toContain('Total:');
+    });
+
+    it('contains full shipping address', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Main St, London SW1A 1AA, UK',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.text).toContain('123 Main St, London SW1A 1AA, UK');
+    });
+
+    it('contains Airtable link', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Test User',
+        customerEmail: 'test@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.text).toContain('https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ');
+      expect(result.text).toContain('VIEW IN AIRTABLE');
+    });
+  });
+
+  describe('Gherkin scenario compliance', () => {
+    it('matches the exact scenario from the plan', () => {
+      // Scenario: Email template generates shop owner notification
+      //   Given order data with specific values and Airtable link
+      const orderData = {
+        orderId: 'PUP-abc123',
+        items: [{ description: 'Blue Waterproof Collar - Medium', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Main St, London SW1A 1AA, UK',
+        customerName: 'Jane Smith',
+        customerEmail: 'jane@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ';
+
+      // When generateShopOwnerNotification is called
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      // Then template returns object with subject, html, text fields
+      expect(result).toHaveProperty('subject');
+      expect(result).toHaveProperty('html');
+      expect(result).toHaveProperty('text');
+
+      // And subject is "New Order - PUP-abc123"
+      expect(result.subject).toBe('New Order - PUP-abc123');
+
+      // And html contains customer email
+      expect(result.html).toContain('jane@example.com');
+
+      // And html contains customer name
+      expect(result.html).toContain('Jane Smith');
+
+      // And html contains shipping address
+      expect(result.html).toContain('123 Main St, London SW1A 1AA, UK');
+
+      // And html contains itemized products with quantities
+      expect(result.html).toContain('Blue Waterproof Collar - Medium');
+      expect(result.html).toContain('(1)');
+
+      // And html contains total amount
+      expect(result.html).toContain('£19.99');
+
+      // And html contains clickable Airtable link
+      expect(result.html).toContain('https://airtable.com/appXXXXX/tblYYYYY/recZZZZZ');
+      expect(result.html).toContain(`<a href="${airtableLink}"`);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles items with missing quantity field', () => {
+      const orderData = {
+        orderId: 'PUP-no-qty',
+        items: [{ description: 'Item Without Quantity' }],
+        total: '£15.00',
+        address: '2 Test Road',
+        customerName: 'Quantity Tester',
+        customerEmail: 'qty@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recAAAAAA';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      // Should default to 1
+      expect(result.html).toContain('(1)');
+      expect(result.text).toContain('(1)');
+    });
+
+    it('handles multiple items with various quantities', () => {
+      const orderData = {
+        orderId: 'PUP-multi',
+        items: [
+          { description: 'Item A', quantity: 1 },
+          { description: 'Item B', quantity: 3 },
+          { description: 'Item C', quantity: 2 }
+        ],
+        total: '£99.99',
+        address: '3 Multi Lane',
+        customerName: 'Multi Buyer',
+        customerEmail: 'multi@example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recBBBBBB';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('Item A');
+      expect(result.html).toContain('(1)');
+      expect(result.html).toContain('Item B');
+      expect(result.html).toContain('(3)');
+      expect(result.html).toContain('Item C');
+      expect(result.html).toContain('(2)');
+    });
+
+    it('handles long email addresses', () => {
+      const orderData = {
+        orderId: 'PUP-long-email',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Long Email User',
+        customerEmail: 'very.long.email.address.with.many.dots@subdomain.example.com'
+      };
+      const airtableLink = 'https://airtable.com/appXXXXX/tblYYYYY/recCCCCCC';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('very.long.email.address.with.many.dots@subdomain.example.com');
+      expect(result.text).toContain('very.long.email.address.with.many.dots@subdomain.example.com');
+    });
+
+    it('handles different Airtable link formats', () => {
+      const orderData = {
+        orderId: 'PUP-link-test',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: '£19.99',
+        address: '123 Test St',
+        customerName: 'Link Tester',
+        customerEmail: 'link@example.com'
+      };
+      const airtableLink = 'https://airtable.com/app12345ABC/tblXYZ789/recMNO123';
+
+      const result = generateShopOwnerNotification(orderData, airtableLink);
+
+      expect(result.html).toContain('https://airtable.com/app12345ABC/tblXYZ789/recMNO123');
+      expect(result.text).toContain('https://airtable.com/app12345ABC/tblXYZ789/recMNO123');
     });
   });
 });
