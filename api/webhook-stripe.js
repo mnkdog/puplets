@@ -53,8 +53,10 @@ export default async (req, res) => {
 
   // Only process checkout.session.completed events for now
   if (event.type === 'checkout.session.completed') {
-    // TODO: Process order in next step
-    console.log('Checkout session completed:', event.data.object.id);
+    const session = event.data.object;
+    const orderId = `PUP-${session.id.slice(-8)}`;
+
+    console.log('Checkout session completed:', session.id, '→ Order ID:', orderId);
   }
 
   return res.status(200).json({ received: true });

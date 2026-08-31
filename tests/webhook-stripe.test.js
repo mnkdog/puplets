@@ -195,4 +195,74 @@ describe('Stripe Webhook Handler', () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Method not allowed' });
     });
   });
+
+  describe('Order ID Generation', () => {
+    it('generates order ID in format PUP-{last-8-chars} from Stripe session ID', async () => {
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_a1b2c3d4e5f6g7h8'
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_a1b2c3d4e5f6g7h8'
+          }
+        }
+      });
+
+      await webhookHandler(req, res);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Checkout session completed:',
+        'cs_test_a1b2c3d4e5f6g7h8',
+        '→ Order ID:',
+        'PUP-e5f6g7h8'
+      );
+
+      consoleLogSpy.mockRestore();
+    });
+
+    it('generates order ID correctly for short session IDs', async () => {
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_short'
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_short'
+          }
+        }
+      });
+
+      await webhookHandler(req, res);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Checkout session completed:',
+        'cs_short',
+        '→ Order ID:',
+        'PUP-cs_short'
+      );
+
+      consoleLogSpy.mockRestore();
+    });
+  });
 });
