@@ -5,8 +5,13 @@
 // See: https://stripe.com/docs/webhooks/signatures
 
 import Stripe from 'stripe';
+import { AirtableClient } from '../services/airtable-client.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const airtableClient = new AirtableClient(
+  process.env.AIRTABLE_API_KEY,
+  process.env.AIRTABLE_BASE_ID
+);
 
 /**
  * Verify Stripe webhook signature
@@ -120,6 +125,16 @@ const webhookHandler = async (req, res) => {
     const orderId = `PUP-${session.id.slice(-8)}`;
 
     console.log('Checkout session completed:', session.id, '→ Order ID:', orderId);
+
+    // Transform and create order in Airtable
+    const orderData = transformSessionToOrder(session, orderId);
+
+    try {
+      await airtableClient.createOrder(orderData);
+    } catch (err) {
+      console.error('[ORDER CREATION FAILED]', 'Session:', session.id, 'Error:', err.message);
+      return res.status(500).json({ error: 'Failed to create order' });
+    }
   }
 
   return res.status(200).json({ received: true });

@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock Stripe webhooks using vi.hoisted to ensure proper initialization
-const { mockWebhooks } = vi.hoisted(() => {
+// Mock Stripe webhooks and AirtableClient using vi.hoisted to ensure proper initialization
+const { mockWebhooks, mockCreateOrder } = vi.hoisted(() => {
   return {
     mockWebhooks: {
       constructEvent: vi.fn()
-    }
+    },
+    mockCreateOrder: vi.fn()
   };
 });
 
@@ -14,6 +15,16 @@ vi.mock('stripe', () => {
     default: class MockStripe {
       constructor() {
         this.webhooks = mockWebhooks;
+      }
+    }
+  };
+});
+
+vi.mock('../services/airtable-client.js', () => {
+  return {
+    AirtableClient: class MockAirtableClient {
+      constructor() {
+        this.createOrder = mockCreateOrder;
       }
     }
   };
@@ -29,6 +40,7 @@ describe('Stripe Webhook Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockWebhooks.constructEvent.mockReset();
+    mockCreateOrder.mockReset();
 
     // Spy on console.error
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -479,6 +491,102 @@ describe('Stripe Webhook Handler', () => {
       const result = transformSessionToOrder(stripeSession, 'PUP-test123');
 
       expect(result.customerName).toBe('');
+    });
+  });
+
+  describe('Order Creation Integration', () => {
+    it('delegates order creation to airtableClient.createOrder with transformed data', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_a1b2c3d4e5f6g7h8',
+            customer_email: 'customer@example.com',
+            customer_details: {
+              name: 'Jane Smith',
+              email: 'customer@example.com'
+            },
+            shipping: {
+              address: {
+                line1: '123 Main St',
+                line2: 'Apt 4B',
+                city: 'London',
+                postal_code: 'SW1A 1AA',
+                country: 'UK'
+              }
+            },
+            line_items: {
+              data: [
+                {
+                  description: 'Blue Waterproof Collar - Medium',
+                  quantity: 1,
+                  price: {
+                    unit_amount: 1999
+                  }
+                }
+              ]
+            },
+            amount_total: 1999
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recABC123',
+        fields: { 'Order ID': 'PUP-e5f6g7h8' }
+      });
+
+      await webhookHandler(req, res);
+
+      expect(mockCreateOrder).toHaveBeenCalledWith({
+        orderId: 'PUP-e5f6g7h8',
+        sessionId: 'cs_test_a1b2c3d4e5f6g7h8',
+        customerEmail: 'customer@example.com',
+        customerName: 'Jane Smith',
+        shippingAddress: '123 Main St, Apt 4B, London, SW1A 1AA, UK',
+        items: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: 1999
+          }
+        ],
+        total: 19.99
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('returns 500 and logs error when airtableClient.createOrder fails', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_fail123',
+            customer_email: 'fail@example.com',
+            amount_total: 1000,
+            line_items: { data: [] }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockCreateOrder.mockRejectedValue(new Error('Airtable API error'));
+
+      await webhookHandler(req, res);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[ORDER CREATION FAILED]',
+        'Session:',
+        'cs_test_fail123',
+        'Error:',
+        'Airtable API error'
+      );
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to create order' });
     });
   });
 });
