@@ -751,6 +751,54 @@ describe('Stripe Webhook Handler', () => {
       expect(res.json).toHaveBeenCalledWith({ received: true });
     });
 
+    it('updates inventory for multiple items in one order', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_multi_item',
+            customer_email: 'test@example.com',
+            amount_total: 5797,
+            line_items: {
+              data: [
+                {
+                  description: 'Blue Waterproof Collar - Medium',
+                  quantity: 1,
+                  price: { unit_amount: 1999 }
+                },
+                {
+                  description: 'Red Waterproof Collar - Small',
+                  quantity: 2,
+                  price: { unit_amount: 1899 }
+                }
+              ]
+            }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recMULTI123',
+        fields: { 'Order ID': 'PUP-lti_item' }
+      });
+      mockUpdateInventoryForOrder.mockResolvedValue();
+
+      await webhookHandler(req, res);
+
+      expect(mockUpdateInventoryForOrder).toHaveBeenCalledWith(
+        [
+          { description: 'Blue Waterproof Collar - Medium', quantity: 1 },
+          { description: 'Red Waterproof Collar - Small', quantity: 2 }
+        ],
+        'PUP-lti_item'
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
     it('logs warning but continues when inventory update fails', async () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
