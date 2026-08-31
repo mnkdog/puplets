@@ -1,7 +1,7 @@
 ---
 id: post-order-processing
 created: 2026-08-30
-status: draft
+status: approved
 spec: docs/specs/post-order-processing.md
 ---
 
