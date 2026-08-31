@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock Stripe webhooks, AirtableClient, email templates, and email client using vi.hoisted to ensure proper initialization
-const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInventoryForOrder, mockGenerateCustomerConfirmation, mockSendCustomerConfirmation } = vi.hoisted(() => {
+const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInventoryForOrder, mockGenerateCustomerConfirmation, mockGenerateShopOwnerNotification, mockSendCustomerConfirmation } = vi.hoisted(() => {
   return {
     mockWebhooks: {
       constructEvent: vi.fn()
@@ -10,6 +10,7 @@ const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInven
     mockFindOrderBySessionId: vi.fn(),
     mockUpdateInventoryForOrder: vi.fn(),
     mockGenerateCustomerConfirmation: vi.fn(),
+    mockGenerateShopOwnerNotification: vi.fn(),
     mockSendCustomerConfirmation: vi.fn()
   };
 });
@@ -38,7 +39,8 @@ vi.mock('../services/airtable-client.js', () => {
 
 vi.mock('../templates/email-templates.js', () => {
   return {
-    generateCustomerConfirmation: mockGenerateCustomerConfirmation
+    generateCustomerConfirmation: mockGenerateCustomerConfirmation,
+    generateShopOwnerNotification: mockGenerateShopOwnerNotification
   };
 });
 
@@ -64,6 +66,7 @@ describe('Stripe Webhook Handler', () => {
     mockFindOrderBySessionId.mockReset();
     mockUpdateInventoryForOrder.mockReset();
     mockGenerateCustomerConfirmation.mockReset();
+    mockGenerateShopOwnerNotification.mockReset();
     mockSendCustomerConfirmation.mockReset();
 
     // Set default mock return value for email generation
@@ -71,6 +74,13 @@ describe('Stripe Webhook Handler', () => {
       subject: 'Order Confirmation - Puplets Order PUP-test123',
       html: '<html>Test email</html>',
       text: 'Test email'
+    });
+
+    // Set default mock return value for shop owner email generation
+    mockGenerateShopOwnerNotification.mockReturnValue({
+      subject: 'New Order - PUP-test123',
+      html: '<html>Shop owner notification</html>',
+      text: 'Shop owner notification'
     });
 
     // Set default mock return value for email sending
@@ -221,6 +231,13 @@ describe('Stripe Webhook Handler', () => {
         }
       });
 
+      // Mock order creation to return a record with ID
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recVALID123',
+        fields: { 'Order ID': 'PUP-valid123' }
+      });
+
       await webhookHandler(req, res);
 
       expect(mockWebhooks.constructEvent).toHaveBeenCalledWith(
@@ -267,6 +284,13 @@ describe('Stripe Webhook Handler', () => {
         }
       });
 
+      // Mock order creation to return a record with ID
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recORDERID1',
+        fields: { 'Order ID': 'PUP-e5f6g7h8' }
+      });
+
       await webhookHandler(req, res);
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -299,6 +323,13 @@ describe('Stripe Webhook Handler', () => {
             id: 'cs_short'
           }
         }
+      });
+
+      // Mock order creation to return a record with ID
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recSHORT123',
+        fields: { 'Order ID': 'PUP-cs_short' }
       });
 
       await webhookHandler(req, res);
@@ -951,6 +982,260 @@ describe('Stripe Webhook Handler', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ received: true });
 
+      consoleWarnSpy.mockRestore();
+    });
+  });
+
+  describe('Shop Owner Email Generation', () => {
+    it('generates shop owner notification email after order creation', async () => {
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_a1b2c3d4e5f6g7h8',
+            customer_email: 'customer@example.com',
+            customer_details: {
+              name: 'Jane Smith',
+              email: 'customer@example.com'
+            },
+            shipping: {
+              address: {
+                line1: '123 Main St',
+                line2: 'Apt 4B',
+                city: 'London',
+                postal_code: 'SW1A 1AA',
+                country: 'UK'
+              }
+            },
+            line_items: {
+              data: [
+                {
+                  description: 'Blue Waterproof Collar - Medium',
+                  quantity: 1,
+                  price: {
+                    unit_amount: 1999
+                  }
+                }
+              ]
+            },
+            amount_total: 1999
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recABC123',
+        fields: { 'Order ID': 'PUP-e5f6g7h8' }
+      });
+
+      mockGenerateShopOwnerNotification.mockReturnValue({
+        subject: 'New Order - PUP-e5f6g7h8',
+        html: '<html>Shop owner notification email body</html>',
+        text: 'Shop owner notification email body'
+      });
+
+      process.env.AIRTABLE_BASE_ID = 'appXYZ123';
+
+      await webhookHandler(req, res);
+
+      // Verify generateShopOwnerNotification was called with correct order data and Airtable link
+      expect(mockGenerateShopOwnerNotification).toHaveBeenCalledWith(
+        {
+          orderId: 'PUP-e5f6g7h8',
+          items: [
+            {
+              description: 'Blue Waterproof Collar - Medium',
+              quantity: 1,
+              price: 1999
+            }
+          ],
+          total: 19.99,
+          address: '123 Main St, Apt 4B, London, SW1A 1AA, UK',
+          customerName: 'Jane Smith',
+          customerEmail: 'customer@example.com'
+        },
+        'https://airtable.com/appXYZ123/Orders/recABC123'
+      );
+
+      // Verify console log shows email subject
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Shop owner notification email generated:',
+        'New Order - PUP-e5f6g7h8'
+      );
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+
+      delete process.env.AIRTABLE_BASE_ID;
+      consoleLogSpy.mockRestore();
+    });
+  });
+
+  describe('Shop Owner Email Sending', () => {
+    it('sends shop owner notification email via email client after order creation', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_a1b2c3d4e5f6g7h8',
+            customer_email: 'customer@example.com',
+            customer_details: {
+              name: 'Jane Smith',
+              email: 'customer@example.com'
+            },
+            shipping: {
+              address: {
+                line1: '123 Main St',
+                line2: 'Apt 4B',
+                city: 'London',
+                postal_code: 'SW1A 1AA',
+                country: 'UK'
+              }
+            },
+            line_items: {
+              data: [
+                {
+                  description: 'Blue Waterproof Collar - Medium',
+                  quantity: 1,
+                  price: {
+                    unit_amount: 1999
+                  }
+                }
+              ]
+            },
+            amount_total: 1999
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recABC123',
+        fields: { 'Order ID': 'PUP-e5f6g7h8' }
+      });
+
+      mockGenerateShopOwnerNotification.mockReturnValue({
+        subject: 'New Order - PUP-e5f6g7h8',
+        html: '<html>Shop owner notification email body</html>',
+        text: 'Shop owner notification email body'
+      });
+
+      process.env.AIRTABLE_BASE_ID = 'appXYZ123';
+      process.env.SHOP_OWNER_EMAIL = 'stephenmbrown@gmail.com';
+
+      await webhookHandler(req, res);
+
+      // Verify sendCustomerConfirmation was called twice: once for customer, once for shop owner
+      expect(mockSendCustomerConfirmation).toHaveBeenCalledTimes(2);
+
+      // Verify second call is for shop owner with correct parameters
+      expect(mockSendCustomerConfirmation).toHaveBeenNthCalledWith(
+        2,
+        'stephenmbrown@gmail.com',
+        'New Order - PUP-e5f6g7h8',
+        '<html>Shop owner notification email body</html>',
+        'Shop owner notification email body'
+      );
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+
+      delete process.env.AIRTABLE_BASE_ID;
+      delete process.env.SHOP_OWNER_EMAIL;
+    });
+
+    it('logs warning and continues when shop owner email sending fails', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_shop_owner_fail',
+            customer_email: 'customer@example.com',
+            amount_total: 1999,
+            line_items: {
+              data: [
+                {
+                  description: 'Blue Waterproof Collar - Medium',
+                  quantity: 1,
+                  price: { unit_amount: 1999 }
+                }
+              ]
+            }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recSHOP123',
+        fields: { 'Order ID': 'PUP-ner_fail' }
+      });
+
+      mockGenerateCustomerConfirmation.mockReturnValue({
+        subject: 'Order Confirmation',
+        html: '<html>Test</html>',
+        text: 'Test'
+      });
+
+      mockGenerateShopOwnerNotification.mockReturnValue({
+        subject: 'New Order - PUP-ner_fail',
+        html: '<html>Shop owner notification</html>',
+        text: 'Shop owner notification'
+      });
+
+      // First call (customer email) succeeds, second call (shop owner email) fails
+      mockSendCustomerConfirmation
+        .mockResolvedValueOnce({ id: 'msg_customer123' })
+        .mockRejectedValueOnce(new Error('Shop owner email service error'));
+
+      process.env.AIRTABLE_BASE_ID = 'appXYZ123';
+      process.env.SHOP_OWNER_EMAIL = 'stephenmbrown@gmail.com';
+
+      await webhookHandler(req, res);
+
+      // Verify order was still created
+      expect(mockCreateOrder).toHaveBeenCalledWith({
+        orderId: 'PUP-ner_fail',
+        sessionId: 'cs_test_shop_owner_fail',
+        customerEmail: 'customer@example.com',
+        customerName: '',
+        shippingAddress: '',
+        items: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: 1999
+          }
+        ],
+        total: 19.99
+      });
+
+      // Verify warning was logged with order ID
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[SHOP OWNER EMAIL FAILED]',
+        'Order:',
+        'PUP-ner_fail',
+        'Error:',
+        'Shop owner email service error'
+      );
+
+      // Verify webhook still responds with 200
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+
+      delete process.env.AIRTABLE_BASE_ID;
+      delete process.env.SHOP_OWNER_EMAIL;
       consoleWarnSpy.mockRestore();
     });
   });

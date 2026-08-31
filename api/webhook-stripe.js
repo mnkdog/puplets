@@ -6,7 +6,7 @@
 
 import Stripe from 'stripe';
 import { AirtableClient } from '../services/airtable-client.js';
-import { generateCustomerConfirmation } from '../templates/email-templates.js';
+import { generateCustomerConfirmation, generateShopOwnerNotification } from '../templates/email-templates.js';
 import { createEmailClient } from '../services/email-client.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -119,6 +119,18 @@ function transformOrderDataForEmail(orderData) {
 }
 
 /**
+ * Transform order data to shop owner email format
+ * @param {object} orderData - Order data from transformSessionToOrder
+ * @returns {object} Email order data for generateShopOwnerNotification
+ */
+function transformOrderDataForShopOwner(orderData) {
+  return {
+    ...transformOrderDataForEmail(orderData),
+    customerEmail: orderData.customerEmail
+  };
+}
+
+/**
  * Log error and return 500 response
  * @param {object} res - Express response object
  * @param {string} sessionId - Stripe session ID for correlation
@@ -169,6 +181,36 @@ async function sendCustomerEmail(orderData) {
 
   await emailClient.sendCustomerConfirmation(
     orderData.customerEmail,
+    emailData.subject,
+    emailData.html,
+    emailData.text
+  );
+}
+
+/**
+ * Construct Airtable record link
+ * @param {string} recordId - Airtable record ID
+ * @returns {string} Clickable Airtable link
+ */
+function constructAirtableLink(recordId) {
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  return `https://airtable.com/${baseId}/Orders/${recordId}`;
+}
+
+/**
+ * Send shop owner notification email
+ * @param {object} orderData - Order data from transformSessionToOrder
+ * @param {string} airtableRecordId - Airtable record ID
+ * @returns {Promise<void>}
+ */
+async function sendShopOwnerEmail(orderData, airtableRecordId) {
+  const airtableLink = constructAirtableLink(airtableRecordId);
+  const shopOwnerData = transformOrderDataForShopOwner(orderData);
+  const emailData = generateShopOwnerNotification(shopOwnerData, airtableLink);
+  console.log('Shop owner notification email generated:', emailData.subject);
+
+  await emailClient.sendCustomerConfirmation(
+    process.env.SHOP_OWNER_EMAIL,
     emailData.subject,
     emailData.html,
     emailData.text
@@ -232,8 +274,9 @@ const webhookHandler = async (req, res) => {
     // Transform and create order in Airtable
     const orderData = transformSessionToOrder(session, orderId);
 
+    let airtableRecord;
     try {
-      await airtableClient.createOrder(orderData);
+      airtableRecord = await airtableClient.createOrder(orderData);
     } catch (err) {
       return handleAirtableError(res, session.id, 'ORDER CREATION FAILED', err, 'Failed to create order');
     }
@@ -242,6 +285,13 @@ const webhookHandler = async (req, res) => {
     await runNonFatalOperation(
       () => sendCustomerEmail(orderData),
       'CUSTOMER EMAIL FAILED',
+      orderId
+    );
+
+    // Send shop owner notification email (non-fatal)
+    await runNonFatalOperation(
+      () => sendShopOwnerEmail(orderData, airtableRecord.id),
+      'SHOP OWNER EMAIL FAILED',
       orderId
     );
 
