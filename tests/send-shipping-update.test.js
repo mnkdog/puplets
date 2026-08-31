@@ -21,12 +21,25 @@ describe('send-shipping-update authentication', () => {
     const { AirtableClient } = await import('../services/airtable-client.js');
     vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
       id: 'rec123',
-      fields: { 'Order ID': 'test-order-id' }
+      fields: {
+        'Order ID': 'test-order-id',
+        'Customer Email': 'test@example.com',
+        'Customer Name': 'Test Customer'
+      }
     });
     vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
       id: 'rec123',
-      fields: { 'Order ID': 'test-order-id', 'Status': 'shipped' }
+      fields: {
+        'Order ID': 'test-order-id',
+        'Status': 'shipped',
+        'Customer Email': 'test@example.com',
+        'Customer Name': 'Test Customer'
+      }
     });
+
+    // Mock EmailClient.sendShippingNotification for all tests by default
+    const { EmailClient } = await import('../services/email-client.js');
+    vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockResolvedValue({ id: 'email123' });
 
     // Import handler fresh for each test
     const module = await import('../api/send-shipping-update.js');
@@ -506,6 +519,74 @@ describe('send-shipping-update authentication', () => {
         'Your Puplets order PUP-xyz789 has been dispatched',
         '<html>Your order has been shipped</html>',
         'Your order has been shipped'
+      );
+    });
+  });
+
+  describe('send shipping notification without tracking URL', () => {
+    it('should send shipping notification email without tracking URL when trackingUrl is not provided', async () => {
+      // Import modules for mocking
+      const { AirtableClient } = await import('../services/airtable-client.js');
+      const { EmailClient } = await import('../services/email-client.js');
+      const emailTemplates = await import('../templates/email-templates.js');
+
+      // Mock AirtableClient.findOrderById to return order with customer email and name
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
+        id: 'rec456',
+        fields: {
+          'Order ID': 'PUP-abc123',
+          'Customer Email': 'john@example.com',
+          'Customer Name': 'John Doe'
+        }
+      });
+
+      // Mock AirtableClient.updateOrder
+      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
+        id: 'rec456',
+        fields: {
+          'Order ID': 'PUP-abc123',
+          'Status': 'shipped',
+          'Customer Email': 'john@example.com',
+          'Customer Name': 'John Doe'
+        }
+      });
+
+      // Mock generateShippingNotification to return template data
+      const mockTemplateData = {
+        subject: 'Your Puplets order PUP-abc123 has been dispatched',
+        html: '<html>Your order has been shipped (no tracking yet)</html>',
+        text: 'Your order has been shipped (no tracking yet)'
+      };
+      vi.spyOn(emailTemplates, 'generateShippingNotification').mockReturnValue(mockTemplateData);
+
+      // Mock EmailClient.sendShippingNotification
+      const mockSendShippingNotification = vi.fn().mockResolvedValue({ id: 'email456' });
+      vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockImplementation(mockSendShippingNotification);
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = {
+        orderId: 'PUP-abc123'
+        // No trackingUrl provided
+      };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      // Verify generateShippingNotification was called with orderId but no trackingUrl (undefined)
+      expect(emailTemplates.generateShippingNotification).toHaveBeenCalledWith(
+        {
+          orderId: 'PUP-abc123',
+          customerName: 'John Doe'
+        },
+        undefined
+      );
+
+      // Verify EmailClient.sendShippingNotification was called with customer email and template data
+      expect(mockSendShippingNotification).toHaveBeenCalledWith(
+        'john@example.com',
+        'Your Puplets order PUP-abc123 has been dispatched',
+        '<html>Your order has been shipped (no tracking yet)</html>',
+        'Your order has been shipped (no tracking yet)'
       );
     });
   });

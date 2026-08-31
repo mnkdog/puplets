@@ -73,27 +73,25 @@ export default async (req, res) => {
   // Update order status to "shipped"
   const updatedOrder = await airtableClient.updateOrder(order.id, { Status: 'shipped' });
 
-  // Send shipping notification email when trackingUrl is provided
-  if (req.body.trackingUrl) {
-    const emailClient = new EmailClient(process.env.RESEND_API_KEY);
-    const customerEmail = order.fields['Customer Email'];
-    const customerName = order.fields['Customer Name'];
+  // Send shipping notification email (with or without tracking URL)
+  const emailClient = new EmailClient(process.env.RESEND_API_KEY);
+  const customerEmail = order.fields['Customer Email'];
+  const customerName = order.fields['Customer Name'];
 
-    const emailData = generateShippingNotification(
-      {
-        orderId: req.body.orderId,
-        customerName
-      },
-      req.body.trackingUrl
-    );
+  const emailData = generateShippingNotification(
+    {
+      orderId: req.body.orderId,
+      customerName
+    },
+    req.body.trackingUrl
+  );
 
-    await emailClient.sendShippingNotification(
-      customerEmail,
-      emailData.subject,
-      emailData.html,
-      emailData.text
-    );
-  }
+  await emailClient.sendShippingNotification(
+    customerEmail,
+    emailData.subject,
+    emailData.html,
+    emailData.text
+  );
 
   return res.status(200).json({ message: 'Authenticated' });
 };
