@@ -63,6 +63,11 @@ export default async (req, res) => {
   );
   const order = await airtableClient.findOrderById(req.body.orderId);
 
+  // Check if order exists
+  if (order === null || order === undefined) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
   // TODO: Implement shipping notification logic in subsequent steps
   return res.status(200).json({ message: 'Authenticated' });
 };

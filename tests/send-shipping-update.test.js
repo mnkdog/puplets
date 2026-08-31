@@ -295,6 +295,36 @@ describe('send-shipping-update authentication', () => {
   });
 
   describe('order lookup', () => {
+    it('should return 404 Not Found when order does not exist (null)', async () => {
+      const { AirtableClient } = await import('../services/airtable-client.js');
+
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue(null);
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'PUP-nonexist' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Order not found' });
+    });
+
+    it('should return 404 Not Found when order does not exist (undefined)', async () => {
+      const { AirtableClient } = await import('../services/airtable-client.js');
+
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue(undefined);
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'PUP-nonexist' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Order not found' });
+    });
+
     it('should call AirtableClient.findOrderById with correct orderId', async () => {
       // Import AirtableClient for mocking
       const { AirtableClient } = await import('../services/airtable-client.js');
