@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock Stripe webhooks and AirtableClient using vi.hoisted to ensure proper initialization
-const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInventoryForOrder } = vi.hoisted(() => {
+// Mock Stripe webhooks, AirtableClient, and email templates using vi.hoisted to ensure proper initialization
+const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInventoryForOrder, mockGenerateCustomerConfirmation } = vi.hoisted(() => {
   return {
     mockWebhooks: {
       constructEvent: vi.fn()
     },
     mockCreateOrder: vi.fn(),
     mockFindOrderBySessionId: vi.fn(),
-    mockUpdateInventoryForOrder: vi.fn()
+    mockUpdateInventoryForOrder: vi.fn(),
+    mockGenerateCustomerConfirmation: vi.fn()
   };
 });
 
@@ -34,6 +35,12 @@ vi.mock('../services/airtable-client.js', () => {
   };
 });
 
+vi.mock('../templates/email-templates.js', () => {
+  return {
+    generateCustomerConfirmation: mockGenerateCustomerConfirmation
+  };
+});
+
 import webhookHandler from '../api/webhook-stripe.js';
 
 describe('Stripe Webhook Handler', () => {
@@ -47,6 +54,14 @@ describe('Stripe Webhook Handler', () => {
     mockCreateOrder.mockReset();
     mockFindOrderBySessionId.mockReset();
     mockUpdateInventoryForOrder.mockReset();
+    mockGenerateCustomerConfirmation.mockReset();
+
+    // Set default mock return value for email generation
+    mockGenerateCustomerConfirmation.mockReturnValue({
+      subject: 'Order Confirmation - Puplets Order PUP-test123',
+      html: '<html>Test email</html>',
+      text: 'Test email'
+    });
 
     // Spy on console.error
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -699,6 +714,89 @@ describe('Stripe Webhook Handler', () => {
       );
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Failed to create order' });
+    });
+  });
+
+  describe('Customer Email Generation', () => {
+    it('generates customer confirmation email after order creation', async () => {
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_a1b2c3d4e5f6g7h8',
+            customer_email: 'customer@example.com',
+            customer_details: {
+              name: 'Jane Smith',
+              email: 'customer@example.com'
+            },
+            shipping: {
+              address: {
+                line1: '123 Main St',
+                line2: 'Apt 4B',
+                city: 'London',
+                postal_code: 'SW1A 1AA',
+                country: 'UK'
+              }
+            },
+            line_items: {
+              data: [
+                {
+                  description: 'Blue Waterproof Collar - Medium',
+                  quantity: 1,
+                  price: {
+                    unit_amount: 1999
+                  }
+                }
+              ]
+            },
+            amount_total: 1999
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recABC123',
+        fields: { 'Order ID': 'PUP-e5f6g7h8' }
+      });
+
+      mockGenerateCustomerConfirmation.mockReturnValue({
+        subject: 'Order Confirmation - Puplets Order PUP-e5f6g7h8',
+        html: '<html>Order confirmation email body</html>',
+        text: 'Order confirmation email body'
+      });
+
+      await webhookHandler(req, res);
+
+      // Verify generateCustomerConfirmation was called with correct order data
+      expect(mockGenerateCustomerConfirmation).toHaveBeenCalledWith({
+        orderId: 'PUP-e5f6g7h8',
+        items: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: 1999
+          }
+        ],
+        total: 19.99,
+        address: '123 Main St, Apt 4B, London, SW1A 1AA, UK',
+        customerName: 'Jane Smith'
+      });
+
+      // Verify console log shows email subject
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Customer confirmation email generated:',
+        'Order Confirmation - Puplets Order PUP-e5f6g7h8'
+      );
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+
+      consoleLogSpy.mockRestore();
     });
   });
 

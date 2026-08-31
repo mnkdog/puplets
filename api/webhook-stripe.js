@@ -6,6 +6,7 @@
 
 import Stripe from 'stripe';
 import { AirtableClient } from '../services/airtable-client.js';
+import { generateCustomerConfirmation } from '../templates/email-templates.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const airtableClient = new AirtableClient(
@@ -101,6 +102,21 @@ function transformSessionToOrder(session, orderId) {
 }
 
 /**
+ * Transform order data to email template format
+ * @param {object} orderData - Order data from transformSessionToOrder
+ * @returns {object} Email order data for generateCustomerConfirmation
+ */
+function transformOrderDataForEmail(orderData) {
+  return {
+    orderId: orderData.orderId,
+    items: orderData.items,
+    total: orderData.total,
+    address: orderData.shippingAddress,
+    customerName: orderData.customerName
+  };
+}
+
+/**
  * Log error and return 500 response
  * @param {object} res - Express response object
  * @param {string} sessionId - Stripe session ID for correlation
@@ -186,6 +202,11 @@ const webhookHandler = async (req, res) => {
     } catch (err) {
       return handleAirtableError(res, session.id, 'ORDER CREATION FAILED', err, 'Failed to create order');
     }
+
+    // Generate customer confirmation email
+    const emailOrderData = transformOrderDataForEmail(orderData);
+    const emailData = generateCustomerConfirmation(emailOrderData);
+    console.log('Customer confirmation email generated:', emailData.subject);
 
     // Update inventory for order items
     const inventoryLineItems = session.line_items?.data?.map(item => ({
