@@ -7,12 +7,14 @@
 import Stripe from 'stripe';
 import { AirtableClient } from '../services/airtable-client.js';
 import { generateCustomerConfirmation } from '../templates/email-templates.js';
+import { createEmailClient } from '../services/email-client.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const airtableClient = new AirtableClient(
   process.env.AIRTABLE_API_KEY,
   process.env.AIRTABLE_BASE_ID
 );
+const emailClient = createEmailClient();
 
 /**
  * Verify Stripe webhook signature
@@ -141,6 +143,24 @@ function logWarning(warningTag, orderId, error) {
 }
 
 /**
+ * Send customer confirmation email
+ * @param {object} orderData - Order data from transformSessionToOrder
+ * @returns {Promise<void>}
+ */
+async function sendCustomerEmail(orderData) {
+  const emailOrderData = transformOrderDataForEmail(orderData);
+  const emailData = generateCustomerConfirmation(emailOrderData);
+  console.log('Customer confirmation email generated:', emailData.subject);
+
+  await emailClient.sendCustomerConfirmation(
+    orderData.customerEmail,
+    emailData.subject,
+    emailData.html,
+    emailData.text
+  );
+}
+
+/**
  * Check if order already exists for given session (idempotency check)
  * @param {AirtableClient} client - Airtable client instance
  * @param {string} sessionId - Stripe session ID
@@ -203,10 +223,8 @@ const webhookHandler = async (req, res) => {
       return handleAirtableError(res, session.id, 'ORDER CREATION FAILED', err, 'Failed to create order');
     }
 
-    // Generate customer confirmation email
-    const emailOrderData = transformOrderDataForEmail(orderData);
-    const emailData = generateCustomerConfirmation(emailOrderData);
-    console.log('Customer confirmation email generated:', emailData.subject);
+    // Send customer confirmation email
+    await sendCustomerEmail(orderData);
 
     // Update inventory for order items
     const inventoryLineItems = session.line_items?.data?.map(item => ({
