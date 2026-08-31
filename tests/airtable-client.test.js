@@ -202,6 +202,74 @@ describe('AirtableClient', () => {
     });
   });
 
+  describe('findOrderBySessionId', () => {
+    it('finds order by Stripe session ID', async () => {
+      const mockRecord = {
+        id: 'recABC123',
+        fields: {
+          'Order ID': 'PUP-abc123',
+          'Stripe Session ID': 'cs_test_xyz789',
+          'Customer Email': 'customer@example.com',
+          'Total': 19.99
+        }
+      };
+
+      // Mock the select chain
+      const mockFirstPage = vi.fn().mockResolvedValue([mockRecord]);
+      const mockSelect = vi.fn().mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+
+      const result = await client.findOrderBySessionId('cs_test_xyz789');
+
+      expect(mockTable.select).toHaveBeenCalledWith({
+        filterByFormula: "{Stripe Session ID} = 'cs_test_xyz789'"
+      });
+      expect(result).toEqual({
+        id: 'recABC123',
+        fields: mockRecord.fields
+      });
+      expect(result.fields['Order ID']).toBe('PUP-abc123');
+    });
+
+    it('returns null when session ID not found', async () => {
+      const mockFirstPage = vi.fn().mockResolvedValue([]);
+      mockTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+
+      const result = await client.findOrderBySessionId('cs_test_notfound');
+
+      expect(result).toBeNull();
+    });
+
+    it('returns first record when multiple matches exist', async () => {
+      const mockRecords = [
+        {
+          id: 'recFirst',
+          fields: { 'Order ID': 'PUP-first' }
+        },
+        {
+          id: 'recSecond',
+          fields: { 'Order ID': 'PUP-second' }
+        }
+      ];
+
+      const mockFirstPage = vi.fn().mockResolvedValue(mockRecords);
+      mockTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+
+      const result = await client.findOrderBySessionId('cs_test_duplicate');
+
+      expect(result.id).toBe('recFirst');
+      expect(result.fields['Order ID']).toBe('PUP-first');
+    });
+  });
+
   describe('mapOrderFields', () => {
     it('maps all fields to Airtable schema', () => {
       const orderData = {

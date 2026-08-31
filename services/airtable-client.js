@@ -41,6 +41,38 @@ export class AirtableClient {
   }
 
   /**
+   * Find order by Stripe session ID
+   * @param {string} sessionId - Stripe session ID
+   * @returns {Promise<Object|null>} Order record or null if not found
+   */
+  async findOrderBySessionId(sessionId) {
+    const records = await this.ordersTable
+      .select({
+        filterByFormula: this.buildFieldEqualsFilter('Stripe Session ID', sessionId)
+      })
+      .firstPage();
+
+    if (records.length === 0) {
+      return null;
+    }
+
+    return {
+      id: records[0].id,
+      fields: records[0].fields
+    };
+  }
+
+  /**
+   * Build Airtable filterByFormula for field equality
+   * @param {string} fieldName - Airtable field name
+   * @param {string} value - Value to match
+   * @returns {string} Filter formula
+   */
+  buildFieldEqualsFilter(fieldName, value) {
+    return `{${fieldName}} = '${value}'`;
+  }
+
+  /**
    * Map order data to Airtable table schema
    * @param {Object} orderData - Order data
    * @returns {Object} Mapped fields for Airtable
