@@ -270,6 +270,70 @@ describe('AirtableClient', () => {
     });
   });
 
+  describe('findOrderById', () => {
+    it('finds order by Order ID', async () => {
+      const mockRecord = {
+        id: 'recDEF456',
+        fields: {
+          'Order ID': 'PUP-xyz789',
+          'Stripe Session ID': 'cs_test_abc123',
+          'Customer Email': 'test@example.com',
+          'Total': 29.99
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockRecord]);
+      mockTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+
+      const result = await client.findOrderById('PUP-xyz789');
+
+      expect(mockTable.select).toHaveBeenCalledWith({
+        filterByFormula: "{Order ID} = 'PUP-xyz789'"
+      });
+      expect(result).toEqual({
+        id: 'recDEF456',
+        fields: mockRecord.fields
+      });
+      expect(result.fields['Order ID']).toBe('PUP-xyz789');
+    });
+
+    it('returns null when Order ID not found', async () => {
+      const mockFirstPage = vi.fn().mockResolvedValue([]);
+      mockTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+
+      const result = await client.findOrderById('PUP-notfound');
+
+      expect(result).toBeNull();
+    });
+
+    it('returns first record when multiple matches exist', async () => {
+      const mockRecords = [
+        {
+          id: 'recFirst',
+          fields: { 'Order ID': 'PUP-duplicate' }
+        },
+        {
+          id: 'recSecond',
+          fields: { 'Order ID': 'PUP-duplicate' }
+        }
+      ];
+
+      const mockFirstPage = vi.fn().mockResolvedValue(mockRecords);
+      mockTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+
+      const result = await client.findOrderById('PUP-duplicate');
+
+      expect(result.id).toBe('recFirst');
+      expect(result.fields['Order ID']).toBe('PUP-duplicate');
+    });
+  });
+
   describe('mapOrderFields', () => {
     it('maps all fields to Airtable schema', () => {
       const orderData = {

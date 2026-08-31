@@ -63,6 +63,28 @@ export class AirtableClient {
   }
 
   /**
+   * Find order by Order ID
+   * @param {string} orderId - Order ID in format PUP-{last-8-chars}
+   * @returns {Promise<Object|null>} Order record or null if not found
+   */
+  async findOrderById(orderId) {
+    const records = await this.ordersTable
+      .select({
+        filterByFormula: this.buildFieldEqualsFilter('Order ID', orderId)
+      })
+      .firstPage();
+
+    if (records.length === 0) {
+      return null;
+    }
+
+    return {
+      id: records[0].id,
+      fields: records[0].fields
+    };
+  }
+
+  /**
    * Build Airtable filterByFormula for field equality
    * @param {string} fieldName - Airtable field name
    * @param {string} value - Value to match
