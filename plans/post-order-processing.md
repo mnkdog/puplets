@@ -23,6 +23,20 @@ spec: docs/specs/post-order-processing.md
 - **Integration**: auto-merge (default) - PR opens with auto-merge enabled, lands on green checks
 - **Scope**: feature-toggle not applicable - webhook is inactive until registered in Stripe dashboard (natural toggle)
 
+## Approach Rationale
+
+**Why custom code over no-code alternatives** (Zapier/Make.com/n8n):
+
+While no-code tools could deliver Stripe → Airtable + Email integration faster initially, custom code was chosen for:
+
+1. **Learning objective**: This is a teaching project for daughter to learn business ownership and technical literacy - understanding how her own system works (reading code, modifying templates, debugging logs) builds capability that clicking through Zapier UIs does not
+2. **Full control**: Email templates, error handling, and order ID format are customized to brand requirements - no-code tools constrain template design and error recovery patterns
+3. **No vendor lock-in**: $20/month Zapier subscription becomes $50+/month as order volume grows with tiered pricing, and migrating off Zapier later is harder than starting with owned code
+4. **TDD/BDD practice**: Explicit requirement from user to set up test-driven development - this plan is the vehicle for establishing that practice in the codebase
+5. **Integration depth**: Shipping endpoint with bearer auth, idempotency via findOrderBySessionId, and inventory updates with missing-product handling are easier to implement and test in code than chaining no-code conditional logic
+
+**Trade-off acknowledged**: Custom code increases initial setup complexity (7 environment variables, webhook registration, domain verification) and maintenance burden (debugging logs, monitoring email delivery). If this proves too complex for non-technical management, no-code integration remains a viable fallback - the Airtable schema and email template content can be ported to Zapier without starting over.
+
 ## Acceptance Criteria
 
 From spec - verify at PR review:
@@ -64,9 +78,10 @@ Feature: Service Layer Abstractions
       | sessionId    | cs_test_xyz789              |
       | customerEmail| customer@example.com        |
       | total        | 19.99                       |
-    Then Airtable base receives create request to Orders table
-    And created record contains Order ID "PUP-abc123"
-    And client returns record with Airtable record ID
+    Then client returns record with Airtable record ID
+    And returned record contains Order ID "PUP-abc123"
+    And returned record contains all provided fields
+    And created order can be retrieved by session ID "cs_test_xyz789"
 
   Scenario: Airtable client finds order by session ID
     Given Orders table contains record with Stripe Session ID "cs_test_xyz789"
@@ -80,9 +95,10 @@ Feature: Service Layer Abstractions
       | to      | customer@example.com  |
       | subject | Order Confirmation... |
       | html    | <html>Order details   |
-    Then Resend API receives send request
-    And email sender is "Puplets <hello@puplets.co.uk>"
-    And client returns message ID
+      | text    | Order details...      |
+    Then client returns message ID
+    And message ID is non-empty string
+    And no error is thrown
 
   Scenario: Email template generates customer confirmation HTML
     Given order data:
@@ -453,6 +469,10 @@ Feature: Shop Owner Notifications
 
 **Goal**: Provide endpoint for shop owner to send shipping notifications to customers.
 
+**User workflow**: Shop owner fills in "Tracking URL" field in Airtable Orders table → Airtable automation triggers on field update → automation calls /api/send-shipping-update endpoint with bearer token from Airtable script configuration → customer receives shipping email and order status updates to "shipped". This keeps the shop owner in familiar Airtable UI instead of requiring API tool usage.
+
+**Setup requirement** (post-deployment): Configure Airtable automation in Orders base that triggers when "Tracking URL" field changes from empty to non-empty, calls the Vercel endpoint with Authorization header reading SHIPPING_UPDATE_TOKEN from automation environment, passes Order ID and Tracking URL fields. Automation setup is one-time configuration by developer, daily usage is filling in tracking URL field.
+
 **Files**:
 - api/send-shipping-update.js (new)
 
@@ -510,6 +530,20 @@ Feature: Shipping Notifications
     Then endpoint responds with status 401
     And response body contains error message "Unauthorized"
     And no order is updated
+
+  Scenario: Request with missing orderId returns 400
+    When shop owner calls "POST /api/send-shipping-update" with empty body
+    Then endpoint responds with status 400
+    And response body contains error message "Missing required field: orderId"
+    And no order is updated
+
+  Scenario: Request with invalid trackingUrl format returns 400
+    When shop owner calls "POST /api/send-shipping-update" with:
+      | orderId     | PUP-a1b2c3d4 |
+      | trackingUrl | invalid-url  |
+    Then endpoint responds with status 400
+    And response body contains error message "Invalid URL format for trackingUrl"
+    And no order is updated
 ```
 
 **Steps**:
@@ -520,10 +554,10 @@ Feature: Shipping Notifications
      **Complexity**: Trivial (header parsing, string comparison)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
-6.2. **RED**: Test endpoint parses orderId and optional trackingUrl from request body
-     **GREEN**: Parse JSON body, extract fields
-     **REFACTOR**: Extract field extraction logic
-     **Complexity**: Trivial (body parsing, field extraction)
+6.2. **RED**: Test endpoint validates and parses request body
+     **GREEN**: Parse JSON body, validate orderId is present and non-empty, validate trackingUrl is valid URL format if provided, return 400 with specific error messages for validation failures
+     **REFACTOR**: Extract validation helper
+     **Complexity**: Standard (body parsing, validation, error messages)
      **Files**: api/send-shipping-update.js, tests/send-shipping-update.test.js
 
 6.3. **RED**: Test order lookup by Order ID finds existing order
@@ -626,6 +660,7 @@ None - all spec acceptance criteria are in scope.
 5. **Initial inventory data**: Airtable Inventory table needs to be manually populated with product list matching Stripe product descriptions before first order
 6. **Email template HTML**: Spec doesn't specify HTML vs plain text emails - assume HTML for better formatting, test rendering in common email clients
 7. **Directory structure change**: Introduces services/ and templates/ directories to separate infrastructure and presentation concerns from API endpoints - establishes layered architecture pattern for future features (diverges from current flat api/ structure)
+8. **Airtable automation setup**: After deployment, configure Airtable automation in Orders base that triggers when "Tracking URL" field is populated - automation calls /api/send-shipping-update with bearer token, passing Order ID and Tracking URL. One-time developer setup enables shop owner to send shipping notifications by simply filling in tracking field (no API tools needed).
 
 ## Build Progress
 
