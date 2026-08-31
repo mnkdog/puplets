@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock Stripe webhooks and AirtableClient using vi.hoisted to ensure proper initialization
-const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId } = vi.hoisted(() => {
+const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInventoryForOrder } = vi.hoisted(() => {
   return {
     mockWebhooks: {
       constructEvent: vi.fn()
     },
     mockCreateOrder: vi.fn(),
-    mockFindOrderBySessionId: vi.fn()
+    mockFindOrderBySessionId: vi.fn(),
+    mockUpdateInventoryForOrder: vi.fn()
   };
 });
 
@@ -27,6 +28,7 @@ vi.mock('../services/airtable-client.js', () => {
       constructor() {
         this.createOrder = mockCreateOrder;
         this.findOrderBySessionId = mockFindOrderBySessionId;
+        this.updateInventoryForOrder = mockUpdateInventoryForOrder;
       }
     }
   };
@@ -44,6 +46,7 @@ describe('Stripe Webhook Handler', () => {
     mockWebhooks.constructEvent.mockReset();
     mockCreateOrder.mockReset();
     mockFindOrderBySessionId.mockReset();
+    mockUpdateInventoryForOrder.mockReset();
 
     // Spy on console.error
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -696,6 +699,130 @@ describe('Stripe Webhook Handler', () => {
       );
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Failed to create order' });
+    });
+  });
+
+  describe('Inventory Update Integration', () => {
+    it('delegates inventory update to airtableClient.updateInventoryForOrder after order creation', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_inventory123',
+            customer_email: 'test@example.com',
+            amount_total: 3998,
+            line_items: {
+              data: [
+                {
+                  description: 'Blue Waterproof Collar - Medium',
+                  quantity: 2,
+                  price: { unit_amount: 1999 }
+                },
+                {
+                  description: 'Red Waterproof Collar - Small',
+                  quantity: 1,
+                  price: { unit_amount: 1999 }
+                }
+              ]
+            }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recABC123',
+        fields: { 'Order ID': 'PUP-ntory123' }
+      });
+      mockUpdateInventoryForOrder.mockResolvedValue();
+
+      await webhookHandler(req, res);
+
+      expect(mockUpdateInventoryForOrder).toHaveBeenCalledWith(
+        [
+          { description: 'Blue Waterproof Collar - Medium', quantity: 2 },
+          { description: 'Red Waterproof Collar - Small', quantity: 1 }
+        ],
+        'PUP-ntory123'
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('logs warning but continues when inventory update fails', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_inventory_fail',
+            customer_email: 'test@example.com',
+            amount_total: 1999,
+            line_items: {
+              data: [
+                {
+                  description: 'Unknown Product',
+                  quantity: 1,
+                  price: { unit_amount: 1999 }
+                }
+              ]
+            }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recXYZ789',
+        fields: { 'Order ID': 'PUP-ory_fail' }
+      });
+      mockUpdateInventoryForOrder.mockRejectedValue(new Error('Product not found in inventory'));
+
+      await webhookHandler(req, res);
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[INVENTORY UPDATE FAILED]',
+        'Order:',
+        'PUP-ory_fail',
+        'Error:',
+        'Product not found in inventory'
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('handles missing line items gracefully', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_no_items',
+            customer_email: 'test@example.com',
+            amount_total: 0
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recDEF456',
+        fields: { 'Order ID': 'PUP-no_items' }
+      });
+      mockUpdateInventoryForOrder.mockResolvedValue();
+
+      await webhookHandler(req, res);
+
+      expect(mockUpdateInventoryForOrder).toHaveBeenCalledWith([], 'PUP-no_items');
+      expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 });

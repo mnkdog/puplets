@@ -176,6 +176,19 @@ const webhookHandler = async (req, res) => {
     } catch (err) {
       return handleAirtableError(res, session.id, 'ORDER CREATION FAILED', err, 'Failed to create order');
     }
+
+    // Update inventory for order items
+    const inventoryLineItems = session.line_items?.data?.map(item => ({
+      description: item.description,
+      quantity: item.quantity
+    })) || [];
+
+    try {
+      await airtableClient.updateInventoryForOrder(inventoryLineItems, orderId);
+    } catch (err) {
+      // Log warning but don't fail the webhook - order was already created
+      console.warn('[INVENTORY UPDATE FAILED]', 'Order:', orderId, 'Error:', err.message);
+    }
   }
 
   return res.status(200).json({ received: true });
