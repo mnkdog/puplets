@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateCustomerConfirmation, generateShopOwnerNotification } from '../templates/email-templates.js';
+import { generateCustomerConfirmation, generateShopOwnerNotification, generateShippingNotification } from '../templates/email-templates.js';
 
 describe('generateCustomerConfirmation', () => {
   describe('return structure', () => {
@@ -825,6 +825,370 @@ describe('generateShopOwnerNotification', () => {
 
       expect(result.html).toContain('https://airtable.com/app12345ABC/tblXYZ789/recMNO123');
       expect(result.text).toContain('https://airtable.com/app12345ABC/tblXYZ789/recMNO123');
+    });
+  });
+});
+
+describe('generateShippingNotification', () => {
+  describe('return structure', () => {
+    it('returns object with subject, html, and text fields', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Jane Smith'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result).toHaveProperty('subject');
+      expect(result).toHaveProperty('html');
+      expect(result).toHaveProperty('text');
+      expect(typeof result.subject).toBe('string');
+      expect(typeof result.html).toBe('string');
+      expect(typeof result.text).toBe('string');
+    });
+  });
+
+  describe('subject line', () => {
+    it('formats subject with order ID', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.subject).toBe('Your Puplets order PUP-abc123 has been dispatched');
+    });
+
+    it('handles different order ID formats', () => {
+      const orderData = {
+        orderId: 'PUP-xyz789',
+        customerName: 'Another User'
+      };
+
+      const result = generateShippingNotification(orderData);
+
+      expect(result.subject).toBe('Your Puplets order PUP-xyz789 has been dispatched');
+    });
+  });
+
+  describe('HTML content with tracking URL', () => {
+    it('contains order ID', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.html).toContain('PUP-abc123');
+    });
+
+    it('contains dispatched message', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.html).toContain('Your Order Has Been Dispatched');
+      expect(result.html).toContain('has been dispatched and is on its way to you');
+    });
+
+    it('contains tracking URL as clickable link', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.html).toContain('https://track.example.com/12345');
+      expect(result.html).toContain('Track your order:');
+      expect(result.html).toContain(`<a href="${trackingUrl}"`);
+    });
+
+    it('includes customer name in greeting', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Jane Smith'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.html).toContain('Hi Jane Smith');
+    });
+
+    it('uses fallback greeting when customer name is missing', () => {
+      const orderData = {
+        orderId: 'PUP-abc123'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.html).toContain('Hi there');
+    });
+  });
+
+  describe('HTML content without tracking URL', () => {
+    it('contains order ID', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+
+      const result = generateShippingNotification(orderData);
+
+      expect(result.html).toContain('PUP-abc123');
+    });
+
+    it('contains dispatched message without tracking section', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+
+      const result = generateShippingNotification(orderData);
+
+      expect(result.html).toContain('Your Order Has Been Dispatched');
+      expect(result.html).toContain('Your order has been dispatched and is on its way to you');
+      expect(result.html).not.toContain('Track your order:');
+    });
+
+    it('does not contain tracking URL when null', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+
+      const result = generateShippingNotification(orderData, null);
+
+      expect(result.html).not.toContain('Track your order:');
+      expect(result.html).not.toContain('https://track');
+    });
+
+    it('does not contain tracking URL when undefined', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+
+      const result = generateShippingNotification(orderData, undefined);
+
+      expect(result.html).not.toContain('Track your order:');
+      expect(result.html).not.toContain('https://track');
+    });
+  });
+
+  describe('text content with tracking URL', () => {
+    it('contains order ID', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.text).toContain('PUP-abc123');
+    });
+
+    it('contains dispatched message', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.text).toContain('Your Order Has Been Dispatched');
+      expect(result.text).toContain('has been dispatched and is on its way to you');
+    });
+
+    it('contains tracking URL', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.text).toContain('https://track.example.com/12345');
+      expect(result.text).toContain('TRACK YOUR ORDER');
+    });
+
+    it('includes customer name in greeting', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Jane Smith'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.text).toContain('Hi Jane Smith');
+    });
+  });
+
+  describe('text content without tracking URL', () => {
+    it('contains order ID', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+
+      const result = generateShippingNotification(orderData);
+
+      expect(result.text).toContain('PUP-abc123');
+    });
+
+    it('contains dispatched message without tracking section', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+
+      const result = generateShippingNotification(orderData);
+
+      expect(result.text).toContain('Your Order Has Been Dispatched');
+      expect(result.text).toContain('Your order has been dispatched and is on its way to you');
+      expect(result.text).not.toContain('TRACK YOUR ORDER');
+    });
+
+    it('does not contain tracking URL when null', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+
+      const result = generateShippingNotification(orderData, null);
+
+      expect(result.text).not.toContain('TRACK YOUR ORDER');
+      expect(result.text).not.toContain('https://track');
+    });
+
+    it('does not contain tracking URL when undefined', () => {
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test User'
+      };
+
+      const result = generateShippingNotification(orderData, undefined);
+
+      expect(result.text).not.toContain('TRACK YOUR ORDER');
+      expect(result.text).not.toContain('https://track');
+    });
+  });
+
+  describe('Gherkin scenario compliance', () => {
+    it('matches scenario with tracking URL provided', () => {
+      // Scenario: POST /api/send-shipping-update with valid bearer token, valid orderId, and trackingUrl
+      //   Given order data with orderId and customer name
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test Customer'
+      };
+      const trackingUrl = 'https://track.example.com/PUP-abc123';
+
+      // When generateShippingNotification is called with trackingUrl
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      // Then template returns object with subject, html, text fields
+      expect(result).toHaveProperty('subject');
+      expect(result).toHaveProperty('html');
+      expect(result).toHaveProperty('text');
+
+      // And subject contains order ID
+      expect(result.subject).toContain('PUP-abc123');
+      expect(result.subject).toContain('dispatched');
+
+      // And html contains tracking link (customer receives email with tracking link)
+      expect(result.html).toContain('https://track.example.com/PUP-abc123');
+      expect(result.html).toContain('Track your order');
+
+      // And text contains tracking URL
+      expect(result.text).toContain('https://track.example.com/PUP-abc123');
+    });
+
+    it('matches scenario without tracking URL provided', () => {
+      // Scenario: POST /api/send-shipping-update with valid bearer token and orderId but no trackingUrl
+      //   Given order data with orderId and customer name
+      const orderData = {
+        orderId: 'PUP-abc123',
+        customerName: 'Test Customer'
+      };
+
+      // When generateShippingNotification is called without trackingUrl
+      const result = generateShippingNotification(orderData);
+
+      // Then template returns object with subject, html, text fields
+      expect(result).toHaveProperty('subject');
+      expect(result).toHaveProperty('html');
+      expect(result).toHaveProperty('text');
+
+      // And subject contains order ID
+      expect(result.subject).toContain('PUP-abc123');
+      expect(result.subject).toContain('dispatched');
+
+      // And html states order dispatched (no tracking link shown)
+      expect(result.html).toContain('Your order has been dispatched and is on its way to you');
+      expect(result.html).not.toContain('Track your order');
+      expect(result.html).not.toContain('https://track');
+
+      // And text states order dispatched (no tracking link shown)
+      expect(result.text).toContain('Your order has been dispatched and is on its way to you');
+      expect(result.text).not.toContain('TRACK YOUR ORDER');
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles empty string tracking URL as falsy', () => {
+      const orderData = {
+        orderId: 'PUP-empty-track',
+        customerName: 'Empty Track User'
+      };
+
+      const result = generateShippingNotification(orderData, '');
+
+      expect(result.html).not.toContain('Track your order:');
+      expect(result.text).not.toContain('TRACK YOUR ORDER');
+    });
+
+    it('handles different tracking URL formats', () => {
+      const orderData = {
+        orderId: 'PUP-custom-track',
+        customerName: 'Custom Track User'
+      };
+      const trackingUrl = 'https://custom-carrier.com/track?id=ABC123XYZ&lang=en';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.html).toContain('https://custom-carrier.com/track?id=ABC123XYZ&lang=en');
+      expect(result.text).toContain('https://custom-carrier.com/track?id=ABC123XYZ&lang=en');
+    });
+
+    it('handles long order IDs', () => {
+      const orderData = {
+        orderId: 'PUP-very-long-order-id-12345678',
+        customerName: 'Long ID User'
+      };
+      const trackingUrl = 'https://track.example.com/12345';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      expect(result.subject).toContain('PUP-very-long-order-id-12345678');
+      expect(result.html).toContain('PUP-very-long-order-id-12345678');
+      expect(result.text).toContain('PUP-very-long-order-id-12345678');
     });
   });
 });

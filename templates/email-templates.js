@@ -59,6 +59,34 @@ function formatGreeting(customerName) {
   return customerName || 'there';
 }
 
+/**
+ * Generate standard signature block for HTML emails
+ * @returns {string} HTML signature block
+ */
+function generateSignatureHtml() {
+  return `
+  <p style="margin-top: 40px;">Best regards,<br>The Puplets Team</p>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 40px 0;">
+
+  <p style="font-size: 12px; color: #777; text-align: center;">
+    Puplets - Quality collars for your furry friends
+  </p>`;
+}
+
+/**
+ * Generate standard signature block for plain text emails
+ * @returns {string} Plain text signature block
+ */
+function generateSignatureText() {
+  return `
+Best regards,
+The Puplets Team
+
+---
+Puplets - Quality collars for your furry friends`;
+}
+
 // ============================================================================
 // Template Generators
 // ============================================================================
@@ -116,14 +144,7 @@ export function generateCustomerConfirmation(orderData) {
   </div>
 
   <p style="margin-top: 30px;">If you have any questions about your order, please don't hesitate to get in touch.</p>
-
-  <p style="margin-top: 40px;">Best regards,<br>The Puplets Team</p>
-
-  <hr style="border: none; border-top: 1px solid #ddd; margin: 40px 0;">
-
-  <p style="font-size: 12px; color: #777; text-align: center;">
-    Puplets - Quality collars for your furry friends
-  </p>
+${generateSignatureHtml()}
 </body>
 </html>
   `.trim();
@@ -153,12 +174,7 @@ ${address}
 *** FREE DELIVERY IN 3-7 BUSINESS DAYS ***
 
 If you have any questions about your order, please don't hesitate to get in touch.
-
-Best regards,
-The Puplets Team
-
----
-Puplets - Quality collars for your furry friends
+${generateSignatureText()}
   `.trim();
 
   return {
@@ -263,6 +279,78 @@ ${airtableLink}
 
 ---
 This is an automated notification. Process this order in Airtable.
+  `.trim();
+
+  return {
+    subject,
+    html,
+    text
+  };
+}
+
+/**
+ * Generate shipping notification email
+ * @param {Object} orderData - Order details
+ * @param {string} orderData.orderId - Order ID (e.g., PUP-abc123)
+ * @param {string} orderData.customerName - Customer name
+ * @param {string} [trackingUrl] - Optional tracking URL
+ * @returns {Object} Email template with subject, html, and text fields
+ */
+export function generateShippingNotification(orderData, trackingUrl) {
+  const { orderId, customerName } = orderData;
+  const greeting = formatGreeting(customerName);
+
+  const subject = `Your Puplets order ${orderId} has been dispatched`;
+
+  const trackingHtml = trackingUrl
+    ? `
+  <div style="background-color: #f5f5f5; border-left: 4px solid #00AD50; padding: 15px; margin: 30px 0;">
+    <p style="margin: 0;"><strong>Track your order:</strong> <a href="${trackingUrl}" style="color: #00AD50;">${trackingUrl}</a></p>
+  </div>`
+    : `
+  <p>Your order has been dispatched and is on its way to you.</p>`;
+
+  const trackingText = trackingUrl
+    ? `
+TRACK YOUR ORDER
+----------------
+
+${trackingUrl}`
+    : `
+Your order has been dispatched and is on its way to you.`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Dispatched</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h1 style="color: #00AD50; border-bottom: 2px solid #00AD50; padding-bottom: 10px;">Your Order Has Been Dispatched</h1>
+
+  <p>Hi ${greeting},</p>
+
+  <p>Good news! Your order <strong>${orderId}</strong> has been dispatched and is on its way to you.</p>
+${trackingHtml}
+
+  <p style="margin-top: 30px;">If you have any questions about your order, please don't hesitate to get in touch.</p>
+${generateSignatureHtml()}
+</body>
+</html>
+  `.trim();
+
+  const text = `
+Your Order Has Been Dispatched
+
+Hi ${greeting},
+
+Good news! Your order ${orderId} has been dispatched and is on its way to you.
+${trackingText}
+
+If you have any questions about your order, please don't hesitate to get in touch.
+${generateSignatureText()}
   `.trim();
 
   return {
