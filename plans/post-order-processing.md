@@ -662,6 +662,44 @@ None - all spec acceptance criteria are in scope.
 7. **Directory structure change**: Introduces services/ and templates/ directories to separate infrastructure and presentation concerns from API endpoints - establishes layered architecture pattern for future features (diverges from current flat api/ structure)
 8. **Airtable automation setup**: After deployment, configure Airtable automation in Orders base that triggers when "Tracking URL" field is populated - automation calls /api/send-shipping-update with bearer token, passing Order ID and Tracking URL. One-time developer setup enables shop owner to send shipping notifications by simply filling in tracking field (no API tools needed).
 
+## Plan Review Summary
+
+Plan tier: **complex** — reviewers: Acceptance, Design, Strategic, UX, Parallelization (all 5)
+
+**All reviewers approved** after addressing 4 blockers across 5 iterations:
+
+**Design & Architecture** (5 iterations): ✅ approve
+- Iteration 1-2: Added service layer (Slice 1), fixed Slices 3-5 to delegate to services
+- Iteration 3-4: Added updateOrder and sendShippingNotification methods, standardized email client interface
+- Iteration 5: Added authentication (bearer token) and email error handling to Slice 6
+- Remaining warnings (acceptable for MVP): Email client method proliferation, N+1 inventory queries, directory structure change documented
+
+**Acceptance Test** (1 iteration): ✅ approve (after fix)
+- Blocker: Slice 1 scenarios checked implementation details (Airtable receives request) instead of behavior
+- Fixed: Rewrote scenarios to verify behavioral outcomes (returns record, can retrieve by session ID)
+- Warnings: Added missing error scenarios for malformed payloads, missing env vars, validation
+
+**Strategic** (1 iteration): ✅ approve (after fix)
+- Blocker: No justification for custom code vs no-code alternatives (Zapier/Make.com)
+- Fixed: Added "Approach Rationale" section explaining learning objectives, control, no lock-in, TDD practice
+- Warnings: Scope could start smaller (MVP = Slices 1+2+4), operational support plan for non-technical user
+
+**UX** (1 iteration): ✅ approve (after fix)
+- Blocker 1: Shipping workflow undefined (how does non-technical user call authenticated API?)
+- Fixed: Added Airtable automation setup - shop owner fills tracking field, automation calls endpoint
+- Blocker 2: Missing input validation (orderId required, trackingUrl format)
+- Fixed: Added validation scenarios and updated step 6.2 to validate request body
+- Warnings: Email failure visibility, shipping success hides email errors, no batch updates, email accessibility
+
+**Parallelization** (1 iteration): ✅ approve
+- Wave 5 parallelism (Slices 5 & 6) verified safe: disjoint files, no behavioral coupling, valid DAG
+
+**Key observations from review:**
+- Clean dependency direction: service layer → API endpoints, no circular dependencies
+- Proper error handling hierarchy: email failures non-fatal (log + continue), Airtable failures fatal (500 + Stripe retry)
+- Security-first: bearer token auth, Stripe signature validation, idempotency via findOrderBySessionId
+- Well-structured incremental delivery: 6 slices with clear boundaries, 5 waves with genuine parallelism in Wave 5
+
 ## Build Progress
 
 _Note: Wave structure to be recomputed by `plan_waves.py` after approval_
