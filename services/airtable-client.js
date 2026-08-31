@@ -96,6 +96,27 @@ export class AirtableClient {
   }
 
   /**
+   * Update order record fields
+   * @param {string} orderId - Order ID in format PUP-{last-8-chars}
+   * @param {Object} updates - Fields to update (e.g., {Status: 'shipped', 'Tracking URL': 'https://...'})
+   * @returns {Promise<Object|null>} Updated record or null if not found
+   */
+  async updateOrder(orderId, updates) {
+    const order = await this.findOrderById(orderId);
+
+    if (!order) {
+      return null;
+    }
+
+    await this.ordersTable.update(order.id, updates);
+
+    return {
+      id: order.id,
+      fields: { ...order.fields, ...updates }
+    };
+  }
+
+  /**
    * Update inventory quantities for order line items
    * @param {Array} lineItems - Array of line items [{description, quantity}]
    * @param {string} orderId - Order ID for logging purposes

@@ -345,6 +345,183 @@ describe('AirtableClient', () => {
     });
   });
 
+  describe('updateOrder', () => {
+    it('updates order fields when order exists', async () => {
+      const mockRecord = {
+        id: 'recABC123',
+        fields: {
+          'Order ID': 'PUP-abc123',
+          'Status': 'pending',
+          'Customer Email': 'test@example.com'
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockRecord]);
+      mockOrdersTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockOrdersTable.update = vi.fn().mockResolvedValue({});
+
+      const updates = {
+        'Status': 'shipped',
+        'Tracking URL': 'https://tracking.example.com/abc123'
+      };
+
+      const result = await client.updateOrder('PUP-abc123', updates);
+
+      expect(mockOrdersTable.select).toHaveBeenCalledWith({
+        filterByFormula: "{Order ID} = 'PUP-abc123'"
+      });
+      expect(mockOrdersTable.update).toHaveBeenCalledWith('recABC123', updates);
+      expect(result).toEqual({
+        id: 'recABC123',
+        fields: {
+          'Order ID': 'PUP-abc123',
+          'Status': 'shipped',
+          'Customer Email': 'test@example.com',
+          'Tracking URL': 'https://tracking.example.com/abc123'
+        }
+      });
+    });
+
+    it('returns null when order not found', async () => {
+      const mockFirstPage = vi.fn().mockResolvedValue([]);
+      mockOrdersTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockOrdersTable.update = vi.fn();
+
+      const result = await client.updateOrder('PUP-notfound', { 'Status': 'shipped' });
+
+      expect(result).toBeNull();
+      expect(mockOrdersTable.update).not.toHaveBeenCalled();
+    });
+
+    it('updates Status field', async () => {
+      const mockRecord = {
+        id: 'recSTATUS',
+        fields: {
+          'Order ID': 'PUP-xyz789',
+          'Status': 'pending'
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockRecord]);
+      mockOrdersTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockOrdersTable.update = vi.fn().mockResolvedValue({});
+
+      await client.updateOrder('PUP-xyz789', { 'Status': 'shipped' });
+
+      expect(mockOrdersTable.update).toHaveBeenCalledWith('recSTATUS', {
+        'Status': 'shipped'
+      });
+    });
+
+    it('updates Tracking URL field', async () => {
+      const mockRecord = {
+        id: 'recTRACK',
+        fields: {
+          'Order ID': 'PUP-xyz789',
+          'Status': 'pending'
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockRecord]);
+      mockOrdersTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockOrdersTable.update = vi.fn().mockResolvedValue({});
+
+      await client.updateOrder('PUP-xyz789', {
+        'Tracking URL': 'https://tracking.example.com/xyz789'
+      });
+
+      expect(mockOrdersTable.update).toHaveBeenCalledWith('recTRACK', {
+        'Tracking URL': 'https://tracking.example.com/xyz789'
+      });
+    });
+
+    it('updates multiple fields at once', async () => {
+      const mockRecord = {
+        id: 'recMULTI',
+        fields: {
+          'Order ID': 'PUP-multi',
+          'Status': 'pending'
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockRecord]);
+      mockOrdersTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockOrdersTable.update = vi.fn().mockResolvedValue({});
+
+      const updates = {
+        'Status': 'shipped',
+        'Tracking URL': 'https://tracking.example.com/multi'
+      };
+
+      await client.updateOrder('PUP-multi', updates);
+
+      expect(mockOrdersTable.update).toHaveBeenCalledWith('recMULTI', updates);
+    });
+
+    it('uses findOrderById to locate the record', async () => {
+      const mockRecord = {
+        id: 'recFIND',
+        fields: {
+          'Order ID': 'PUP-find123',
+          'Status': 'pending'
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockRecord]);
+      mockOrdersTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockOrdersTable.update = vi.fn().mockResolvedValue({});
+
+      await client.updateOrder('PUP-find123', { 'Status': 'shipped' });
+
+      expect(mockOrdersTable.select).toHaveBeenCalledWith({
+        filterByFormula: "{Order ID} = 'PUP-find123'"
+      });
+    });
+
+    it('returns updated record with merged fields', async () => {
+      const mockRecord = {
+        id: 'recMERGE',
+        fields: {
+          'Order ID': 'PUP-merge',
+          'Status': 'pending',
+          'Customer Email': 'merge@example.com',
+          'Total': 29.99
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockRecord]);
+      mockOrdersTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockOrdersTable.update = vi.fn().mockResolvedValue({});
+
+      const result = await client.updateOrder('PUP-merge', {
+        'Status': 'shipped',
+        'Tracking URL': 'https://tracking.example.com/merge'
+      });
+
+      expect(result.fields).toEqual({
+        'Order ID': 'PUP-merge',
+        'Status': 'shipped',
+        'Customer Email': 'merge@example.com',
+        'Total': 29.99,
+        'Tracking URL': 'https://tracking.example.com/merge'
+      });
+    });
+  });
+
   describe('mapOrderFields', () => {
     it('maps all fields to Airtable schema', () => {
       const orderData = {
