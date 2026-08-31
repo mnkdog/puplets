@@ -115,6 +115,16 @@ function handleAirtableError(res, sessionId, errorTag, error, clientMessage) {
 }
 
 /**
+ * Log non-blocking warning for operational issues that don't prevent order completion
+ * @param {string} warningTag - Warning classification tag for logging (e.g., 'INVENTORY UPDATE FAILED')
+ * @param {string} orderId - Order ID for correlation
+ * @param {Error} error - The error object
+ */
+function logWarning(warningTag, orderId, error) {
+  console.warn(`[${warningTag}]`, 'Order:', orderId, 'Error:', error.message);
+}
+
+/**
  * Check if order already exists for given session (idempotency check)
  * @param {AirtableClient} client - Airtable client instance
  * @param {string} sessionId - Stripe session ID
@@ -187,7 +197,7 @@ const webhookHandler = async (req, res) => {
       await airtableClient.updateInventoryForOrder(inventoryLineItems, orderId);
     } catch (err) {
       // Log warning but don't fail the webhook - order was already created
-      console.warn('[INVENTORY UPDATE FAILED]', 'Order:', orderId, 'Error:', err.message);
+      logWarning('INVENTORY UPDATE FAILED', orderId, err);
     }
   }
 

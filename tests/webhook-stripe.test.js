@@ -872,5 +872,72 @@ describe('Stripe Webhook Handler', () => {
       expect(mockUpdateInventoryForOrder).toHaveBeenCalledWith([], 'PUP-no_items');
       expect(res.status).toHaveBeenCalledWith(200);
     });
+
+    it('creates order successfully when inventory product not found', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_missing_inventory',
+            customer_email: 'test@example.com',
+            amount_total: 2499,
+            line_items: {
+              data: [
+                {
+                  description: 'Green Waterproof Collar - Large',
+                  quantity: 1,
+                  price: { unit_amount: 2499 }
+                }
+              ]
+            }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recGREEN123',
+        fields: { 'Order ID': 'PUP-nventory' }
+      });
+      // Simulate the actual updateInventoryForOrder behavior: it logs internally but doesn't throw
+      mockUpdateInventoryForOrder.mockImplementation(async (lineItems, orderId) => {
+        // Simulate what the real implementation does when product not found
+        console.warn(`Product not found in inventory: "${lineItems[0].description}" for order ${orderId}`);
+      });
+
+      await webhookHandler(req, res);
+
+      // Verify order was created
+      expect(mockCreateOrder).toHaveBeenCalledWith({
+        orderId: 'PUP-nventory',
+        sessionId: 'cs_test_missing_inventory',
+        customerEmail: 'test@example.com',
+        customerName: '',
+        shippingAddress: '',
+        items: [
+          {
+            description: 'Green Waterproof Collar - Large',
+            quantity: 1,
+            price: 2499
+          }
+        ],
+        total: 24.99
+      });
+
+      // Verify warning was logged about missing product
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Product not found in inventory: "Green Waterproof Collar - Large" for order PUP-nventory'
+      );
+
+      // Verify webhook responds with 200 despite missing inventory
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+
+      consoleWarnSpy.mockRestore();
+    });
   });
 });
