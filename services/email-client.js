@@ -28,14 +28,15 @@ export class EmailClient {
   }
 
   /**
-   * Send customer confirmation email
+   * Send email via Resend API
    * @param {string} to - Recipient email address
    * @param {string} subject - Email subject line
    * @param {string} html - HTML email body
    * @param {string} text - Plain text email body
    * @returns {Promise<Object>} Response with message ID
+   * @private
    */
-  async sendCustomerConfirmation(to, subject, html, text) {
+  async sendEmail(to, subject, html, text) {
     const { data, error } = await this.resend.emails.send({
       from: this.fromEmail,
       to,
@@ -51,6 +52,30 @@ export class EmailClient {
     return {
       id: data.id
     };
+  }
+
+  /**
+   * Send customer confirmation email
+   * @param {string} to - Recipient email address
+   * @param {string} subject - Email subject line
+   * @param {string} html - HTML email body
+   * @param {string} text - Plain text email body
+   * @returns {Promise<Object>} Response with message ID
+   */
+  async sendCustomerConfirmation(to, subject, html, text) {
+    return this.sendEmail(to, subject, html, text);
+  }
+
+  /**
+   * Send shop owner notification email
+   * @param {string} to - Recipient email address
+   * @param {string} subject - Email subject line
+   * @param {string} html - HTML email body
+   * @param {string} text - Plain text email body
+   * @returns {Promise<Object>} Response with message ID
+   */
+  async sendShopOwnerNotification(to, subject, html, text) {
+    return this.sendEmail(to, subject, html, text);
   }
 }
 

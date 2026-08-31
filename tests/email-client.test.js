@@ -168,6 +168,35 @@ describe('EmailClient', () => {
     });
   });
 
+  describe('sendShopOwnerNotification', () => {
+    it('sends email with all template fields', async () => {
+      const mockResponse = {
+        data: { id: 'msg_shop_123' },
+        error: null
+      };
+      mockSend.mockResolvedValue(mockResponse);
+
+      const result = await client.sendShopOwnerNotification(
+        'shop@puplets.co.uk',
+        'New Order Notification - Order #12345',
+        '<html><body>New order details</body></html>',
+        'New order details text version'
+      );
+
+      expect(mockSend).toHaveBeenCalledWith({
+        from: 'Puplets <hello@puplets.co.uk>',
+        to: 'shop@puplets.co.uk',
+        subject: 'New Order Notification - Order #12345',
+        html: '<html><body>New order details</body></html>',
+        text: 'New order details text version'
+      });
+
+      expect(result).toEqual({
+        id: 'msg_shop_123'
+      });
+    });
+  });
+
   describe('createEmailClient', () => {
     it('creates client with API key from environment', () => {
       const originalEnv = process.env.RESEND_API_KEY;
