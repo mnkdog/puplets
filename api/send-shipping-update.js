@@ -68,6 +68,9 @@ export default async (req, res) => {
     return res.status(404).json({ error: 'Order not found' });
   }
 
+  // Update order status to "shipped"
+  const updatedOrder = await airtableClient.updateOrder(order.id, { Status: 'shipped' });
+
   // TODO: Implement shipping notification logic in subsequent steps
   return res.status(200).json({ message: 'Authenticated' });
 };

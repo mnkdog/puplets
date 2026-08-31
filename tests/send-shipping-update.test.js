@@ -16,11 +16,15 @@ describe('send-shipping-update authentication', () => {
     // Clear all mocks
     vi.clearAllMocks();
 
-    // Mock AirtableClient.findOrderById for all tests by default
+    // Mock AirtableClient.findOrderById and updateOrder for all tests by default
     const { AirtableClient } = await import('../services/airtable-client.js');
     vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
       id: 'rec123',
       fields: { 'Order ID': 'test-order-id' }
+    });
+    vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
+      id: 'rec123',
+      fields: { 'Order ID': 'test-order-id', 'Status': 'shipped' }
     });
 
     // Import handler fresh for each test
@@ -398,6 +402,33 @@ describe('send-shipping-update authentication', () => {
 
       // Restore
       process.env.AIRTABLE_BASE_ID = originalBaseId;
+    });
+  });
+
+  describe('update order status', () => {
+    it('should call AirtableClient.updateOrder with record ID and Status: "shipped"', async () => {
+      // Import AirtableClient for mocking
+      const { AirtableClient } = await import('../services/airtable-client.js');
+
+      const mockUpdateOrder = vi.fn().mockResolvedValue({
+        id: 'rec123',
+        fields: { 'Order ID': 'PUP-xyz789', 'Status': 'shipped' }
+      });
+
+      // Mock both findOrderById and updateOrder
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
+        id: 'rec123',
+        fields: { 'Order ID': 'PUP-xyz789' }
+      });
+      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockImplementation(mockUpdateOrder);
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'PUP-xyz789' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(mockUpdateOrder).toHaveBeenCalledWith('rec123', { Status: 'shipped' });
     });
   });
 });
