@@ -740,9 +740,9 @@ _Note: Wave structure to be recomputed by `plan_waves.py` after approval_
   - [x] Step 4.2: Send via email client
   - [x] Step 4.3: Email failure handling
 
-- [ ] Slice 5: Shop Owner Email Notifications
-  - [ ] Step 5.1: Shop owner email payload
-  - [ ] Step 5.2: Send to SHOP_OWNER_EMAIL
+- [x] Slice 5: Shop Owner Email Notifications
+  - [x] Step 5.1: Shop owner email payload
+  - [x] Step 5.2: Send to SHOP_OWNER_EMAIL
 
 - [ ] Slice 6: Shipping Updates
   - [ ] Step 6.1: Request body parsing
