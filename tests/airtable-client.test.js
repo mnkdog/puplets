@@ -1,14 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AirtableClient } from '../services/airtable-client.js';
 
-// Create mock table object
-const mockTable = {
+// Create mock table objects
+const mockOrdersTable = {
   create: vi.fn(),
   select: vi.fn()
 };
 
-// Create a function that returns mockTable when called (this represents the base)
-const mockBaseInstance = vi.fn(() => mockTable);
+const mockInventoryTable = {
+  select: vi.fn(),
+  update: vi.fn()
+};
+
+// Create a function that returns the appropriate table based on table name
+const mockBaseInstance = vi.fn((tableName) => {
+  if (tableName === 'Orders') return mockOrdersTable;
+  if (tableName === 'Inventory') return mockInventoryTable;
+  throw new Error(`Unknown table: ${tableName}`);
+});
 
 // Create a function that returns mockBaseInstance when called with baseId
 const mockBase = vi.fn(() => mockBaseInstance);
@@ -30,8 +39,10 @@ describe('AirtableClient', () => {
   beforeEach(() => {
     // Reset mocks
     vi.clearAllMocks();
-    mockTable.create.mockReset();
-    mockTable.select.mockReset();
+    mockOrdersTable.create.mockReset();
+    mockOrdersTable.select.mockReset();
+    mockInventoryTable.select.mockReset();
+    mockInventoryTable.update.mockReset();
     mockBase.mockClear();
 
     // Create client
@@ -87,12 +98,12 @@ describe('AirtableClient', () => {
         }
       };
 
-      mockTable.create.mockResolvedValue([mockRecord]);
+      mockOrdersTable.create.mockResolvedValue([mockRecord]);
 
       const result = await client.createOrder(orderData);
 
       // Verify create was called
-      expect(mockTable.create).toHaveBeenCalledWith([
+      expect(mockOrdersTable.create).toHaveBeenCalledWith([
         {
           fields: {
             'Order ID': 'PUP-abc123',
@@ -123,7 +134,7 @@ describe('AirtableClient', () => {
         total: 19.99
       };
 
-      mockTable.create.mockResolvedValue([{
+      mockOrdersTable.create.mockResolvedValue([{
         id: 'recXYZ789',
         fields: { 'Order ID': 'PUP-abc123' }
       }]);
@@ -142,14 +153,14 @@ describe('AirtableClient', () => {
         total: 19.99
       };
 
-      mockTable.create.mockResolvedValue([{
+      mockOrdersTable.create.mockResolvedValue([{
         id: 'recMIN123',
         fields: {}
       }]);
 
       await client.createOrder(minimalOrder);
 
-      const callArgs = mockTable.create.mock.calls[0][0][0].fields;
+      const callArgs = mockOrdersTable.create.mock.calls[0][0][0].fields;
       expect(callArgs['Customer Name']).toBe('');
       expect(callArgs['Shipping Address']).toBe('');
       expect(callArgs['Items']).toBe('[]');
@@ -164,14 +175,14 @@ describe('AirtableClient', () => {
         total: 19.99
       };
 
-      mockTable.create.mockResolvedValue([{
+      mockOrdersTable.create.mockResolvedValue([{
         id: 'recSTATUS',
         fields: { 'Status': 'pending' }
       }]);
 
       await client.createOrder(orderData);
 
-      const callArgs = mockTable.create.mock.calls[0][0][0].fields;
+      const callArgs = mockOrdersTable.create.mock.calls[0][0][0].fields;
       expect(callArgs['Status']).toBe('pending');
     });
 
@@ -185,14 +196,14 @@ describe('AirtableClient', () => {
 
       const beforeCreate = new Date().toISOString();
 
-      mockTable.create.mockResolvedValue([{
+      mockOrdersTable.create.mockResolvedValue([{
         id: 'recTIME',
         fields: {}
       }]);
 
       await client.createOrder(orderData);
 
-      const callArgs = mockTable.create.mock.calls[0][0][0].fields;
+      const callArgs = mockOrdersTable.create.mock.calls[0][0][0].fields;
       const afterCreate = new Date().toISOString();
 
       expect(callArgs['Created']).toBeDefined();
@@ -219,13 +230,13 @@ describe('AirtableClient', () => {
       const mockSelect = vi.fn().mockReturnValue({
         firstPage: mockFirstPage
       });
-      mockTable.select.mockReturnValue({
+      mockOrdersTable.select.mockReturnValue({
         firstPage: mockFirstPage
       });
 
       const result = await client.findOrderBySessionId('cs_test_xyz789');
 
-      expect(mockTable.select).toHaveBeenCalledWith({
+      expect(mockOrdersTable.select).toHaveBeenCalledWith({
         filterByFormula: "{Stripe Session ID} = 'cs_test_xyz789'"
       });
       expect(result).toEqual({
@@ -237,7 +248,7 @@ describe('AirtableClient', () => {
 
     it('returns null when session ID not found', async () => {
       const mockFirstPage = vi.fn().mockResolvedValue([]);
-      mockTable.select.mockReturnValue({
+      mockOrdersTable.select.mockReturnValue({
         firstPage: mockFirstPage
       });
 
@@ -259,7 +270,7 @@ describe('AirtableClient', () => {
       ];
 
       const mockFirstPage = vi.fn().mockResolvedValue(mockRecords);
-      mockTable.select.mockReturnValue({
+      mockOrdersTable.select.mockReturnValue({
         firstPage: mockFirstPage
       });
 
@@ -283,13 +294,13 @@ describe('AirtableClient', () => {
       };
 
       const mockFirstPage = vi.fn().mockResolvedValue([mockRecord]);
-      mockTable.select.mockReturnValue({
+      mockOrdersTable.select.mockReturnValue({
         firstPage: mockFirstPage
       });
 
       const result = await client.findOrderById('PUP-xyz789');
 
-      expect(mockTable.select).toHaveBeenCalledWith({
+      expect(mockOrdersTable.select).toHaveBeenCalledWith({
         filterByFormula: "{Order ID} = 'PUP-xyz789'"
       });
       expect(result).toEqual({
@@ -301,7 +312,7 @@ describe('AirtableClient', () => {
 
     it('returns null when Order ID not found', async () => {
       const mockFirstPage = vi.fn().mockResolvedValue([]);
-      mockTable.select.mockReturnValue({
+      mockOrdersTable.select.mockReturnValue({
         firstPage: mockFirstPage
       });
 
@@ -323,7 +334,7 @@ describe('AirtableClient', () => {
       ];
 
       const mockFirstPage = vi.fn().mockResolvedValue(mockRecords);
-      mockTable.select.mockReturnValue({
+      mockOrdersTable.select.mockReturnValue({
         firstPage: mockFirstPage
       });
 
@@ -376,6 +387,246 @@ describe('AirtableClient', () => {
       });
 
       expect(mapped['Items']).toBe(JSON.stringify(items));
+    });
+  });
+
+  describe('updateInventoryForOrder', () => {
+    it('decrements inventory quantity for a single line item', async () => {
+      const lineItems = [
+        { description: 'Blue Waterproof Collar - Medium', quantity: 2 }
+      ];
+
+      const mockProduct = {
+        id: 'recINV123',
+        fields: {
+          'Product': 'Blue Waterproof Collar - Medium',
+          'Quantity': 10
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockProduct]);
+      mockInventoryTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockInventoryTable.update.mockResolvedValue({});
+
+      await client.updateInventoryForOrder(lineItems, 'PUP-abc123');
+
+      expect(mockInventoryTable.select).toHaveBeenCalledWith({
+        filterByFormula: "{Product} = 'Blue Waterproof Collar - Medium'"
+      });
+      expect(mockInventoryTable.update).toHaveBeenCalledWith('recINV123', {
+        'Quantity': 8
+      });
+    });
+
+    it('handles multiple line items in a single order', async () => {
+      const lineItems = [
+        { description: 'Blue Waterproof Collar - Medium', quantity: 2 },
+        { description: 'Red Leash - Large', quantity: 1 }
+      ];
+
+      const mockProduct1 = {
+        id: 'recINV123',
+        fields: { 'Product': 'Blue Waterproof Collar - Medium', 'Quantity': 10 }
+      };
+
+      const mockProduct2 = {
+        id: 'recINV456',
+        fields: { 'Product': 'Red Leash - Large', 'Quantity': 5 }
+      };
+
+      mockInventoryTable.select
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([mockProduct1])
+        })
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([mockProduct2])
+        });
+
+      mockInventoryTable.update.mockResolvedValue({});
+
+      await client.updateInventoryForOrder(lineItems, 'PUP-abc123');
+
+      expect(mockInventoryTable.update).toHaveBeenCalledTimes(2);
+      expect(mockInventoryTable.update).toHaveBeenNthCalledWith(1, 'recINV123', {
+        'Quantity': 8
+      });
+      expect(mockInventoryTable.update).toHaveBeenNthCalledWith(2, 'recINV456', {
+        'Quantity': 4
+      });
+    });
+
+    it('logs warning when product not found in inventory', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const lineItems = [
+        { description: 'Non-existent Product', quantity: 1 }
+      ];
+
+      const mockFirstPage = vi.fn().mockResolvedValue([]);
+      mockInventoryTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+
+      await client.updateInventoryForOrder(lineItems, 'PUP-xyz789');
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Product not found in inventory: "Non-existent Product" for order PUP-xyz789'
+      );
+      expect(mockInventoryTable.update).not.toHaveBeenCalled();
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('continues processing remaining items when one product is not found', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const lineItems = [
+        { description: 'Non-existent Product', quantity: 1 },
+        { description: 'Blue Waterproof Collar - Medium', quantity: 2 }
+      ];
+
+      const mockProduct = {
+        id: 'recINV123',
+        fields: { 'Product': 'Blue Waterproof Collar - Medium', 'Quantity': 10 }
+      };
+
+      mockInventoryTable.select
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([])
+        })
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([mockProduct])
+        });
+
+      mockInventoryTable.update.mockResolvedValue({});
+
+      await client.updateInventoryForOrder(lineItems, 'PUP-xyz789');
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Product not found in inventory: "Non-existent Product" for order PUP-xyz789'
+      );
+      expect(mockInventoryTable.update).toHaveBeenCalledWith('recINV123', {
+        'Quantity': 8
+      });
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('logs warning when update fails but continues processing', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const lineItems = [
+        { description: 'Blue Waterproof Collar - Medium', quantity: 2 },
+        { description: 'Red Leash - Large', quantity: 1 }
+      ];
+
+      const mockProduct1 = {
+        id: 'recINV123',
+        fields: { 'Product': 'Blue Waterproof Collar - Medium', 'Quantity': 10 }
+      };
+
+      const mockProduct2 = {
+        id: 'recINV456',
+        fields: { 'Product': 'Red Leash - Large', 'Quantity': 5 }
+      };
+
+      mockInventoryTable.select
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([mockProduct1])
+        })
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([mockProduct2])
+        });
+
+      mockInventoryTable.update
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({});
+
+      await client.updateInventoryForOrder(lineItems, 'PUP-abc123');
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Failed to update inventory for product "Blue Waterproof Collar - Medium" in order PUP-abc123:',
+        'Network error'
+      );
+      expect(mockInventoryTable.update).toHaveBeenCalledTimes(2);
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('matches products by exact description', async () => {
+      const lineItems = [
+        { description: 'Blue Waterproof Collar - Medium', quantity: 1 }
+      ];
+
+      const mockProduct = {
+        id: 'recINV123',
+        fields: { 'Product': 'Blue Waterproof Collar - Medium', 'Quantity': 10 }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockProduct]);
+      mockInventoryTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockInventoryTable.update.mockResolvedValue({});
+
+      await client.updateInventoryForOrder(lineItems, 'PUP-abc123');
+
+      expect(mockInventoryTable.select).toHaveBeenCalledWith({
+        filterByFormula: "{Product} = 'Blue Waterproof Collar - Medium'"
+      });
+    });
+
+    it('handles zero initial quantity', async () => {
+      const lineItems = [
+        { description: 'Blue Waterproof Collar - Medium', quantity: 2 }
+      ];
+
+      const mockProduct = {
+        id: 'recINV123',
+        fields: {
+          'Product': 'Blue Waterproof Collar - Medium',
+          'Quantity': 0
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockProduct]);
+      mockInventoryTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockInventoryTable.update.mockResolvedValue({});
+
+      await client.updateInventoryForOrder(lineItems, 'PUP-abc123');
+
+      expect(mockInventoryTable.update).toHaveBeenCalledWith('recINV123', {
+        'Quantity': -2
+      });
+    });
+
+    it('handles missing Quantity field', async () => {
+      const lineItems = [
+        { description: 'Blue Waterproof Collar - Medium', quantity: 2 }
+      ];
+
+      const mockProduct = {
+        id: 'recINV123',
+        fields: {
+          'Product': 'Blue Waterproof Collar - Medium'
+        }
+      };
+
+      const mockFirstPage = vi.fn().mockResolvedValue([mockProduct]);
+      mockInventoryTable.select.mockReturnValue({
+        firstPage: mockFirstPage
+      });
+      mockInventoryTable.update.mockResolvedValue({});
+
+      await client.updateInventoryForOrder(lineItems, 'PUP-abc123');
+
+      expect(mockInventoryTable.update).toHaveBeenCalledWith('recINV123', {
+        'Quantity': -2
+      });
     });
   });
 });

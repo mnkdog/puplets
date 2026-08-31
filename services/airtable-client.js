@@ -14,6 +14,7 @@ export class AirtableClient {
 
     this.base = new Airtable({ apiKey }).base(baseId);
     this.ordersTable = this.base('Orders');
+    this.inventoryTable = this.base('Inventory');
   }
 
   /**
@@ -92,6 +93,41 @@ export class AirtableClient {
    */
   buildFieldEqualsFilter(fieldName, value) {
     return `{${fieldName}} = '${value}'`;
+  }
+
+  /**
+   * Update inventory quantities for order line items
+   * @param {Array} lineItems - Array of line items [{description, quantity}]
+   * @param {string} orderId - Order ID for logging purposes
+   * @returns {Promise<void>}
+   */
+  async updateInventoryForOrder(lineItems, orderId) {
+    for (const item of lineItems) {
+      try {
+        // Find product by exact description match
+        const records = await this.inventoryTable
+          .select({
+            filterByFormula: this.buildFieldEqualsFilter('Product', item.description)
+          })
+          .firstPage();
+
+        if (records.length === 0) {
+          console.warn(`Product not found in inventory: "${item.description}" for order ${orderId}`);
+          continue;
+        }
+
+        const product = records[0];
+        const currentQuantity = product.fields.Quantity || 0;
+        const newQuantity = currentQuantity - item.quantity;
+
+        // Update the inventory quantity
+        await this.inventoryTable.update(product.id, {
+          'Quantity': newQuantity
+        });
+      } catch (error) {
+        console.warn(`Failed to update inventory for product "${item.description}" in order ${orderId}:`, error.message);
+      }
+    }
   }
 
   /**
