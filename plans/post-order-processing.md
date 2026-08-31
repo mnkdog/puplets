@@ -735,10 +735,10 @@ _Note: Wave structure to be recomputed by `plan_waves.py` after approval_
   - [x] Step 3.2: Quantity decrement
   - [x] Step 3.3: Multiple items update
 
-- [ ] Slice 4: Customer Email Notifications
-  - [ ] Step 4.1: Email payload generation
-  - [ ] Step 4.2: Send via email client
-  - [ ] Step 4.3: Email failure handling
+- [x] Slice 4: Customer Email Notifications
+  - [x] Step 4.1: Email payload generation
+  - [x] Step 4.2: Send via email client
+  - [x] Step 4.3: Email failure handling
 
 - [ ] Slice 5: Shop Owner Email Notifications
   - [ ] Step 5.1: Shop owner email payload
