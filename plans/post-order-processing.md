@@ -722,13 +722,13 @@ _Note: Wave structure to be recomputed by `plan_waves.py` after approval_
   - [x] Step 1.9: Email template generateShopOwnerNotification
   - [x] Step 1.10: Email template generateShippingNotification
 
-- [ ] Slice 2: Webhook Infrastructure & Order Capture
-  - [ ] Step 2.1: Webhook signature validation
-  - [ ] Step 2.2: Order ID generation
-  - [ ] Step 2.3: Order payload transformation
-  - [ ] Step 2.4: Order creation via Airtable client
-  - [ ] Step 2.5: Idempotency check
-  - [ ] Step 2.6: Error handling
+- [x] Slice 2: Webhook Infrastructure & Order Capture
+  - [x] Step 2.1: Webhook signature validation
+  - [x] Step 2.2: Order ID generation
+  - [x] Step 2.3: Order payload transformation
+  - [x] Step 2.4: Order creation via Airtable client
+  - [x] Step 2.5: Idempotency check
+  - [x] Step 2.6: Error handling
 
 - [ ] Slice 3: Inventory Management
   - [ ] Step 3.1: Inventory lookup
