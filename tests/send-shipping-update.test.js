@@ -590,4 +590,150 @@ describe('send-shipping-update authentication', () => {
       );
     });
   });
+
+  describe('email failure handling (non-fatal)', () => {
+    it('should log warning with [SHIPPING EMAIL FAILED] prefix when email sending fails', async () => {
+      // Import modules for mocking
+      const { AirtableClient } = await import('../services/airtable-client.js');
+      const { EmailClient } = await import('../services/email-client.js');
+
+      // Mock AirtableClient.findOrderById to return order
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
+        id: 'rec789',
+        fields: {
+          'Order ID': 'PUP-fail123',
+          'Customer Email': 'fail@example.com',
+          'Customer Name': 'Test User'
+        }
+      });
+
+      // Mock AirtableClient.updateOrder
+      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
+        id: 'rec789',
+        fields: {
+          'Order ID': 'PUP-fail123',
+          'Status': 'shipped',
+          'Customer Email': 'fail@example.com',
+          'Customer Name': 'Test User'
+        }
+      });
+
+      // Mock EmailClient.sendShippingNotification to throw an error
+      const emailError = new Error('Resend API error: rate limit exceeded');
+      vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockRejectedValue(emailError);
+
+      // Spy on console.warn
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'PUP-fail123' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      // Verify console.warn was called with [SHIPPING EMAIL FAILED] prefix
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[SHIPPING EMAIL FAILED]',
+        emailError.message
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should return 200 OK even when email sending fails', async () => {
+      // Import modules for mocking
+      const { AirtableClient } = await import('../services/airtable-client.js');
+      const { EmailClient } = await import('../services/email-client.js');
+
+      // Mock AirtableClient.findOrderById to return order
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
+        id: 'rec789',
+        fields: {
+          'Order ID': 'PUP-fail123',
+          'Customer Email': 'fail@example.com',
+          'Customer Name': 'Test User'
+        }
+      });
+
+      // Mock AirtableClient.updateOrder
+      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
+        id: 'rec789',
+        fields: {
+          'Order ID': 'PUP-fail123',
+          'Status': 'shipped',
+          'Customer Email': 'fail@example.com',
+          'Customer Name': 'Test User'
+        }
+      });
+
+      // Mock EmailClient.sendShippingNotification to throw an error
+      const emailError = new Error('Network timeout');
+      vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockRejectedValue(emailError);
+
+      // Suppress console.warn output during test
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'PUP-fail123' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      // Verify response is 200 OK, not 500
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Authenticated' });
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should keep order status as "shipped" even when email sending fails', async () => {
+      // Import modules for mocking
+      const { AirtableClient } = await import('../services/airtable-client.js');
+      const { EmailClient } = await import('../services/email-client.js');
+
+      const mockUpdateOrder = vi.fn().mockResolvedValue({
+        id: 'rec789',
+        fields: {
+          'Order ID': 'PUP-fail123',
+          'Status': 'shipped',
+          'Customer Email': 'fail@example.com',
+          'Customer Name': 'Test User'
+        }
+      });
+
+      // Mock AirtableClient.findOrderById to return order
+      vi.spyOn(AirtableClient.prototype, 'findOrderById').mockResolvedValue({
+        id: 'rec789',
+        fields: {
+          'Order ID': 'PUP-fail123',
+          'Customer Email': 'fail@example.com',
+          'Customer Name': 'Test User'
+        }
+      });
+
+      // Mock AirtableClient.updateOrder
+      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockImplementation(mockUpdateOrder);
+
+      // Mock EmailClient.sendShippingNotification to throw an error
+      const emailError = new Error('Email service unavailable');
+      vi.spyOn(EmailClient.prototype, 'sendShippingNotification').mockRejectedValue(emailError);
+
+      // Suppress console.warn output during test
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const req = createMockRequest('POST', 'Bearer test-secret-token-123');
+      req.body = { orderId: 'PUP-fail123' };
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      // Verify updateOrder was called with Status: "shipped"
+      expect(mockUpdateOrder).toHaveBeenCalledWith('rec789', { Status: 'shipped' });
+
+      // Verify the order status was updated (and not rolled back)
+      expect(mockUpdateOrder).toHaveBeenCalledTimes(1);
+
+      consoleWarnSpy.mockRestore();
+    });
+  });
 });
