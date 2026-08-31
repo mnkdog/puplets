@@ -32,7 +32,70 @@ function verifyWebhookSignature(payload, signature, secret) {
   }
 }
 
-export default async (req, res) => {
+// Currency conversion constant
+const CENTS_TO_POUNDS = 100;
+
+/**
+ * Format Stripe shipping address to comma-separated string
+ * @param {object} shipping - Stripe shipping object
+ * @returns {string} Formatted address or empty string
+ */
+function formatShippingAddress(shipping) {
+  if (!shipping?.address) {
+    return '';
+  }
+
+  const { line1, line2, city, postal_code, country } = shipping.address;
+  return [line1, line2, city, postal_code, country]
+    .filter(Boolean)
+    .join(', ');
+}
+
+/**
+ * Transform Stripe line items to simplified format
+ * @param {object} lineItems - Stripe line_items object
+ * @returns {Array} Simplified line items array
+ */
+function transformLineItems(lineItems) {
+  if (!lineItems?.data) {
+    return [];
+  }
+
+  return lineItems.data.map(item => ({
+    description: item.description,
+    quantity: item.quantity,
+    price: item.price.unit_amount
+  }));
+}
+
+/**
+ * Extract customer email with fallback
+ * @param {object} session - Stripe session object
+ * @returns {string} Customer email or empty string
+ */
+function extractCustomerEmail(session) {
+  return session.customer_email || session.customer_details?.email || '';
+}
+
+/**
+ * Transform Stripe session to Airtable order format
+ * @param {object} session - Stripe checkout session object
+ * @param {string} orderId - Generated order ID (PUP-{last-8-chars})
+ * @returns {object} Order data formatted for AirtableClient.createOrder()
+ */
+function transformSessionToOrder(session, orderId) {
+  return {
+    orderId,
+    sessionId: session.id,
+    customerEmail: extractCustomerEmail(session),
+    customerName: session.customer_details?.name || '',
+    shippingAddress: formatShippingAddress(session.shipping),
+    items: transformLineItems(session.line_items),
+    total: session.amount_total / CENTS_TO_POUNDS
+  };
+}
+
+const webhookHandler = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -61,3 +124,6 @@ export default async (req, res) => {
 
   return res.status(200).json({ received: true });
 };
+
+export default webhookHandler;
+export { transformSessionToOrder };
