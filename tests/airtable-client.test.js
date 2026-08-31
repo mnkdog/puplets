@@ -806,4 +806,34 @@ describe('AirtableClient', () => {
       });
     });
   });
+
+  describe('buildFieldEqualsFilter', () => {
+    it('builds basic filter formula for field equality', () => {
+      const formula = client.buildFieldEqualsFilter('Order ID', 'PUP-abc123');
+
+      expect(formula).toBe("{Order ID} = 'PUP-abc123'");
+    });
+
+    it('escapes single quotes to prevent formula injection', () => {
+      const formula = client.buildFieldEqualsFilter('Order ID', "PUP-abc'; DELETE FROM Orders; --");
+
+      // Verify single quotes are escaped
+      expect(formula).toBe("{Order ID} = 'PUP-abc\\'; DELETE FROM Orders; --'");
+      // Verify the injection payload is neutralized (the quote is escaped)
+      expect(formula).toContain("\\'");
+      // The entire payload should be treated as a literal string value, not executable code
+    });
+
+    it('handles values with multiple single quotes', () => {
+      const formula = client.buildFieldEqualsFilter('Customer Name', "O'Brien's Pet's Store");
+
+      expect(formula).toBe("{Customer Name} = 'O\\'Brien\\'s Pet\\'s Store'");
+    });
+
+    it('preserves other special characters that are safe', () => {
+      const formula = client.buildFieldEqualsFilter('Email', 'test+tag@example.com');
+
+      expect(formula).toBe("{Email} = 'test+tag@example.com'");
+    });
+  });
 });

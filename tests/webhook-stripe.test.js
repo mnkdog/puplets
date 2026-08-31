@@ -98,10 +98,21 @@ describe('Stripe Webhook Handler', () => {
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     // Mock request and response objects
+    // Request object must implement async iterable protocol for raw body reading
     req = {
       method: 'POST',
       headers: {},
-      body: {}
+      body: {},
+      _rawBody: null, // Will be set by individual tests
+      async *[Symbol.asyncIterator]() {
+        // Yield the raw body as a buffer when iterating
+        if (this._rawBody) {
+          yield Buffer.from(this._rawBody, 'utf8');
+        } else if (this.body) {
+          // Fallback: serialize body as JSON
+          yield Buffer.from(JSON.stringify(this.body), 'utf8');
+        }
+      }
     };
 
     res = {

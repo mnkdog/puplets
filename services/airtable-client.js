@@ -92,7 +92,9 @@ export class AirtableClient {
    * @returns {string} Filter formula
    */
   buildFieldEqualsFilter(fieldName, value) {
-    return `{${fieldName}} = '${value}'`;
+    // Escape single quotes to prevent formula injection
+    const escapedValue = value.replace(/'/g, "\\'");
+    return `{${fieldName}} = '${escapedValue}'`;
   }
 
   /**

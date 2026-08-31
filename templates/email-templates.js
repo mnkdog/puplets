@@ -42,12 +42,14 @@ function formatItemsText(items) {
 /**
  * Format total amount with £ symbol
  * @param {string|number} total - Total amount
- * @returns {string} Formatted total with £ symbol
+ * @returns {string} Formatted total with £ symbol and 2 decimal places
  */
 function formatTotal(total) {
-  return typeof total === 'string' && total.startsWith('£')
-    ? total
-    : `£${total}`;
+  if (typeof total === 'string' && total.startsWith('£')) {
+    return total;
+  }
+  const numericTotal = typeof total === 'number' ? total : parseFloat(total);
+  return `£${numericTotal.toFixed(2)}`;
 }
 
 /**

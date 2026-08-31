@@ -1192,3 +1192,67 @@ describe('generateShippingNotification', () => {
     });
   });
 });
+
+describe('formatTotal helper', () => {
+  describe('numeric values', () => {
+    it('formats integer as currency with two decimal places', () => {
+      const orderData = {
+        orderId: 'PUP-test',
+        items: [{ description: 'Test', quantity: 1 }],
+        total: 20,
+        address: 'Test',
+        customerName: 'Test'
+      };
+
+      const result = generateCustomerConfirmation(orderData);
+
+      expect(result.html).toContain('£20.00');
+      expect(result.text).toContain('£20.00');
+    });
+
+    it('formats decimal with one decimal place to two decimal places', () => {
+      const orderData = {
+        orderId: 'PUP-test',
+        items: [{ description: 'Test', quantity: 1 }],
+        total: 19.9,
+        address: 'Test',
+        customerName: 'Test'
+      };
+
+      const result = generateCustomerConfirmation(orderData);
+
+      expect(result.html).toContain('£19.90');
+      expect(result.text).toContain('£19.90');
+    });
+
+    it('formats decimal with three decimal places to two decimal places', () => {
+      const orderData = {
+        orderId: 'PUP-test',
+        items: [{ description: 'Test', quantity: 1 }],
+        total: 19.999,
+        address: 'Test',
+        customerName: 'Test'
+      };
+
+      const result = generateCustomerConfirmation(orderData);
+
+      expect(result.html).toContain('£20.00');
+      expect(result.text).toContain('£20.00');
+    });
+
+    it('preserves already formatted string with £ symbol', () => {
+      const orderData = {
+        orderId: 'PUP-test',
+        items: [{ description: 'Test', quantity: 1 }],
+        total: '£19.99',
+        address: 'Test',
+        customerName: 'Test'
+      };
+
+      const result = generateCustomerConfirmation(orderData);
+
+      expect(result.html).toContain('£19.99');
+      expect(result.text).toContain('£19.99');
+    });
+  });
+});

@@ -70,8 +70,12 @@ export default async (req, res) => {
     return res.status(404).json({ error: 'Order not found' });
   }
 
-  // Update order status to "shipped" using Order ID field (not record ID)
-  const updatedOrder = await airtableClient.updateOrder(order.fields['Order ID'], { Status: 'shipped' });
+  // Update order status to "shipped" and persist tracking URL if provided
+  const updates = { Status: 'shipped' };
+  if (req.body.trackingUrl) {
+    updates['Tracking URL'] = req.body.trackingUrl;
+  }
+  const updatedOrder = await airtableClient.updateOrder(order.fields['Order ID'], updates);
 
   // Check if update succeeded
   if (updatedOrder === null || updatedOrder === undefined) {

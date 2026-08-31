@@ -730,13 +730,14 @@ describe('send-shipping-update authentication', () => {
         }
       });
 
-      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
+      const updateOrderSpy = vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
         id: 'rec123',
         fields: {
           'Order ID': 'PUP-success-001',
           'Status': 'shipped',
           'Customer Email': 'customer@example.com',
-          'Customer Name': 'Happy Customer'
+          'Customer Name': 'Happy Customer',
+          'Tracking URL': 'https://track.example.com/12345'
         }
       });
 
@@ -751,6 +752,10 @@ describe('send-shipping-update authentication', () => {
 
       await handler(req, res);
 
+      expect(updateOrderSpy).toHaveBeenCalledWith('PUP-success-001', {
+        Status: 'shipped',
+        'Tracking URL': 'https://track.example.com/12345'
+      });
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ message: 'Shipping update processed successfully' });
     });
@@ -768,7 +773,7 @@ describe('send-shipping-update authentication', () => {
         }
       });
 
-      vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
+      const updateOrderSpy = vi.spyOn(AirtableClient.prototype, 'updateOrder').mockResolvedValue({
         id: 'rec456',
         fields: {
           'Order ID': 'PUP-success-002',
@@ -789,6 +794,10 @@ describe('send-shipping-update authentication', () => {
 
       await handler(req, res);
 
+      expect(updateOrderSpy).toHaveBeenCalledWith('PUP-success-002', {
+        Status: 'shipped'
+        // No Tracking URL field should be included
+      });
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ message: 'Shipping update processed successfully' });
     });

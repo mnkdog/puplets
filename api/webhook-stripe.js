@@ -243,6 +243,19 @@ async function checkExistingOrder(client, sessionId) {
   }
 }
 
+/**
+ * Read raw body from request stream
+ * @param {object} req - Request object
+ * @returns {Promise<Buffer>} Raw body buffer
+ */
+async function getRawBody(req) {
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
 const webhookHandler = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -253,8 +266,9 @@ const webhookHandler = async (req, res) => {
 
   let event;
   try {
-    // Get raw body as string - Vercel provides this as req.body when content-type is application/json
-    const payload = JSON.stringify(req.body);
+    // Read raw body for signature verification - must be the EXACT bytes Stripe sent
+    const rawBody = await getRawBody(req);
+    const payload = rawBody.toString('utf8');
 
     event = verifyWebhookSignature(payload, signature, webhookSecret);
   } catch (err) {
@@ -320,6 +334,13 @@ const webhookHandler = async (req, res) => {
   }
 
   return res.status(200).json({ received: true });
+};
+
+// Disable Vercel's body parser to get raw body for signature verification
+export const config = {
+  api: {
+    bodyParser: false,
+  },
 };
 
 export default webhookHandler;
