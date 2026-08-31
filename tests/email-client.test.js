@@ -197,6 +197,35 @@ describe('EmailClient', () => {
     });
   });
 
+  describe('sendShippingNotification', () => {
+    it('sends email with all template fields', async () => {
+      const mockResponse = {
+        data: { id: 'msg_ship_456' },
+        error: null
+      };
+      mockSend.mockResolvedValue(mockResponse);
+
+      const result = await client.sendShippingNotification(
+        'customer@example.com',
+        'Shipping Notification - Order #12345',
+        '<html><body>Shipping details</body></html>',
+        'Shipping details text version'
+      );
+
+      expect(mockSend).toHaveBeenCalledWith({
+        from: 'Puplets <hello@puplets.co.uk>',
+        to: 'customer@example.com',
+        subject: 'Shipping Notification - Order #12345',
+        html: '<html><body>Shipping details</body></html>',
+        text: 'Shipping details text version'
+      });
+
+      expect(result).toEqual({
+        id: 'msg_ship_456'
+      });
+    });
+  });
+
   describe('createEmailClient', () => {
     it('creates client with API key from environment', () => {
       const originalEnv = process.env.RESEND_API_KEY;

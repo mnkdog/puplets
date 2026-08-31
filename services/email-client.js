@@ -77,6 +77,18 @@ export class EmailClient {
   async sendShopOwnerNotification(to, subject, html, text) {
     return this.sendEmail(to, subject, html, text);
   }
+
+  /**
+   * Send shipping notification email
+   * @param {string} to - Recipient email address
+   * @param {string} subject - Email subject line
+   * @param {string} html - HTML email body
+   * @param {string} text - Plain text email body
+   * @returns {Promise<Object>} Response with message ID
+   */
+  async sendShippingNotification(to, subject, html, text) {
+    return this.sendEmail(to, subject, html, text);
+  }
 }
 
 /**
