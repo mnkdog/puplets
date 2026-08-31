@@ -730,11 +730,10 @@ _Note: Wave structure to be recomputed by `plan_waves.py` after approval_
   - [x] Step 2.5: Idempotency check
   - [x] Step 2.6: Error handling
 
-- [ ] Slice 3: Inventory Management
-  - [ ] Step 3.1: Inventory lookup
-  - [ ] Step 3.2: Quantity decrement
-  - [ ] Step 3.3: Multiple items update
-  - [ ] Step 3.4: Missing product handling
+- [x] Slice 3: Inventory Management
+  - [x] Step 3.1: Inventory lookup
+  - [x] Step 3.2: Quantity decrement
+  - [x] Step 3.3: Multiple items update
 
 - [ ] Slice 4: Customer Email Notifications
   - [ ] Step 4.1: Email payload generation
