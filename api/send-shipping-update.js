@@ -3,6 +3,8 @@
  * Called by Airtable automation when shop owner marks order as shipped
  */
 
+import { AirtableClient } from '../services/airtable-client.js';
+
 export default async (req, res) => {
   // Only allow POST method
   if (req.method !== 'POST') {
@@ -53,6 +55,13 @@ export default async (req, res) => {
       return res.status(400).json({ error: 'Invalid trackingUrl format' });
     }
   }
+
+  // Look up order in Airtable
+  const airtableClient = new AirtableClient(
+    process.env.AIRTABLE_API_KEY,
+    process.env.AIRTABLE_BASE_ID
+  );
+  const order = await airtableClient.findOrderById(req.body.orderId);
 
   // TODO: Implement shipping notification logic in subsequent steps
   return res.status(200).json({ message: 'Authenticated' });
