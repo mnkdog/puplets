@@ -744,11 +744,13 @@ _Note: Wave structure to be recomputed by `plan_waves.py` after approval_
   - [x] Step 5.1: Shop owner email payload
   - [x] Step 5.2: Send to SHOP_OWNER_EMAIL
 
-- [ ] Slice 6: Shipping Updates
-  - [ ] Step 6.1: Request body parsing
-  - [ ] Step 6.2: Order lookup
-  - [ ] Step 6.3: 404 handling
-  - [ ] Step 6.4: Status update
-  - [ ] Step 6.5: Email with tracking
-  - [ ] Step 6.6: Email without tracking
-  - [ ] Step 6.7: Success response
+- [x] Slice 6: Shipping Updates
+  - [x] Step 6.1: Bearer token authentication
+  - [x] Step 6.2: Request body validation
+  - [x] Step 6.3: Order lookup by Order ID
+  - [x] Step 6.4: 404 handling for non-existent orders
+  - [x] Step 6.5: Update order status to shipped
+  - [x] Step 6.6: Send shipping email with tracking URL
+  - [x] Step 6.7: Send shipping email without tracking URL
+  - [x] Step 6.8: Email failure handling (non-fatal)
+  - [x] Step 6.9: Return 200 success response
