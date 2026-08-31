@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock Stripe webhooks and AirtableClient using vi.hoisted to ensure proper initialization
-const { mockWebhooks, mockCreateOrder } = vi.hoisted(() => {
+const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId } = vi.hoisted(() => {
   return {
     mockWebhooks: {
       constructEvent: vi.fn()
     },
-    mockCreateOrder: vi.fn()
+    mockCreateOrder: vi.fn(),
+    mockFindOrderBySessionId: vi.fn()
   };
 });
 
@@ -25,6 +26,7 @@ vi.mock('../services/airtable-client.js', () => {
     AirtableClient: class MockAirtableClient {
       constructor() {
         this.createOrder = mockCreateOrder;
+        this.findOrderBySessionId = mockFindOrderBySessionId;
       }
     }
   };
@@ -41,6 +43,7 @@ describe('Stripe Webhook Handler', () => {
     vi.clearAllMocks();
     mockWebhooks.constructEvent.mockReset();
     mockCreateOrder.mockReset();
+    mockFindOrderBySessionId.mockReset();
 
     // Spy on console.error
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -494,6 +497,110 @@ describe('Stripe Webhook Handler', () => {
     });
   });
 
+  describe('Webhook Idempotency', () => {
+    it('returns 200 and skips order creation when session already processed', async () => {
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_a1b2c3d4e5f6g7h8',
+            customer_email: 'customer@example.com',
+            amount_total: 1999,
+            line_items: { data: [] }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+
+      // Mock existing order found
+      mockFindOrderBySessionId.mockResolvedValue({
+        id: 'recABC123',
+        fields: { 'Order ID': 'PUP-e5f6g7h8' }
+      });
+
+      await webhookHandler(req, res);
+
+      expect(mockFindOrderBySessionId).toHaveBeenCalledWith('cs_test_a1b2c3d4e5f6g7h8');
+      expect(mockCreateOrder).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Duplicate webhook for session:',
+        'cs_test_a1b2c3d4e5f6g7h8',
+        '- order already exists:',
+        'PUP-e5f6g7h8'
+      );
+
+      consoleLogSpy.mockRestore();
+    });
+
+    it('creates order when session not previously processed', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_new123',
+            customer_email: 'new@example.com',
+            amount_total: 1000,
+            line_items: { data: [] }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+
+      // Mock no existing order found
+      mockFindOrderBySessionId.mockResolvedValue(null);
+      mockCreateOrder.mockResolvedValue({
+        id: 'recXYZ789',
+        fields: { 'Order ID': 'PUP-w123' }
+      });
+
+      await webhookHandler(req, res);
+
+      expect(mockFindOrderBySessionId).toHaveBeenCalledWith('cs_test_new123');
+      expect(mockCreateOrder).toHaveBeenCalledTimes(1);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('returns 500 when idempotency check fails', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      req.body = {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_error123',
+            customer_email: 'error@example.com',
+            amount_total: 1000,
+            line_items: { data: [] }
+          }
+        }
+      };
+
+      mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockRejectedValue(new Error('Airtable query failed'));
+
+      await webhookHandler(req, res);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[IDEMPOTENCY CHECK FAILED]',
+        'Session:',
+        'cs_test_error123',
+        'Error:',
+        'Failed to check for existing order: Airtable query failed'
+      );
+      expect(mockCreateOrder).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to check for existing order' });
+    });
+  });
+
   describe('Order Creation Integration', () => {
     it('delegates order creation to airtableClient.createOrder with transformed data', async () => {
       req.headers['stripe-signature'] = 'valid_signature';
@@ -533,6 +640,7 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockResolvedValue({
         id: 'recABC123',
         fields: { 'Order ID': 'PUP-e5f6g7h8' }
@@ -574,6 +682,7 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockRejectedValue(new Error('Airtable API error'));
 
       await webhookHandler(req, res);

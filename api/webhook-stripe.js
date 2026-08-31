@@ -100,6 +100,21 @@ function transformSessionToOrder(session, orderId) {
   };
 }
 
+/**
+ * Check if order already exists for given session (idempotency check)
+ * @param {AirtableClient} client - Airtable client instance
+ * @param {string} sessionId - Stripe session ID
+ * @returns {Promise<object|null>} Existing order record or null if not found
+ * @throws {Error} If Airtable query fails
+ */
+async function checkExistingOrder(client, sessionId) {
+  try {
+    return await client.findOrderBySessionId(sessionId);
+  } catch (err) {
+    throw new Error(`Failed to check for existing order: ${err.message}`);
+  }
+}
+
 const webhookHandler = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -125,6 +140,20 @@ const webhookHandler = async (req, res) => {
     const orderId = `PUP-${session.id.slice(-8)}`;
 
     console.log('Checkout session completed:', session.id, '→ Order ID:', orderId);
+
+    // Check for existing order (idempotency)
+    let existingOrder;
+    try {
+      existingOrder = await checkExistingOrder(airtableClient, session.id);
+    } catch (err) {
+      console.error('[IDEMPOTENCY CHECK FAILED]', 'Session:', session.id, 'Error:', err.message);
+      return res.status(500).json({ error: 'Failed to check for existing order' });
+    }
+
+    if (existingOrder) {
+      console.log('Duplicate webhook for session:', session.id, '- order already exists:', existingOrder.fields['Order ID']);
+      return res.status(200).json({ received: true });
+    }
 
     // Transform and create order in Airtable
     const orderData = transformSessionToOrder(session, orderId);
