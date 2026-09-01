@@ -6,7 +6,7 @@
 
 import Stripe from 'stripe';
 import { AirtableClient } from '../services/airtable-client.js';
-import { generateCustomerConfirmation, generateShopOwnerNotification } from '../templates/email-templates.js';
+import { generateCustomerConfirmation, generateShopOwnerNotification, generateShopOwnerErrorNotification } from '../templates/email-templates.js';
 import { createEmailClient } from '../services/email-client.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -290,7 +290,10 @@ const webhookHandler = async (req, res) => {
       return res.status(200).json({ received: true });
     }
 
-    // Check for existing order (idempotency)
+    // Transform order data before atomic create operation
+    const orderData = transformSessionToOrder(session, orderId);
+
+    // Check for existing order (idempotency) - separate try-catch to preserve error tagging
     let existingOrder;
     try {
       existingOrder = await checkExistingOrder(airtableClient, session.id);
@@ -303,13 +306,75 @@ const webhookHandler = async (req, res) => {
       return res.status(200).json({ received: true });
     }
 
-    // Transform and create order in Airtable
-    const orderData = transformSessionToOrder(session, orderId);
-
+    // Atomic create-or-skip pattern to prevent race conditions
+    // Attempt to create order, then verify no duplicate was created concurrently
     let airtableRecord;
     try {
+      // Create the order
       airtableRecord = await airtableClient.createOrder(orderData);
+
+      // Immediately verify no concurrent duplicate was created (race condition check)
+      // Query for ALL records with this session ID
+      const allRecordsWithSession = await airtableClient.findAllOrdersBySessionId(session.id);
+
+      if (allRecordsWithSession.length > 1) {
+        // Race condition detected - multiple webhooks created orders concurrently
+        // Keep the oldest record (earliest Created timestamp), delete the others
+        const sortedRecords = allRecordsWithSession.sort((a, b) =>
+          new Date(a.fields.Created) - new Date(b.fields.Created)
+        );
+
+        const keepRecord = sortedRecords[0];
+        const deleteRecords = sortedRecords.slice(1);
+
+        console.log('[RACE CONDITION DETECTED]', 'Session:', session.id,
+          '- keeping record', keepRecord.id, ', deleting', deleteRecords.length, 'duplicate(s)');
+
+        // Delete duplicate records (including ours if it's not the oldest)
+        for (const record of deleteRecords) {
+          try {
+            await airtableClient.deleteOrder(record.id);
+          } catch (deleteErr) {
+            console.warn('[DUPLICATE DELETE FAILED]', 'Record:', record.id, 'Error:', deleteErr.message);
+          }
+        }
+
+        // If we deleted our own record, use the kept record for subsequent operations
+        if (deleteRecords.some(r => r.id === airtableRecord.id)) {
+          airtableRecord = keepRecord;
+          console.log('[USING CONCURRENT RECORD]', 'Session:', session.id, '- our record was newer, using', keepRecord.id);
+        }
+      }
     } catch (err) {
+      // On any create error, re-check if order was created by another concurrent webhook
+      try {
+        const existingOrder = await checkExistingOrder(airtableClient, session.id);
+        if (existingOrder) {
+          // Another webhook succeeded - treat this as success (idempotent)
+          console.log('[CONCURRENT CREATE DETECTED]', 'Session:', session.id,
+            '- create failed but order exists, treating as success');
+          return res.status(200).json({ received: true });
+        }
+      } catch (recheckErr) {
+        console.warn('[RECHECK FAILED]', 'Session:', session.id, 'Error:', recheckErr.message);
+      }
+
+      // Send error notification to shop owner (non-fatal - don't block the error response)
+      try {
+        const errorEmailData = generateShopOwnerErrorNotification({
+          sessionId: session.id,
+          errorType: 'ORDER CREATION FAILED',
+          errorMessage: err.message
+        });
+        await emailClient.sendShopOwnerNotification(
+          process.env.SHOP_OWNER_EMAIL,
+          errorEmailData.subject,
+          errorEmailData.html,
+          errorEmailData.text
+        );
+      } catch (emailErr) {
+        console.warn('[SHOP OWNER ERROR EMAIL FAILED]', 'Session:', session.id, 'Error:', emailErr.message);
+      }
       return handleAirtableError(res, session.id, 'ORDER CREATION FAILED', err, 'Failed to create order');
     }
 

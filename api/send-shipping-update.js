@@ -111,5 +111,5 @@ export default async (req, res) => {
     console.warn('[SHIPPING EMAIL FAILED]', error.message);
   }
 
-  return res.status(200).json({ message: 'Shipping update processed successfully' });
+  return res.status(200).json({ success: true, message: 'Shipping update processed successfully' });
 };

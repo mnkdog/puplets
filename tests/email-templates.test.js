@@ -35,7 +35,7 @@ describe('generateCustomerConfirmation', () => {
 
       const result = generateCustomerConfirmation(orderData);
 
-      expect(result.subject).toBe('Order Confirmation - Puplets Order PUP-abc123');
+      expect(result.subject).toBe('Your Puplets order PUP-abc123 is confirmed');
     });
 
     it('handles different order ID formats', () => {
@@ -49,7 +49,7 @@ describe('generateCustomerConfirmation', () => {
 
       const result = generateCustomerConfirmation(orderData);
 
-      expect(result.subject).toBe('Order Confirmation - Puplets Order PUP-xyz789');
+      expect(result.subject).toBe('Your Puplets order PUP-xyz789 is confirmed');
     });
   });
 
@@ -290,7 +290,7 @@ describe('generateCustomerConfirmation', () => {
       expect(result).toHaveProperty('text');
 
       // And subject is "Order Confirmation - Puplets Order PUP-abc123"
-      expect(result.subject).toBe('Order Confirmation - Puplets Order PUP-abc123');
+      expect(result.subject).toBe('Your Puplets order PUP-abc123 is confirmed');
 
       // And html contains order ID, itemized products, total, address
       expect(result.html).toContain('PUP-abc123');
@@ -859,7 +859,7 @@ describe('generateShippingNotification', () => {
 
       const result = generateShippingNotification(orderData, trackingUrl);
 
-      expect(result.subject).toBe('Your Puplets order PUP-abc123 has been dispatched');
+      expect(result.subject).toBe('Your Puplets order PUP-abc123 has shipped');
     });
 
     it('handles different order ID formats', () => {
@@ -870,7 +870,7 @@ describe('generateShippingNotification', () => {
 
       const result = generateShippingNotification(orderData);
 
-      expect(result.subject).toBe('Your Puplets order PUP-xyz789 has been dispatched');
+      expect(result.subject).toBe('Your Puplets order PUP-xyz789 has shipped');
     });
   });
 

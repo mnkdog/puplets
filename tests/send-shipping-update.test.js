@@ -757,7 +757,7 @@ describe('send-shipping-update authentication', () => {
         'Tracking URL': 'https://track.example.com/12345'
       });
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Shipping update processed successfully' });
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Shipping update processed successfully' });
     });
 
     it('should return 200 OK with success message when shipping update completes without tracking URL', async () => {
@@ -799,7 +799,7 @@ describe('send-shipping-update authentication', () => {
         // No Tracking URL field should be included
       });
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Shipping update processed successfully' });
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Shipping update processed successfully' });
     });
   });
 
@@ -893,7 +893,7 @@ describe('send-shipping-update authentication', () => {
 
       // Verify response is 200 OK, not 500
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Shipping update processed successfully' });
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Shipping update processed successfully' });
 
       consoleWarnSpy.mockRestore();
     });

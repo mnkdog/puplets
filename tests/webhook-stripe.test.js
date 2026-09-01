@@ -1,16 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock Stripe webhooks, AirtableClient, email templates, and email client using vi.hoisted to ensure proper initialization
-const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockUpdateInventoryForOrder, mockGenerateCustomerConfirmation, mockGenerateShopOwnerNotification, mockSendCustomerConfirmation, mockSendShopOwnerNotification } = vi.hoisted(() => {
+const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockFindAllOrdersBySessionId, mockDeleteOrder, mockUpdateInventoryForOrder, mockGenerateCustomerConfirmation, mockGenerateShopOwnerNotification, mockGenerateShopOwnerErrorNotification, mockSendCustomerConfirmation, mockSendShopOwnerNotification } = vi.hoisted(() => {
   return {
     mockWebhooks: {
       constructEvent: vi.fn()
     },
     mockCreateOrder: vi.fn(),
     mockFindOrderBySessionId: vi.fn(),
+    mockFindAllOrdersBySessionId: vi.fn(),
+    mockDeleteOrder: vi.fn(),
     mockUpdateInventoryForOrder: vi.fn(),
     mockGenerateCustomerConfirmation: vi.fn(),
     mockGenerateShopOwnerNotification: vi.fn(),
+    mockGenerateShopOwnerErrorNotification: vi.fn(),
     mockSendCustomerConfirmation: vi.fn(),
     mockSendShopOwnerNotification: vi.fn()
   };
@@ -32,6 +35,8 @@ vi.mock('../services/airtable-client.js', () => {
       constructor() {
         this.createOrder = mockCreateOrder;
         this.findOrderBySessionId = mockFindOrderBySessionId;
+        this.findAllOrdersBySessionId = mockFindAllOrdersBySessionId;
+        this.deleteOrder = mockDeleteOrder;
         this.updateInventoryForOrder = mockUpdateInventoryForOrder;
       }
     }
@@ -41,7 +46,8 @@ vi.mock('../services/airtable-client.js', () => {
 vi.mock('../templates/email-templates.js', () => {
   return {
     generateCustomerConfirmation: mockGenerateCustomerConfirmation,
-    generateShopOwnerNotification: mockGenerateShopOwnerNotification
+    generateShopOwnerNotification: mockGenerateShopOwnerNotification,
+    generateShopOwnerErrorNotification: mockGenerateShopOwnerErrorNotification
   };
 });
 
@@ -66,17 +72,28 @@ describe('Stripe Webhook Handler', () => {
     mockWebhooks.constructEvent.mockReset();
     mockCreateOrder.mockReset();
     mockFindOrderBySessionId.mockReset();
+    mockFindAllOrdersBySessionId.mockReset();
+    mockDeleteOrder.mockReset();
     mockUpdateInventoryForOrder.mockReset();
     mockGenerateCustomerConfirmation.mockReset();
     mockGenerateShopOwnerNotification.mockReset();
+    mockGenerateShopOwnerErrorNotification.mockReset();
     mockSendCustomerConfirmation.mockReset();
     mockSendShopOwnerNotification.mockReset();
 
-    // Set default mock return value for email generation
+    // Set default mock return values
+    mockFindAllOrdersBySessionId.mockResolvedValue([]);
+
     mockGenerateCustomerConfirmation.mockReturnValue({
       subject: 'Order Confirmation - Puplets Order PUP-test123',
       html: '<html>Test email</html>',
       text: 'Test email'
+    });
+
+    mockGenerateShopOwnerErrorNotification.mockReturnValue({
+      subject: 'Order Processing Error',
+      html: '<html>Error email</html>',
+      text: 'Error email'
     });
 
     // Set default mock return value for shop owner email generation

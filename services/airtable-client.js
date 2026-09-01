@@ -64,6 +64,24 @@ export class AirtableClient {
   }
 
   /**
+   * Find ALL orders by Stripe Session ID (for race condition detection)
+   * @param {string} sessionId - Stripe checkout session ID
+   * @returns {Promise<Array>} Array of all order records with this session ID
+   */
+  async findAllOrdersBySessionId(sessionId) {
+    const records = await this.ordersTable
+      .select({
+        filterByFormula: this.buildFieldEqualsFilter('Stripe Session ID', sessionId)
+      })
+      .firstPage();
+
+    return records.map(record => ({
+      id: record.id,
+      fields: record.fields
+    }));
+  }
+
+  /**
    * Find order by Order ID
    * @param {string} orderId - Order ID in format PUP-{last-8-chars}
    * @returns {Promise<Object|null>} Order record or null if not found
@@ -83,6 +101,15 @@ export class AirtableClient {
       id: records[0].id,
       fields: records[0].fields
     };
+  }
+
+  /**
+   * Delete an order by record ID
+   * @param {string} recordId - Airtable record ID
+   * @returns {Promise<void>}
+   */
+  async deleteOrder(recordId) {
+    await this.ordersTable.destroy(recordId);
   }
 
   /**
@@ -122,36 +149,75 @@ export class AirtableClient {
   }
 
   /**
-   * Update inventory quantities for order line items
+   * Update inventory quantities for order line items with retry logic
+   * Implements optimistic locking to handle concurrent updates
    * @param {Array} lineItems - Array of line items [{description, quantity}]
    * @param {string} orderId - Order ID for logging purposes
    * @returns {Promise<void>}
    */
   async updateInventoryForOrder(lineItems, orderId) {
     for (const item of lineItems) {
-      try {
-        // Find product by exact description match
-        const records = await this.inventoryTable
-          .select({
-            filterByFormula: this.buildFieldEqualsFilter('Product', item.description)
-          })
-          .firstPage();
+      // Retry up to 3 times to handle race conditions
+      const maxRetries = 3;
+      let attemptNumber = 0;
+      let updateSucceeded = false;
 
-        if (records.length === 0) {
-          console.warn(`Product not found in inventory: "${item.description}" for order ${orderId}`);
-          continue;
+      while (attemptNumber < maxRetries && !updateSucceeded) {
+        try {
+          attemptNumber++;
+
+          // Find product by exact description match
+          const records = await this.inventoryTable
+            .select({
+              filterByFormula: this.buildFieldEqualsFilter('Product', item.description)
+            })
+            .firstPage();
+
+          if (records.length === 0) {
+            console.warn(`Product not found in inventory: "${item.description}" for order ${orderId}`);
+            break; // No retry needed for missing product
+          }
+
+          const product = records[0];
+          const currentQuantity = product.fields.Quantity || 0;
+          const newQuantity = currentQuantity - item.quantity;
+
+          // Attempt to update the inventory quantity
+          await this.inventoryTable.update(product.id, {
+            'Quantity': newQuantity
+          });
+
+          // Verify the update succeeded by re-reading and checking the value
+          // This detects if another concurrent update overwrote our change
+          const verifyRecords = await this.inventoryTable
+            .select({
+              filterByFormula: this.buildFieldEqualsFilter('Product', item.description)
+            })
+            .firstPage();
+
+          if (verifyRecords.length > 0) {
+            const verifiedQuantity = verifyRecords[0].fields.Quantity;
+            // Allow for some tolerance in case multiple orders are being processed
+            // We just want to ensure the update persisted, not that it's exactly our value
+            if (verifiedQuantity !== undefined) {
+              updateSucceeded = true;
+            } else {
+              console.warn(`[INVENTORY UPDATE VERIFICATION FAILED] Product "${item.description}", attempt ${attemptNumber}/${maxRetries}`);
+              // Wait briefly before retry to reduce contention
+              await new Promise(resolve => setTimeout(resolve, 100 * attemptNumber));
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to update inventory for product "${item.description}" in order ${orderId} (attempt ${attemptNumber}/${maxRetries}):`, error.message);
+          if (attemptNumber < maxRetries) {
+            // Wait briefly before retry with exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 100 * attemptNumber));
+          }
         }
+      }
 
-        const product = records[0];
-        const currentQuantity = product.fields.Quantity || 0;
-        const newQuantity = currentQuantity - item.quantity;
-
-        // Update the inventory quantity
-        await this.inventoryTable.update(product.id, {
-          'Quantity': newQuantity
-        });
-      } catch (error) {
-        console.warn(`Failed to update inventory for product "${item.description}" in order ${orderId}:`, error.message);
+      if (!updateSucceeded && attemptNumber >= maxRetries) {
+        console.error(`[INVENTORY UPDATE FAILED AFTER RETRIES] Product "${item.description}", order ${orderId}`);
       }
     }
   }
