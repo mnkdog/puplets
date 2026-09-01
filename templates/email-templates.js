@@ -18,10 +18,9 @@ function escapeHtml(text) {
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
-    "'": '&#039;',
-    '/': '&#x2F;'
+    "'": '&#039;'
   };
-  return str.replace(/[&<>"'/]/g, (char) => htmlEscapeMap[char]);
+  return str.replace(/[&<>"']/g, (char) => htmlEscapeMap[char]);
 }
 
 /**
@@ -40,7 +39,7 @@ function formatGreeting(customerName) {
  */
 function formatItemsHtml(items) {
   return items
-    .map(item => `<li style="margin-bottom: 10px;">${escapeHtml(item.description)} (${item.quantity})</li>`)
+    .map(item => `<li style="margin-bottom: 10px;">${escapeHtml(item.description)} (${item.quantity ?? 1})</li>`)
     .join('\n    ');
 }
 
@@ -51,7 +50,7 @@ function formatItemsHtml(items) {
  */
 function formatItemsText(items) {
   return items
-    .map(item => `- ${item.description} (${item.quantity})`)
+    .map(item => `- ${item.description} (${item.quantity ?? 1})`)
     .join('\n');
 }
 
@@ -166,7 +165,7 @@ ${itemsText}
 
 Total: ${formattedTotal}
 
-Free delivery in 3-7 business days
+FREE DELIVERY IN 3-7 BUSINESS DAYS
 
 SHIPPING ADDRESS
 ----------------
@@ -238,7 +237,7 @@ export function generateShopOwnerNotification(orderData, airtableLink) {
   <p style="margin-left: 20px;">${escapeHtml(address)}</p>
 
   <div style="background-color: #f5f5f5; border-left: 4px solid #00AD50; padding: 15px; margin: 30px 0;">
-    <p style="margin: 0;"><strong>View in Airtable:</strong> <a href="${escapeHtml(airtableLink)}" style="color: #00AD50;">${escapeHtml(airtableLink)}</a></p>
+    <p style="margin: 0;"><strong>View in Airtable:</strong> <a href="${airtableLink}" style="color: #00AD50;">${escapeHtml(airtableLink)}</a></p>
   </div>
 
   <p style="margin-top: 40px; color: #777; font-size: 14px;">
@@ -269,7 +268,7 @@ ${itemsText}
 
 Total: ${formattedTotal}
 
-Free delivery in 3-7 business days
+FREE DELIVERY IN 3-7 BUSINESS DAYS
 
 SHIPPING ADDRESS
 ----------------
@@ -309,7 +308,7 @@ export function generateShippingNotification(orderData, trackingUrl) {
   const trackingHtml = trackingUrl
     ? `
   <div style="background-color: #f5f5f5; border-left: 4px solid #00AD50; padding: 15px; margin: 30px 0;">
-    <p style="margin: 0;"><strong>Track your order:</strong> <a href="${escapeHtml(trackingUrl)}" style="color: #00AD50;">${escapeHtml(trackingUrl)}</a></p>
+    <p style="margin: 0;"><strong>Track your order:</strong> <a href="${trackingUrl}" style="color: #00AD50;">${escapeHtml(trackingUrl)}</a></p>
   </div>`
     : `
   <p>Your order has been dispatched and is on its way to you.</p>`;

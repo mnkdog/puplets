@@ -1110,7 +1110,7 @@ describe('generateShippingNotification', () => {
 
       // And subject contains order ID
       expect(result.subject).toContain('PUP-abc123');
-      expect(result.subject).toContain('dispatched');
+      expect(result.subject).toContain('shipped');
 
       // And html contains tracking link (customer receives email with tracking link)
       expect(result.html).toContain('https://track.example.com/PUP-abc123');
@@ -1138,7 +1138,7 @@ describe('generateShippingNotification', () => {
 
       // And subject contains order ID
       expect(result.subject).toContain('PUP-abc123');
-      expect(result.subject).toContain('dispatched');
+      expect(result.subject).toContain('shipped');
 
       // And html states order dispatched (no tracking link shown)
       expect(result.html).toContain('Your order has been dispatched and is on its way to you');
