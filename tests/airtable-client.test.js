@@ -614,12 +614,19 @@ describe('AirtableClient', () => {
         fields: { 'Product': 'Red Leash - Large', 'Quantity': 5 }
       };
 
+      // Mock select for finding products and verification reads
       mockInventoryTable.select
         .mockReturnValueOnce({
           firstPage: vi.fn().mockResolvedValue([mockProduct1])
         })
         .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([{ ...mockProduct1, fields: { ...mockProduct1.fields, 'Quantity': 8 } }])
+        })
+        .mockReturnValueOnce({
           firstPage: vi.fn().mockResolvedValue([mockProduct2])
+        })
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([{ ...mockProduct2, fields: { ...mockProduct2.fields, 'Quantity': 4 } }])
         });
 
       mockInventoryTable.update.mockResolvedValue({});
@@ -710,25 +717,37 @@ describe('AirtableClient', () => {
         fields: { 'Product': 'Red Leash - Large', 'Quantity': 5 }
       };
 
+      // Mock selects for finding products and verification reads
       mockInventoryTable.select
         .mockReturnValueOnce({
           firstPage: vi.fn().mockResolvedValue([mockProduct1])
         })
         .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([mockProduct1])
+        })
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([mockProduct1])
+        })
+        .mockReturnValueOnce({
           firstPage: vi.fn().mockResolvedValue([mockProduct2])
+        })
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([{ ...mockProduct2, fields: { ...mockProduct2.fields, 'Quantity': 4 } }])
         });
 
       mockInventoryTable.update
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockRejectedValueOnce(new Error('Network error'))
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({});
 
       await client.updateInventoryForOrder(lineItems, 'PUP-abc123');
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'Failed to update inventory for product "Blue Waterproof Collar - Medium" in order PUP-abc123:',
+        'Failed to update inventory for product "Blue Waterproof Collar - Medium" in order PUP-abc123 (attempt 1/3):',
         'Network error'
       );
-      expect(mockInventoryTable.update).toHaveBeenCalledTimes(2);
+      expect(mockInventoryTable.update).toHaveBeenCalledTimes(4);
 
       consoleWarnSpy.mockRestore();
     });
@@ -769,16 +788,21 @@ describe('AirtableClient', () => {
         }
       };
 
-      const mockFirstPage = vi.fn().mockResolvedValue([mockProduct]);
-      mockInventoryTable.select.mockReturnValue({
-        firstPage: mockFirstPage
-      });
+      // Mock both the initial select and the verification select
+      mockInventoryTable.select
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([mockProduct])
+        })
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([{ ...mockProduct, fields: { ...mockProduct.fields, 'Quantity': 0 } }])
+        });
       mockInventoryTable.update.mockResolvedValue({});
 
       await client.updateInventoryForOrder(lineItems, 'PUP-abc123');
 
+      // Math.max(0, 0 - 2) = 0 (prevents negative quantities)
       expect(mockInventoryTable.update).toHaveBeenCalledWith('recINV123', {
-        'Quantity': -2
+        'Quantity': 0
       });
     });
 
@@ -794,16 +818,21 @@ describe('AirtableClient', () => {
         }
       };
 
-      const mockFirstPage = vi.fn().mockResolvedValue([mockProduct]);
-      mockInventoryTable.select.mockReturnValue({
-        firstPage: mockFirstPage
-      });
+      // Mock both the initial select and the verification select
+      mockInventoryTable.select
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([mockProduct])
+        })
+        .mockReturnValueOnce({
+          firstPage: vi.fn().mockResolvedValue([{ ...mockProduct, fields: { ...mockProduct.fields, 'Quantity': 0 } }])
+        });
       mockInventoryTable.update.mockResolvedValue({});
 
       await client.updateInventoryForOrder(lineItems, 'PUP-abc123');
 
+      // Undefined Quantity treated as 0: Math.max(0, 0 - 2) = 0
       expect(mockInventoryTable.update).toHaveBeenCalledWith('recINV123', {
-        'Quantity': -2
+        'Quantity': 0
       });
     });
   });
