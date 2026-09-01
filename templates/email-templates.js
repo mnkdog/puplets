@@ -30,7 +30,7 @@ function escapeHtml(text) {
  * @returns {string} Formatted greeting
  */
 function formatGreeting(customerName) {
-  return customerName && customerName.trim() ? `Hi ${customerName.trim()}` : 'Hi';
+  return customerName && customerName.trim() ? `Hi ${customerName.trim()}` : 'Hi there';
 }
 
 /**
@@ -40,7 +40,7 @@ function formatGreeting(customerName) {
  */
 function formatItemsHtml(items) {
   return items
-    .map(item => `<li style="margin-bottom: 10px;">${escapeHtml(item.description)} x ${item.quantity}</li>`)
+    .map(item => `<li style="margin-bottom: 10px;">${escapeHtml(item.description)} (${item.quantity})</li>`)
     .join('\n    ');
 }
 
@@ -51,18 +51,22 @@ function formatItemsHtml(items) {
  */
 function formatItemsText(items) {
   return items
-    .map(item => `- ${item.description} x ${item.quantity}`)
+    .map(item => `- ${item.description} (${item.quantity})`)
     .join('\n');
 }
 
 /**
  * Format total amount as currency
- * @param {number} total - Total amount in pence
+ * @param {number|string} total - Total amount in pounds as number, or already formatted string
  * @returns {string} Formatted currency string (e.g., "£12.99")
  */
 function formatTotal(total) {
-  const pounds = (total / 100).toFixed(2);
-  return `£${pounds}`;
+  // If already formatted as a string, return as-is
+  if (typeof total === 'string') {
+    return total;
+  }
+  // Otherwise format the number as pounds
+  return `£${total.toFixed(2)}`;
 }
 
 /**
@@ -133,6 +137,8 @@ export function generateCustomerConfirmation(orderData) {
 
   <p><strong>Total:</strong> ${escapeHtml(formattedTotal)}</p>
 
+  <p style="color: #00AD50; margin-top: 20px;"><strong>Free delivery in 3-7 business days</strong></p>
+
   <h3 style="color: #333; margin-top: 30px;">Shipping Address:</h3>
   <p style="margin-left: 20px;">${escapeHtml(address)}</p>
 
@@ -159,6 +165,8 @@ Items:
 ${itemsText}
 
 Total: ${formattedTotal}
+
+Free delivery in 3-7 business days
 
 SHIPPING ADDRESS
 ----------------
@@ -224,6 +232,8 @@ export function generateShopOwnerNotification(orderData, airtableLink) {
 
   <p><strong>Total:</strong> ${escapeHtml(formattedTotal)}</p>
 
+  <p style="color: #00AD50; margin-top: 20px;"><strong>Free delivery in 3-7 business days</strong></p>
+
   <h3 style="color: #333; margin-top: 30px;">Shipping Address:</h3>
   <p style="margin-left: 20px;">${escapeHtml(address)}</p>
 
@@ -258,6 +268,8 @@ Items Ordered:
 ${itemsText}
 
 Total: ${formattedTotal}
+
+Free delivery in 3-7 business days
 
 SHIPPING ADDRESS
 ----------------
@@ -320,7 +332,7 @@ Your order has been dispatched and is on its way to you.`;
   <title>Order Dispatched</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <h1 style="color: #00AD50; border-bottom: 2px solid #00AD50; padding-bottom: 10px;">Your Order Has Shipped!</h1>
+  <h1 style="color: #00AD50; border-bottom: 2px solid #00AD50; padding-bottom: 10px;">Your Order Has Been Dispatched!</h1>
 
   <p>${escapeHtml(greeting)},</p>
 
@@ -336,7 +348,7 @@ Your order has been dispatched and is on its way to you.`;
   `.trim();
 
   const text = `
-Your Order Has Shipped!
+Your Order Has Been Dispatched!
 
 ${greeting},
 
