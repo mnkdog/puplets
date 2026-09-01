@@ -89,16 +89,17 @@ function extractCustomerEmail(session) {
  * Transform Stripe session to Airtable order format
  * @param {object} session - Stripe checkout session object
  * @param {string} orderId - Generated order ID (PUP-{last-8-chars})
+ * @param {object} lineItems - Fetched Stripe line items (from listLineItems)
  * @returns {object} Order data formatted for AirtableClient.createOrder()
  */
-function transformSessionToOrder(session, orderId) {
+function transformSessionToOrder(session, orderId, lineItems) {
   return {
     orderId,
     sessionId: session.id,
     customerEmail: extractCustomerEmail(session),
     customerName: session.customer_details?.name || '',
     shippingAddress: formatShippingAddress(session.shipping),
-    items: transformLineItems(session.line_items),
+    items: transformLineItems(lineItems),
     total: session.amount_total / CENTS_TO_POUNDS
   };
 }
@@ -290,8 +291,18 @@ const webhookHandler = async (req, res) => {
       return res.status(200).json({ received: true });
     }
 
+    // Fetch line items - Stripe does not expand line_items in webhook payloads
+    // Must be fetched explicitly via API
+    let lineItems;
+    try {
+      lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
+    } catch (err) {
+      console.error('[LINE ITEMS FETCH FAILED]', 'Session:', session.id, 'Error:', err.message);
+      return res.status(500).json({ error: 'Failed to fetch order line items' });
+    }
+
     // Transform order data before atomic create operation
-    const orderData = transformSessionToOrder(session, orderId);
+    const orderData = transformSessionToOrder(session, orderId, lineItems);
 
     // Check for existing order (idempotency) - separate try-catch to preserve error tagging
     let existingOrder;
@@ -339,10 +350,11 @@ const webhookHandler = async (req, res) => {
           }
         }
 
-        // If we deleted our own record, use the kept record for subsequent operations
+        // If we deleted our own record, skip downstream side effects (emails, inventory)
+        // The webhook that kept its record is the sole sender of notifications
         if (deleteRecords.some(r => r.id === airtableRecord.id)) {
-          airtableRecord = keepRecord;
-          console.log('[USING CONCURRENT RECORD]', 'Session:', session.id, '- our record was newer, using', keepRecord.id);
+          console.log('[USING CONCURRENT RECORD]', 'Session:', session.id, '- our record was newer, skipping side effects');
+          return res.status(200).json({ received: true });
         }
       }
     } catch (err) {
@@ -393,7 +405,7 @@ const webhookHandler = async (req, res) => {
     );
 
     // Update inventory for order items (non-fatal)
-    const inventoryLineItems = session.line_items?.data?.map(item => ({
+    const inventoryLineItems = lineItems?.data?.map(item => ({
       description: item.description,
       quantity: item.quantity
     })) || [];

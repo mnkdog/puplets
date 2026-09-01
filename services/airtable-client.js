@@ -150,7 +150,7 @@ export class AirtableClient {
 
   /**
    * Update inventory quantities for order line items with retry logic
-   * Implements optimistic locking to handle concurrent updates
+   * Retries converge on a target quantity computed once, preventing re-application
    * @param {Array} lineItems - Array of line items [{description, quantity}]
    * @param {string} orderId - Order ID for logging purposes
    * @returns {Promise<void>}
@@ -161,6 +161,8 @@ export class AirtableClient {
       const maxRetries = 3;
       let attemptNumber = 0;
       let updateSucceeded = false;
+      let targetQuantity = null;
+      let productId = null;
 
       while (attemptNumber < maxRetries && !updateSucceeded) {
         try {
@@ -179,15 +181,21 @@ export class AirtableClient {
           }
 
           const product = records[0];
-          const currentQuantity = product.fields.Quantity || 0;
-          const newQuantity = currentQuantity - item.quantity;
+          productId = product.id;
+
+          // Calculate target quantity once on first attempt, then reuse for retries
+          // This prevents re-applying the decrement on retry
+          if (targetQuantity === null) {
+            const currentQuantity = product.fields.Quantity || 0;
+            targetQuantity = Math.max(0, currentQuantity - item.quantity);
+          }
 
           // Attempt to update the inventory quantity
-          await this.inventoryTable.update(product.id, {
-            'Quantity': newQuantity
+          await this.inventoryTable.update(productId, {
+            'Quantity': targetQuantity
           });
 
-          // Verify the update succeeded by re-reading and checking the value
+          // Verify the update succeeded by checking the written value matches our target
           // This detects if another concurrent update overwrote our change
           const verifyRecords = await this.inventoryTable
             .select({
@@ -197,15 +205,20 @@ export class AirtableClient {
 
           if (verifyRecords.length > 0) {
             const verifiedQuantity = verifyRecords[0].fields.Quantity;
-            // Allow for some tolerance in case multiple orders are being processed
-            // We just want to ensure the update persisted, not that it's exactly our value
-            if (verifiedQuantity !== undefined) {
+            // Verify the written value matches what we intended
+            if (verifiedQuantity === targetQuantity) {
               updateSucceeded = true;
             } else {
-              console.warn(`[INVENTORY UPDATE VERIFICATION FAILED] Product "${item.description}", attempt ${attemptNumber}/${maxRetries}`);
+              console.warn(`[INVENTORY UPDATE VERIFICATION FAILED] Product "${item.description}", expected ${targetQuantity}, got ${verifiedQuantity}, attempt ${attemptNumber}/${maxRetries}`);
+              // Concurrent update detected - recalculate target for next retry
+              targetQuantity = null;
               // Wait briefly before retry to reduce contention
               await new Promise(resolve => setTimeout(resolve, 100 * attemptNumber));
             }
+          } else {
+            console.warn(`[INVENTORY VERIFY READ FAILED] Product "${item.description}", attempt ${attemptNumber}/${maxRetries}`);
+            // Wait briefly before retry
+            await new Promise(resolve => setTimeout(resolve, 100 * attemptNumber));
           }
         } catch (error) {
           console.warn(`Failed to update inventory for product "${item.description}" in order ${orderId} (attempt ${attemptNumber}/${maxRetries}):`, error.message);

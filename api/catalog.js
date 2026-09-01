@@ -1,17 +1,28 @@
-// Product catalog - single source of truth for pricing
-// This file is the authoritative price source for the checkout API
+// Product catalog - loads from products.json to ensure price consistency
+// Both the storefront and checkout API use the same price source
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load products from the same JSON file the storefront uses
+const productsPath = join(__dirname, '../src/config/products.json');
+const productsData = JSON.parse(readFileSync(productsPath, 'utf-8'));
+
+// Transform to the CATALOG format expected by pricing functions
 export const CATALOG = {
   collar: {
-    basePrice: 17.99,
-    sizes: {
-      xs: 17.99,
-      s: 17.99,
-      m: 20.99
-    }
+    basePrice: productsData.collar.basePrice,
+    sizes: productsData.collar.sizes.reduce((acc, size) => {
+      acc[size.size] = size.price;
+      return acc;
+    }, {})
   },
   charm: {
-    price: 3.99
+    price: productsData.charms.price
   }
 };
 

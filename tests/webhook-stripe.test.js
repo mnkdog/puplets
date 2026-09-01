@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock Stripe webhooks, AirtableClient, email templates, and email client using vi.hoisted to ensure proper initialization
-const { mockWebhooks, mockCreateOrder, mockFindOrderBySessionId, mockFindAllOrdersBySessionId, mockDeleteOrder, mockUpdateInventoryForOrder, mockGenerateCustomerConfirmation, mockGenerateShopOwnerNotification, mockGenerateShopOwnerErrorNotification, mockSendCustomerConfirmation, mockSendShopOwnerNotification } = vi.hoisted(() => {
+const { mockWebhooks, mockListLineItems, mockCreateOrder, mockFindOrderBySessionId, mockFindAllOrdersBySessionId, mockDeleteOrder, mockUpdateInventoryForOrder, mockGenerateCustomerConfirmation, mockGenerateShopOwnerNotification, mockGenerateShopOwnerErrorNotification, mockSendCustomerConfirmation, mockSendShopOwnerNotification } = vi.hoisted(() => {
   return {
     mockWebhooks: {
       constructEvent: vi.fn()
     },
+    mockListLineItems: vi.fn(),
     mockCreateOrder: vi.fn(),
     mockFindOrderBySessionId: vi.fn(),
     mockFindAllOrdersBySessionId: vi.fn(),
@@ -24,6 +25,11 @@ vi.mock('stripe', () => {
     default: class MockStripe {
       constructor() {
         this.webhooks = mockWebhooks;
+        this.checkout = {
+          sessions: {
+            listLineItems: mockListLineItems
+          }
+        };
       }
     }
   };
@@ -70,6 +76,7 @@ describe('Stripe Webhook Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockWebhooks.constructEvent.mockReset();
+    mockListLineItems.mockReset();
     mockCreateOrder.mockReset();
     mockFindOrderBySessionId.mockReset();
     mockFindAllOrdersBySessionId.mockReset();
@@ -83,6 +90,10 @@ describe('Stripe Webhook Handler', () => {
 
     // Set default mock return values
     mockFindAllOrdersBySessionId.mockResolvedValue([]);
+
+    // Mock listLineItems to return empty line items by default
+    // Individual tests can override this with actual line items
+    mockListLineItems.mockResolvedValue({ data: [] });
 
     mockGenerateCustomerConfirmation.mockReturnValue({
       subject: 'Order Confirmation - Puplets Order PUP-test123',
@@ -857,6 +868,20 @@ describe('Stripe Webhook Handler', () => {
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
       mockFindOrderBySessionId.mockResolvedValue(null);
+
+      // Mock listLineItems to return the line items from the session
+      mockListLineItems.mockResolvedValue({
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: {
+              unit_amount: 1999
+            }
+          }
+        ]
+      });
+
       mockCreateOrder.mockResolvedValue({
         id: 'recABC123',
         fields: { 'Order ID': 'PUP-e5f6g7h8' }
