@@ -1257,4 +1257,103 @@ describe('formatTotal helper', () => {
       expect(result.text).toContain('£19.99');
     });
   });
+
+  describe('HTML Escaping (XSS Prevention)', () => {
+    it('escapes script tags in customer name in HTML output', () => {
+      const orderData = {
+        orderId: 'PUP-test123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: 19.99,
+        address: '123 Main St',
+        customerName: '<script>alert(1)</script>'
+      };
+
+      const result = generateCustomerConfirmation(orderData);
+
+      // HTML output should have escaped script tags
+      expect(result.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(result.html).not.toContain('<script>alert(1)</script>');
+
+      // Plain text output should have raw value (no HTML escaping needed)
+      expect(result.text).toContain('<script>alert(1)</script>');
+    });
+
+    it('escapes HTML special characters in order ID', () => {
+      const orderData = {
+        orderId: 'PUP-test<>&"\'"',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: 19.99,
+        address: '123 Main St',
+        customerName: 'Test User'
+      };
+
+      const result = generateCustomerConfirmation(orderData);
+
+      expect(result.html).toContain('&lt;');
+      expect(result.html).toContain('&gt;');
+      expect(result.html).toContain('&amp;');
+      expect(result.html).toContain('&quot;');
+      expect(result.html).toContain('&#039;');
+    });
+
+    it('escapes malicious input in item description', () => {
+      const orderData = {
+        orderId: 'PUP-test123',
+        items: [{ description: '<img src=x onerror=alert(1)>', quantity: 1 }],
+        total: 19.99,
+        address: '123 Main St',
+        customerName: 'Test User'
+      };
+
+      const result = generateCustomerConfirmation(orderData);
+
+      expect(result.html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+      expect(result.html).not.toContain('<img src=x onerror=alert(1)>');
+    });
+
+    it('escapes malicious input in shipping address', () => {
+      const orderData = {
+        orderId: 'PUP-test123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: 19.99,
+        address: '<script>document.location="http://evil.com"</script>',
+        customerName: 'Test User'
+      };
+
+      const result = generateCustomerConfirmation(orderData);
+
+      expect(result.html).toContain('&lt;script&gt;');
+      expect(result.html).not.toContain('<script>document.location');
+    });
+
+    it('escapes malicious input in tracking URL', () => {
+      const orderData = {
+        orderId: 'PUP-test123',
+        customerName: 'Test User'
+      };
+      const trackingUrl = 'https://track.example.com?id=1&param=<script>alert(1)</script>';
+
+      const result = generateShippingNotification(orderData, trackingUrl);
+
+      // Ampersand should be escaped in HTML href attribute
+      expect(result.html).toContain('&amp;');
+      expect(result.html).toContain('&lt;script&gt;');
+    });
+
+    it('handles non-string values safely in escapeHtml', () => {
+      const orderData = {
+        orderId: 'PUP-test123',
+        items: [{ description: 'Test Item', quantity: 1 }],
+        total: 19.99,
+        address: '123 Main St',
+        customerName: null
+      };
+
+      // Should not throw error with null customer name
+      const result = generateCustomerConfirmation(orderData);
+
+      expect(result.html).toBeDefined();
+      expect(result.text).toBeDefined();
+    });
+  });
 });

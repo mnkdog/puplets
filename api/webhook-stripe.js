@@ -283,6 +283,13 @@ const webhookHandler = async (req, res) => {
 
     console.log('Checkout session completed:', session.id, '→ Order ID:', orderId);
 
+    // Check payment status before creating order
+    // Stripe emits checkout.session.completed for unpaid sessions (delayed payment methods)
+    if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
+      console.log('Session not paid, deferring:', session.id, 'payment_status:', session.payment_status);
+      return res.status(200).json({ received: true });
+    }
+
     // Check for existing order (idempotency)
     let existingOrder;
     try {

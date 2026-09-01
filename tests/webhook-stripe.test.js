@@ -278,6 +278,111 @@ describe('Stripe Webhook Handler', () => {
     });
   });
 
+  describe('Payment Status Validation', () => {
+    it('defers order creation when payment_status is unpaid', async () => {
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      req.headers['stripe-signature'] = 'valid_signature';
+      const sessionData = {
+        id: 'cs_test_unpaid123',
+        payment_status: 'unpaid',
+        customer_details: { email: 'test@example.com', name: 'Test User' }
+      };
+      req.body = {
+        type: 'checkout.session.completed',
+        data: { object: sessionData }
+      };
+
+      // Mock Stripe webhook signature verification
+      mockWebhooks.constructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: { object: sessionData }
+      });
+
+      await webhookHandler(req, res);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Session not paid, deferring:',
+        'cs_test_unpaid123',
+        'payment_status:',
+        'unpaid'
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+      expect(mockCreateOrder).not.toHaveBeenCalled();
+
+      consoleLogSpy.mockRestore();
+    });
+
+    it('creates order when payment_status is paid', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      const sessionData = {
+        id: 'cs_test_paid123',
+        payment_status: 'paid',
+        customer_details: { email: 'test@example.com', name: 'Test User' },
+        amount_total: 1999,
+        shipping: {
+          address: {
+            line1: '123 Main St',
+            city: 'London',
+            postal_code: 'SW1A 1AA',
+            country: 'GB'
+          }
+        },
+        line_items: { data: [] }
+      };
+      req.body = {
+        type: 'checkout.session.completed',
+        data: { object: sessionData }
+      };
+
+      // Mock Stripe webhook signature verification
+      mockWebhooks.constructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: { object: sessionData }
+      });
+
+      await webhookHandler(req, res);
+
+      expect(mockCreateOrder).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('creates order when payment_status is no_payment_required', async () => {
+      req.headers['stripe-signature'] = 'valid_signature';
+      const sessionData = {
+        id: 'cs_test_no_payment123',
+        payment_status: 'no_payment_required',
+        customer_details: { email: 'test@example.com', name: 'Test User' },
+        amount_total: 0,
+        shipping: {
+          address: {
+            line1: '123 Main St',
+            city: 'London',
+            postal_code: 'SW1A 1AA',
+            country: 'GB'
+          }
+        },
+        line_items: { data: [] }
+      };
+      req.body = {
+        type: 'checkout.session.completed',
+        data: { object: sessionData }
+      };
+
+      // Mock Stripe webhook signature verification
+      mockWebhooks.constructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: { object: sessionData }
+      });
+
+      await webhookHandler(req, res);
+
+      expect(mockCreateOrder).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
   describe('Order ID Generation', () => {
     it('generates order ID in format PUP-{last-8-chars} from Stripe session ID', async () => {
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -374,6 +479,7 @@ describe('Stripe Webhook Handler', () => {
 
       const stripeSession = {
         id: 'cs_test_a1b2c3d4e5f6g7h8',
+        payment_status: 'paid',
         customer_email: 'customer@example.com',
         customer_details: {
           name: 'Jane Smith',
@@ -427,6 +533,7 @@ describe('Stripe Webhook Handler', () => {
 
       const stripeSession = {
         id: 'cs_test_123',
+        payment_status: 'paid',
         amount_total: 2550,  // £25.50
         customer_email: 'test@example.com',
         line_items: { data: [] }
@@ -442,6 +549,7 @@ describe('Stripe Webhook Handler', () => {
 
       const stripeSession = {
         id: 'cs_test_123',
+        payment_status: 'paid',
         amount_total: 1000,
         customer_email: 'test@example.com',
         shipping: {
@@ -466,6 +574,7 @@ describe('Stripe Webhook Handler', () => {
 
       const stripeSession = {
         id: 'cs_test_123',
+        payment_status: 'paid',
         amount_total: 1000,
         customer_email: 'test@example.com',
         shipping: {
@@ -489,6 +598,7 @@ describe('Stripe Webhook Handler', () => {
 
       const stripeSession = {
         id: 'cs_test_123',
+        payment_status: 'paid',
         amount_total: 1000,
         customer_email: 'test@example.com',
         line_items: { data: [] }
@@ -504,6 +614,7 @@ describe('Stripe Webhook Handler', () => {
 
       const stripeSession = {
         id: 'cs_test_123',
+        payment_status: 'paid',
         amount_total: 3998,
         customer_email: 'test@example.com',
         line_items: {
@@ -535,6 +646,7 @@ describe('Stripe Webhook Handler', () => {
 
       const stripeSession = {
         id: 'cs_test_123',
+        payment_status: 'paid',
         amount_total: 1000,
         customer_email: 'test@example.com'
       };
@@ -549,6 +661,7 @@ describe('Stripe Webhook Handler', () => {
 
       const stripeSession = {
         id: 'cs_test_123',
+        payment_status: 'paid',
         amount_total: 1000,
         customer_details: {
           email: 'fallback@example.com',
@@ -567,6 +680,7 @@ describe('Stripe Webhook Handler', () => {
 
       const stripeSession = {
         id: 'cs_test_123',
+        payment_status: 'paid',
         amount_total: 1000,
         customer_email: 'test@example.com',
         line_items: { data: [] }
@@ -588,6 +702,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_a1b2c3d4e5f6g7h8',
+            payment_status: 'paid',
             customer_email: 'customer@example.com',
             amount_total: 1999,
             line_items: { data: [] }
@@ -626,6 +741,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_new123',
+            payment_status: 'paid',
             customer_email: 'new@example.com',
             amount_total: 1000,
             line_items: { data: [] }
@@ -657,6 +773,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_error123',
+            payment_status: 'paid',
             customer_email: 'error@example.com',
             amount_total: 1000,
             line_items: { data: [] }
@@ -690,6 +807,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_a1b2c3d4e5f6g7h8',
+            payment_status: 'paid',
             customer_email: 'customer@example.com',
             customer_details: {
               name: 'Jane Smith',
@@ -755,6 +873,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_fail123',
+            payment_status: 'paid',
             customer_email: 'fail@example.com',
             amount_total: 1000,
             line_items: { data: [] }
@@ -790,6 +909,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_a1b2c3d4e5f6g7h8',
+            payment_status: 'paid',
             customer_email: 'customer@example.com',
             customer_details: {
               name: 'Jane Smith',
@@ -871,6 +991,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_a1b2c3d4e5f6g7h8',
+            payment_status: 'paid',
             customer_email: 'customer@example.com',
             customer_details: {
               name: 'Jane Smith',
@@ -937,6 +1058,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_email_fail',
+            payment_status: 'paid',
             customer_email: 'fail@example.com',
             amount_total: 1999,
             line_items: {
@@ -1013,6 +1135,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_a1b2c3d4e5f6g7h8',
+            payment_status: 'paid',
             customer_email: 'customer@example.com',
             customer_details: {
               name: 'Jane Smith',
@@ -1101,6 +1224,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_a1b2c3d4e5f6g7h8',
+            payment_status: 'paid',
             customer_email: 'customer@example.com',
             customer_details: {
               name: 'Jane Smith',
@@ -1176,6 +1300,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_shop_owner_fail',
+            payment_status: 'paid',
             customer_email: 'customer@example.com',
             amount_total: 1999,
             line_items: {
@@ -1263,6 +1388,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_inventory123',
+            payment_status: 'paid',
             customer_email: 'test@example.com',
             amount_total: 3998,
             line_items: {
@@ -1311,6 +1437,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_multi_item',
+            payment_status: 'paid',
             customer_email: 'test@example.com',
             amount_total: 5797,
             line_items: {
@@ -1361,6 +1488,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_inventory_fail',
+            payment_status: 'paid',
             customer_email: 'test@example.com',
             amount_total: 1999,
             line_items: {
@@ -1406,6 +1534,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_no_items',
+            payment_status: 'paid',
             customer_email: 'test@example.com',
             amount_total: 0
           }
@@ -1435,6 +1564,7 @@ describe('Stripe Webhook Handler', () => {
         data: {
           object: {
             id: 'cs_test_missing_inventory',
+            payment_status: 'paid',
             customer_email: 'test@example.com',
             amount_total: 2499,
             line_items: {

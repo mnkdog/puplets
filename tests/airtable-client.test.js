@@ -187,14 +187,16 @@ describe('AirtableClient', () => {
     });
 
     it('creates Created timestamp', async () => {
+      // Use fake timers to make test deterministic
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-15T10:30:00.000Z'));
+
       const orderData = {
         orderId: 'PUP-abc123',
         sessionId: 'cs_test_xyz789',
         customerEmail: 'customer@example.com',
         total: 19.99
       };
-
-      const beforeCreate = new Date().toISOString();
 
       mockOrdersTable.create.mockResolvedValue([{
         id: 'recTIME',
@@ -204,12 +206,11 @@ describe('AirtableClient', () => {
       await client.createOrder(orderData);
 
       const callArgs = mockOrdersTable.create.mock.calls[0][0][0].fields;
-      const afterCreate = new Date().toISOString();
 
       expect(callArgs['Created']).toBeDefined();
-      expect(callArgs['Created']).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
-      expect(callArgs['Created'] >= beforeCreate).toBe(true);
-      expect(callArgs['Created'] <= afterCreate).toBe(true);
+      expect(callArgs['Created']).toBe('2026-01-15T10:30:00.000Z');
+
+      vi.useRealTimers();
     });
   });
 
