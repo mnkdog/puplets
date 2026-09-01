@@ -92,8 +92,11 @@ export class AirtableClient {
    * @returns {string} Filter formula
    */
   buildFieldEqualsFilter(fieldName, value) {
-    // Escape single quotes to prevent formula injection
-    const escapedValue = value.replace(/'/g, "\\'");
+    // Escape backslashes FIRST, then single quotes to prevent formula injection
+    // Order matters: escaping quotes before backslashes would allow \' to defeat the escape
+    const escapedValue = String(value)
+      .replace(/\\/g, '\\\\')  // Backslashes first
+      .replace(/'/g, "\\'");   // Then quotes
     return `{${fieldName}} = '${escapedValue}'`;
   }
 
