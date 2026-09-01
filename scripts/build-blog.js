@@ -161,8 +161,7 @@ function generatePostHTML(frontmatter, body, slug) {
     ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'a', 'img', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre'],
     ALLOWED_ATTR: ['href', 'src', 'alt', 'title'],
     ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):)/i,
-    ALLOW_DATA_ATTR: false,
-    USE_PROFILES: { html: true }
+    ALLOW_DATA_ATTR: false
   });
 
   return `<!DOCTYPE html>
