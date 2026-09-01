@@ -18,7 +18,7 @@ function escapeHtml(text) {
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
-    "'": '&#x27;',
+    "'": '&#039;',
     '/': '&#x2F;'
   };
   return str.replace(/[&<>"'/]/g, (char) => htmlEscapeMap[char]);
