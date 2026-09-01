@@ -24,8 +24,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "airtable": "^0.12.2",
     "dompurify": "^3.4.13",
     "marked": "^18.0.9",
+    "resend": "^6.25.0",
     "stripe": "^17.5.0"
   },
   "devDependencies": {

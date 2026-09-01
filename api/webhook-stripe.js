@@ -1,0 +1,431 @@
+// Stripe Webhook Handler
+// Processes checkout.session.completed events and captures orders in Airtable
+//
+// SECURITY: Stripe signature verification is mandatory
+// See: https://stripe.com/docs/webhooks/signatures
+
+import Stripe from 'stripe';
+import { AirtableClient } from '../services/airtable-client.js';
+import { generateCustomerConfirmation, generateShopOwnerNotification, generateShopOwnerErrorNotification } from '../templates/email-templates.js';
+import { createEmailClient } from '../services/email-client.js';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const airtableClient = new AirtableClient(
+  process.env.AIRTABLE_API_KEY,
+  process.env.AIRTABLE_BASE_ID
+);
+const emailClient = createEmailClient();
+
+/**
+ * Verify Stripe webhook signature
+ * @param {string} payload - Raw request body as string
+ * @param {string} signature - Stripe-Signature header value
+ * @param {string} secret - STRIPE_WEBHOOK_SECRET environment variable
+ * @returns {object} Parsed event object
+ * @throws {Error} If signature is invalid
+ */
+function verifyWebhookSignature(payload, signature, secret) {
+  if (!secret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
+  }
+
+  if (!signature) {
+    throw new Error('Missing Stripe signature header');
+  }
+
+  try {
+    return stripe.webhooks.constructEvent(payload, signature, secret);
+  } catch (err) {
+    throw new Error(`Webhook signature verification failed: ${err.message}`);
+  }
+}
+
+// Currency conversion constant
+const CENTS_TO_POUNDS = 100;
+
+/**
+ * Format Stripe shipping address to comma-separated string
+ * @param {object} shipping - Stripe shipping object
+ * @returns {string} Formatted address or empty string
+ */
+function formatShippingAddress(shipping) {
+  if (!shipping?.address) {
+    return '';
+  }
+
+  const { line1, line2, city, postal_code, country } = shipping.address;
+  return [line1, line2, city, postal_code, country]
+    .filter(Boolean)
+    .join(', ');
+}
+
+/**
+ * Transform Stripe line items to simplified format
+ * @param {object} lineItems - Stripe line_items object
+ * @returns {Array} Simplified line items array
+ */
+function transformLineItems(lineItems) {
+  if (!lineItems?.data) {
+    return [];
+  }
+
+  return lineItems.data.map(item => ({
+    description: item.description,
+    quantity: item.quantity,
+    price: item.price.unit_amount
+  }));
+}
+
+/**
+ * Extract customer email with fallback
+ * @param {object} session - Stripe session object
+ * @returns {string} Customer email or empty string
+ */
+function extractCustomerEmail(session) {
+  return session.customer_email || session.customer_details?.email || '';
+}
+
+/**
+ * Transform Stripe session to Airtable order format
+ * @param {object} session - Stripe checkout session object
+ * @param {string} orderId - Generated order ID (PUP-{last-8-chars})
+ * @param {object} lineItems - Fetched Stripe line items (from listLineItems)
+ * @returns {object} Order data formatted for AirtableClient.createOrder()
+ */
+function transformSessionToOrder(session, orderId, lineItems) {
+  return {
+    orderId,
+    sessionId: session.id,
+    customerEmail: extractCustomerEmail(session),
+    customerName: session.customer_details?.name || '',
+    shippingAddress: formatShippingAddress(session.shipping),
+    items: transformLineItems(lineItems),
+    total: session.amount_total / CENTS_TO_POUNDS
+  };
+}
+
+/**
+ * Transform order data to email template format
+ * @param {object} orderData - Order data from transformSessionToOrder
+ * @returns {object} Email order data for generateCustomerConfirmation
+ */
+function transformOrderDataForEmail(orderData) {
+  return {
+    orderId: orderData.orderId,
+    items: orderData.items,
+    total: orderData.total,
+    address: orderData.shippingAddress,
+    customerName: orderData.customerName
+  };
+}
+
+/**
+ * Transform order data to shop owner email format
+ * @param {object} orderData - Order data from transformSessionToOrder
+ * @returns {object} Email order data for generateShopOwnerNotification
+ */
+function transformOrderDataForShopOwner(orderData) {
+  return {
+    ...transformOrderDataForEmail(orderData),
+    customerEmail: orderData.customerEmail
+  };
+}
+
+/**
+ * Log error and return 500 response
+ * @param {object} res - Express response object
+ * @param {string} sessionId - Stripe session ID for correlation
+ * @param {string} errorTag - Error classification tag for logging (e.g., 'IDEMPOTENCY CHECK FAILED')
+ * @param {Error} error - The error object
+ * @param {string} clientMessage - User-facing error message
+ * @returns {object} Express response with 500 status
+ */
+function handleAirtableError(res, sessionId, errorTag, error, clientMessage) {
+  console.error(`[${errorTag}]`, 'Session:', sessionId, 'Error:', error.message);
+  return res.status(500).json({ error: clientMessage });
+}
+
+/**
+ * Log non-blocking warning for operational issues that don't prevent order completion
+ * @param {string} warningTag - Warning classification tag for logging (e.g., 'INVENTORY UPDATE FAILED')
+ * @param {string} orderId - Order ID for correlation
+ * @param {Error} error - The error object
+ */
+function logWarning(warningTag, orderId, error) {
+  console.warn(`[${warningTag}]`, 'Order:', orderId, 'Error:', error.message);
+}
+
+/**
+ * Run a non-fatal operation (logs warning on failure but doesn't throw)
+ * @param {Function} operation - Async function to execute
+ * @param {string} warningTag - Warning classification tag for logging
+ * @param {string} orderId - Order ID for correlation
+ * @returns {Promise<void>}
+ */
+async function runNonFatalOperation(operation, warningTag, orderId) {
+  try {
+    await operation();
+  } catch (err) {
+    logWarning(warningTag, orderId, err);
+  }
+}
+
+/**
+ * Generic email sending helper - logs subject and sends email
+ * @param {string} recipientEmail - Recipient email address
+ * @param {object} emailData - Email data with subject, html, text
+ * @param {Function} sendFn - Email client send function to call
+ * @param {string} logPrefix - Prefix for console log
+ * @returns {Promise<void>}
+ */
+async function sendEmail(recipientEmail, emailData, sendFn, logPrefix) {
+  console.log(logPrefix, emailData.subject);
+  await sendFn(recipientEmail, emailData.subject, emailData.html, emailData.text);
+}
+
+/**
+ * Send customer confirmation email
+ * @param {object} orderData - Order data from transformSessionToOrder
+ * @returns {Promise<void>}
+ */
+async function sendCustomerEmail(orderData) {
+  const emailOrderData = transformOrderDataForEmail(orderData);
+  const emailData = generateCustomerConfirmation(emailOrderData);
+
+  await sendEmail(
+    orderData.customerEmail,
+    emailData,
+    emailClient.sendCustomerConfirmation.bind(emailClient),
+    'Customer confirmation email generated:'
+  );
+}
+
+/**
+ * Construct Airtable record link
+ * @param {string} recordId - Airtable record ID
+ * @returns {string} Clickable Airtable link
+ */
+function constructAirtableLink(recordId) {
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  return `https://airtable.com/${baseId}/Orders/${recordId}`;
+}
+
+/**
+ * Send shop owner notification email
+ * @param {object} orderData - Order data from transformSessionToOrder
+ * @param {string} airtableRecordId - Airtable record ID
+ * @returns {Promise<void>}
+ */
+async function sendShopOwnerEmail(orderData, airtableRecordId) {
+  const airtableLink = constructAirtableLink(airtableRecordId);
+  const shopOwnerData = transformOrderDataForShopOwner(orderData);
+  const emailData = generateShopOwnerNotification(shopOwnerData, airtableLink);
+
+  await sendEmail(
+    process.env.SHOP_OWNER_EMAIL,
+    emailData,
+    emailClient.sendShopOwnerNotification.bind(emailClient),
+    'Shop owner notification email generated:'
+  );
+}
+
+/**
+ * Check if order already exists for given session (idempotency check)
+ * @param {AirtableClient} client - Airtable client instance
+ * @param {string} sessionId - Stripe session ID
+ * @returns {Promise<object|null>} Existing order record or null if not found
+ * @throws {Error} If Airtable query fails
+ */
+async function checkExistingOrder(client, sessionId) {
+  try {
+    return await client.findOrderBySessionId(sessionId);
+  } catch (err) {
+    throw new Error(`Failed to check for existing order: ${err.message}`);
+  }
+}
+
+/**
+ * Read raw body from request stream
+ * @param {object} req - Request object
+ * @returns {Promise<Buffer>} Raw body buffer
+ */
+async function getRawBody(req) {
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+const webhookHandler = async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const signature = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+  try {
+    // Read raw body for signature verification - must be the EXACT bytes Stripe sent
+    const rawBody = await getRawBody(req);
+    const payload = rawBody.toString('utf8');
+
+    event = verifyWebhookSignature(payload, signature, webhookSecret);
+  } catch (err) {
+    console.error('[WEBHOOK AUTH FAILURE]', err.message);
+    return res.status(401).json({ error: 'Webhook signature verification failed' });
+  }
+
+  // Only process checkout.session.completed events for now
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const orderId = `PUP-${session.id.slice(-8)}`;
+
+    console.log('Checkout session completed:', session.id, '→ Order ID:', orderId);
+
+    // Check payment status before creating order
+    // Stripe emits checkout.session.completed for unpaid sessions (delayed payment methods)
+    if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
+      console.log('Session not paid, deferring:', session.id, 'payment_status:', session.payment_status);
+      return res.status(200).json({ received: true });
+    }
+
+    // Fetch line items - Stripe does not expand line_items in webhook payloads
+    // Must be fetched explicitly via API
+    let lineItems;
+    try {
+      lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
+    } catch (err) {
+      console.error('[LINE ITEMS FETCH FAILED]', 'Session:', session.id, 'Error:', err.message);
+      return res.status(500).json({ error: 'Failed to fetch order line items' });
+    }
+
+    // Transform order data before atomic create operation
+    const orderData = transformSessionToOrder(session, orderId, lineItems);
+
+    // Check for existing order (idempotency) - separate try-catch to preserve error tagging
+    let existingOrder;
+    try {
+      existingOrder = await checkExistingOrder(airtableClient, session.id);
+    } catch (err) {
+      return handleAirtableError(res, session.id, 'IDEMPOTENCY CHECK FAILED', err, 'Failed to check for existing order');
+    }
+
+    if (existingOrder) {
+      console.log('Duplicate webhook for session:', session.id, '- order already exists:', existingOrder.fields['Order ID']);
+      return res.status(200).json({ received: true });
+    }
+
+    // Atomic create-or-skip pattern to prevent race conditions
+    // Attempt to create order, then verify no duplicate was created concurrently
+    let airtableRecord;
+    try {
+      // Create the order
+      airtableRecord = await airtableClient.createOrder(orderData);
+
+      // Immediately verify no concurrent duplicate was created (race condition check)
+      // Query for ALL records with this session ID
+      const allRecordsWithSession = await airtableClient.findAllOrdersBySessionId(session.id);
+
+      if (allRecordsWithSession.length > 1) {
+        // Race condition detected - multiple webhooks created orders concurrently
+        // Keep the oldest record (earliest Created timestamp), delete the others
+        const sortedRecords = allRecordsWithSession.sort((a, b) =>
+          new Date(a.fields.Created) - new Date(b.fields.Created)
+        );
+
+        const keepRecord = sortedRecords[0];
+        const deleteRecords = sortedRecords.slice(1);
+
+        console.log('[RACE CONDITION DETECTED]', 'Session:', session.id,
+          '- keeping record', keepRecord.id, ', deleting', deleteRecords.length, 'duplicate(s)');
+
+        // Delete duplicate records (including ours if it's not the oldest)
+        for (const record of deleteRecords) {
+          try {
+            await airtableClient.deleteOrder(record.id);
+          } catch (deleteErr) {
+            console.warn('[DUPLICATE DELETE FAILED]', 'Record:', record.id, 'Error:', deleteErr.message);
+          }
+        }
+
+        // If we deleted our own record, skip downstream side effects (emails, inventory)
+        // The webhook that kept its record is the sole sender of notifications
+        if (deleteRecords.some(r => r.id === airtableRecord.id)) {
+          console.log('[USING CONCURRENT RECORD]', 'Session:', session.id, '- our record was newer, skipping side effects');
+          return res.status(200).json({ received: true });
+        }
+      }
+    } catch (err) {
+      // On any create error, re-check if order was created by another concurrent webhook
+      try {
+        const existingOrder = await checkExistingOrder(airtableClient, session.id);
+        if (existingOrder) {
+          // Another webhook succeeded - treat this as success (idempotent)
+          console.log('[CONCURRENT CREATE DETECTED]', 'Session:', session.id,
+            '- create failed but order exists, treating as success');
+          return res.status(200).json({ received: true });
+        }
+      } catch (recheckErr) {
+        console.warn('[RECHECK FAILED]', 'Session:', session.id, 'Error:', recheckErr.message);
+      }
+
+      // Send error notification to shop owner (non-fatal - don't block the error response)
+      try {
+        const errorEmailData = generateShopOwnerErrorNotification({
+          sessionId: session.id,
+          errorType: 'ORDER CREATION FAILED',
+          errorMessage: err.message
+        });
+        await emailClient.sendShopOwnerNotification(
+          process.env.SHOP_OWNER_EMAIL,
+          errorEmailData.subject,
+          errorEmailData.html,
+          errorEmailData.text
+        );
+      } catch (emailErr) {
+        console.warn('[SHOP OWNER ERROR EMAIL FAILED]', 'Session:', session.id, 'Error:', emailErr.message);
+      }
+      return handleAirtableError(res, session.id, 'ORDER CREATION FAILED', err, 'Failed to create order');
+    }
+
+    // Send customer confirmation email (non-fatal)
+    await runNonFatalOperation(
+      () => sendCustomerEmail(orderData),
+      'CUSTOMER EMAIL FAILED',
+      orderId
+    );
+
+    // Send shop owner notification email (non-fatal)
+    await runNonFatalOperation(
+      () => sendShopOwnerEmail(orderData, airtableRecord.id),
+      'SHOP OWNER EMAIL FAILED',
+      orderId
+    );
+
+    // Update inventory for order items (non-fatal)
+    const inventoryLineItems = lineItems?.data?.map(item => ({
+      description: item.description,
+      quantity: item.quantity
+    })) || [];
+
+    await runNonFatalOperation(
+      () => airtableClient.updateInventoryForOrder(inventoryLineItems, orderId),
+      'INVENTORY UPDATE FAILED',
+      orderId
+    );
+  }
+
+  return res.status(200).json({ received: true });
+};
+
+// Disable Vercel's body parser to get raw body for signature verification
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+export default webhookHandler;
+export { transformSessionToOrder };
