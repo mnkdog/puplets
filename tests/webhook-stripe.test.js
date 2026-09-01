@@ -1209,6 +1209,15 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockListLineItems.mockResolvedValue({
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: { unit_amount: 1999 }
+          }
+        ]
+      });
       mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockResolvedValue({
         id: 'recABC123',
@@ -1298,6 +1307,15 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockListLineItems.mockResolvedValue({
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: { unit_amount: 1999 }
+          }
+        ]
+      });
       mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockResolvedValue({
         id: 'recABC123',
@@ -1359,6 +1377,15 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockListLineItems.mockResolvedValue({
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: { unit_amount: 1999 }
+          }
+        ]
+      });
       mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockResolvedValue({
         id: 'recSHOP123',
@@ -1452,6 +1479,20 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockListLineItems.mockResolvedValue({
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 2,
+            price: { unit_amount: 1999 }
+          },
+          {
+            description: 'Red Waterproof Collar - Small',
+            quantity: 1,
+            price: { unit_amount: 1499 }
+          }
+        ]
+      });
       mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockResolvedValue({
         id: 'recABC123',
@@ -1501,6 +1542,20 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockListLineItems.mockResolvedValue({
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: { unit_amount: 1999 }
+          },
+          {
+            description: 'Red Waterproof Collar - Small',
+            quantity: 2,
+            price: { unit_amount: 1499 }
+          }
+        ]
+      });
       mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockResolvedValue({
         id: 'recMULTI123',
@@ -1623,6 +1678,15 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockListLineItems.mockResolvedValue({
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: { unit_amount: 1999 }
+          }
+        ]
+      });
       mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockResolvedValue({
         id: 'recGREEN123',
