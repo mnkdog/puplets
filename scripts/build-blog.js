@@ -14,13 +14,30 @@ import createDOMPurify from 'dompurify';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const BLOG_DIR = path.join(__dirname, '../src/blog');
-const OUTPUT_DIR = path.join(__dirname, '../src/blog');
-const INDEX_FILE = path.join(__dirname, '../src/blog-index.json');
+// Allow environment variables to override paths for isolated testing
+const BLOG_DIR = process.env.BLOG_DIR || path.join(__dirname, '../src/blog');
+const OUTPUT_DIR = process.env.OUTPUT_DIR || path.join(__dirname, '../src/blog');
+const INDEX_FILE = process.env.INDEX_FILE || path.join(__dirname, '../src/blog-index.json');
 
 // Initialize DOMPurify with JSDOM window for Node.js environment
 const window = new JSDOM('').window;
 const DOMPurify = createDOMPurify(window);
+
+// Add hook to sanitize dangerous URL schemes in src/href attributes
+DOMPurify.addHook('afterSanitizeAttributes', function(node) {
+  if (node.hasAttribute('href')) {
+    const href = node.getAttribute('href');
+    if (href && !href.match(/^(https?|mailto|tel):/i)) {
+      node.removeAttribute('href');
+    }
+  }
+  if (node.hasAttribute('src')) {
+    const src = node.getAttribute('src');
+    if (src && !src.match(/^https?:/i)) {
+      node.removeAttribute('src');
+    }
+  }
+});
 
 // Sanitize HTML to prevent XSS attacks
 function escapeHtml(unsafe) {
@@ -138,7 +155,15 @@ async function buildBlog() {
 
 function generatePostHTML(frontmatter, body, slug) {
   const html = markdownToHTML(body);
-  const sanitizedHTML = DOMPurify.sanitize(html);
+  // Configure DOMPurify to only allow basic HTML needed for blog content
+  // Explicitly forbid SVG, MathML, forms, and dangerous elements/URL schemes
+  const sanitizedHTML = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'a', 'img', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title'],
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):)/i,
+    ALLOW_DATA_ATTR: false,
+    USE_PROFILES: { html: true }
+  });
 
   return `<!DOCTYPE html>
 <html lang="en">
