@@ -8,6 +8,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { JSDOM } from 'jsdom';
+import createDOMPurify from 'dompurify';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +17,10 @@ const __dirname = path.dirname(__filename);
 const BLOG_DIR = path.join(__dirname, '../src/blog');
 const OUTPUT_DIR = path.join(__dirname, '../src/blog');
 const INDEX_FILE = path.join(__dirname, '../src/blog-index.json');
+
+// Initialize DOMPurify with JSDOM window for Node.js environment
+const window = new JSDOM('').window;
+const DOMPurify = createDOMPurify(window);
 
 // Sanitize HTML to prevent XSS attacks
 function escapeHtml(unsafe) {
@@ -132,6 +138,7 @@ async function buildBlog() {
 
 function generatePostHTML(frontmatter, body, slug) {
   const html = markdownToHTML(body);
+  const sanitizedHTML = DOMPurify.sanitize(html);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -260,8 +267,7 @@ function generatePostHTML(frontmatter, body, slug) {
         </div>
 
         <div class="post-content">
-            <p>${html}</p>
-            <!-- TODO: Sanitize markdown HTML output with DOMPurify or sanitize-html library to prevent embedded script tags -->
+            <p>${sanitizedHTML}</p>
         </div>
     </article>
 </body>
