@@ -1173,7 +1173,9 @@ describe('generateShippingNotification', () => {
 
       const result = generateShippingNotification(orderData, trackingUrl);
 
-      expect(result.html).toContain('https://custom-carrier.com/track?id=ABC123XYZ&lang=en');
+      // HTML version escapes ampersands per HTML spec
+      expect(result.html).toContain('https://custom-carrier.com/track?id=ABC123XYZ&amp;lang=en');
+      // Plain text version keeps raw ampersand
       expect(result.text).toContain('https://custom-carrier.com/track?id=ABC123XYZ&lang=en');
     });
 

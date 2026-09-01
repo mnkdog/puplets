@@ -3,6 +3,25 @@
  */
 
 // ============================================================================
+// Security: HTML Escaping
+// ============================================================================
+
+/**
+ * Escape HTML to prevent injection attacks
+ * @param {*} unsafe - Value to escape
+ * @returns {string} HTML-escaped string
+ */
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== 'string') return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// ============================================================================
 // Formatting Helpers
 // ============================================================================
 
@@ -23,7 +42,7 @@ function getItemQuantity(item) {
 function formatItemsHtml(items) {
   return items.map(item => {
     const quantity = getItemQuantity(item);
-    return `<li>${item.description} (${quantity})</li>`;
+    return `<li>${escapeHtml(item.description)} (${quantity})</li>`;
   }).join('\n    ');
 }
 
@@ -123,23 +142,23 @@ export function generateCustomerConfirmation(orderData) {
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #00AD50; border-bottom: 2px solid #00AD50; padding-bottom: 10px;">Order Confirmation</h1>
 
-  <p>Hi ${greeting},</p>
+  <p>Hi ${escapeHtml(greeting)},</p>
 
   <p>Thank you for your order! We've received your purchase and will get it dispatched to you soon.</p>
 
   <h2 style="color: #333; margin-top: 30px;">Order Details</h2>
 
-  <p><strong>Order ID:</strong> ${orderId}</p>
+  <p><strong>Order ID:</strong> ${escapeHtml(orderId)}</p>
 
   <h3 style="color: #333;">Items Ordered:</h3>
   <ul style="list-style-type: none; padding-left: 0;">
     ${itemsHtml}
   </ul>
 
-  <p><strong>Total:</strong> ${formattedTotal}</p>
+  <p><strong>Total:</strong> ${escapeHtml(formattedTotal)}</p>
 
   <h3 style="color: #333; margin-top: 30px;">Shipping Address:</h3>
-  <p style="margin-left: 20px;">${address}</p>
+  <p style="margin-left: 20px;">${escapeHtml(address)}</p>
 
   <div style="background-color: #f5f5f5; border-left: 4px solid #00AD50; padding: 15px; margin: 30px 0;">
     <p style="margin: 0;"><strong>Free delivery in 3-7 business days</strong></p>
@@ -221,24 +240,24 @@ export function generateShopOwnerNotification(orderData, airtableLink) {
 
   <h2 style="color: #333; margin-top: 30px;">Order Details</h2>
 
-  <p><strong>Order ID:</strong> ${orderId}</p>
+  <p><strong>Order ID:</strong> ${escapeHtml(orderId)}</p>
 
   <h3 style="color: #333;">Customer Information:</h3>
-  <p><strong>Name:</strong> ${customerName}</p>
-  <p><strong>Email:</strong> ${customerEmail}</p>
+  <p><strong>Name:</strong> ${escapeHtml(customerName)}</p>
+  <p><strong>Email:</strong> ${escapeHtml(customerEmail)}</p>
 
   <h3 style="color: #333;">Items Ordered:</h3>
   <ul style="list-style-type: none; padding-left: 0;">
     ${itemsHtml}
   </ul>
 
-  <p><strong>Total:</strong> ${formattedTotal}</p>
+  <p><strong>Total:</strong> ${escapeHtml(formattedTotal)}</p>
 
   <h3 style="color: #333; margin-top: 30px;">Shipping Address:</h3>
-  <p style="margin-left: 20px;">${address}</p>
+  <p style="margin-left: 20px;">${escapeHtml(address)}</p>
 
   <div style="background-color: #f5f5f5; border-left: 4px solid #00AD50; padding: 15px; margin: 30px 0;">
-    <p style="margin: 0;"><strong>View in Airtable:</strong> <a href="${airtableLink}" style="color: #00AD50;">${airtableLink}</a></p>
+    <p style="margin: 0;"><strong>View in Airtable:</strong> <a href="${escapeHtml(airtableLink)}" style="color: #00AD50;">${escapeHtml(airtableLink)}</a></p>
   </div>
 
   <p style="margin-top: 40px; color: #777; font-size: 14px;">
@@ -307,7 +326,7 @@ export function generateShippingNotification(orderData, trackingUrl) {
   const trackingHtml = trackingUrl
     ? `
   <div style="background-color: #f5f5f5; border-left: 4px solid #00AD50; padding: 15px; margin: 30px 0;">
-    <p style="margin: 0;"><strong>Track your order:</strong> <a href="${trackingUrl}" style="color: #00AD50;">${trackingUrl}</a></p>
+    <p style="margin: 0;"><strong>Track your order:</strong> <a href="${escapeHtml(trackingUrl)}" style="color: #00AD50;">${escapeHtml(trackingUrl)}</a></p>
   </div>`
     : `
   <p>Your order has been dispatched and is on its way to you.</p>`;
@@ -332,9 +351,9 @@ Your order has been dispatched and is on its way to you.`;
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #00AD50; border-bottom: 2px solid #00AD50; padding-bottom: 10px;">Your Order Has Been Dispatched</h1>
 
-  <p>Hi ${greeting},</p>
+  <p>Hi ${escapeHtml(greeting)},</p>
 
-  <p>Good news! Your order <strong>${orderId}</strong> has been dispatched and is on its way to you.</p>
+  <p>Good news! Your order <strong>${escapeHtml(orderId)}</strong> has been dispatched and is on its way to you.</p>
 ${trackingHtml}
 
   <p style="margin-top: 30px;">If you have any questions about your order, please don't hesitate to get in touch.</p>
