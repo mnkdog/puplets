@@ -522,22 +522,23 @@ describe('Stripe Webhook Handler', () => {
             country: 'UK'
           }
         },
-        line_items: {
-          data: [
-            {
-              description: 'Blue Waterproof Collar - Medium',
-              quantity: 1,
-              price: {
-                unit_amount: 1999
-              }
-            }
-          ]
-        },
         amount_total: 1999
       };
 
+      const lineItems = {
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: {
+              unit_amount: 1999
+            }
+          }
+        ]
+      };
+
       const orderId = 'PUP-e5f6g7h8';
-      const result = transformSessionToOrder(stripeSession, orderId);
+      const result = transformSessionToOrder(stripeSession, orderId, lineItems);
 
       expect(result).toEqual({
         orderId: 'PUP-e5f6g7h8',
@@ -644,24 +645,25 @@ describe('Stripe Webhook Handler', () => {
         id: 'cs_test_123',
         payment_status: 'paid',
         amount_total: 3998,
-        customer_email: 'test@example.com',
-        line_items: {
-          data: [
-            {
-              description: 'Blue Waterproof Collar - Medium',
-              quantity: 1,
-              price: { unit_amount: 1999 }
-            },
-            {
-              description: 'Red Waterproof Collar - Small',
-              quantity: 2,
-              price: { unit_amount: 1899 }
-            }
-          ]
-        }
+        customer_email: 'test@example.com'
       };
 
-      const result = transformSessionToOrder(stripeSession, 'PUP-test123');
+      const lineItems = {
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: { unit_amount: 1999 }
+          },
+          {
+            description: 'Red Waterproof Collar - Small',
+            quantity: 2,
+            price: { unit_amount: 1899 }
+          }
+        ]
+      };
+
+      const result = transformSessionToOrder(stripeSession, 'PUP-test123', lineItems);
 
       expect(result.items).toEqual([
         { description: 'Blue Waterproof Collar - Medium', quantity: 1, price: 1999 },
@@ -983,6 +985,15 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockListLineItems.mockResolvedValue({
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: { unit_amount: 1999 }
+          }
+        ]
+      });
       mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockResolvedValue({
         id: 'recABC123',
@@ -1117,6 +1128,15 @@ describe('Stripe Webhook Handler', () => {
       };
 
       mockWebhooks.constructEvent.mockReturnValue(req.body);
+      mockListLineItems.mockResolvedValue({
+        data: [
+          {
+            description: 'Blue Waterproof Collar - Medium',
+            quantity: 1,
+            price: { unit_amount: 1999 }
+          }
+        ]
+      });
       mockFindOrderBySessionId.mockResolvedValue(null);
       mockCreateOrder.mockResolvedValue({
         id: 'recEMAIL123',
@@ -1681,9 +1701,9 @@ describe('Stripe Webhook Handler', () => {
       mockListLineItems.mockResolvedValue({
         data: [
           {
-            description: 'Blue Waterproof Collar - Medium',
+            description: 'Green Waterproof Collar - Large',
             quantity: 1,
-            price: { unit_amount: 1999 }
+            price: { unit_amount: 2499 }
           }
         ]
       });
