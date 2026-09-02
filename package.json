@@ -26,6 +26,7 @@
   "dependencies": {
     "airtable": "^0.12.2",
     "dompurify": "^3.4.13",
+    "jsdom": "^27.2.0",
     "marked": "^18.0.9",
     "resend": "^6.25.0",
     "stripe": "^17.5.0"
@@ -37,7 +38,6 @@
     "@vitest/coverage-v8": "^4.0.13",
     "chai": "^6.2.1",
     "http-server": "^14.1.1",
-    "jsdom": "^27.2.0",
     "oxlint": "^1.78.0",
     "vitest": "^4.0.13",
     "wait-on": "^9.0.3"
