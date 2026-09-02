@@ -307,4 +307,41 @@ published: true
     // Verify meta refresh tags are removed
     expect(lowerHTML).not.toContain('http-equiv');
   });
+
+  it('should preserve relative URLs and anchor links', () => {
+    const safeMarkdown = `---
+title: Relative URL Test
+date: 2024-01-01
+author: Content Creator
+description: Testing relative URL preservation
+published: true
+---
+
+[Internal page](/products.html)
+[Anchor link](#section)
+[Relative path](../about.html)
+![Local image](/images/photo.jpg)
+`;
+
+    fs.writeFileSync(TEST_XSS_FILE, safeMarkdown);
+
+    const tempBase = path.dirname(path.dirname(TEST_BLOG_DIR));
+    execSync(`node scripts/build-blog.js`, {
+      cwd: path.join(__dirname, '..'),
+      env: { ...process.env, BLOG_DIR: TEST_BLOG_DIR, OUTPUT_DIR: TEST_BLOG_DIR, INDEX_FILE: TEST_INDEX_FILE }
+    });
+
+    const generatedHTML = fs.readFileSync(TEST_XSS_HTML, 'utf-8');
+
+    // Extract post content section
+    const contentMatch = generatedHTML.match(/<div class="post-content">([\s\S]*?)<\/div>\s*<\/article>/);
+    expect(contentMatch).toBeTruthy();
+    const postContent = contentMatch[1];
+
+    // Verify relative URLs are preserved
+    expect(postContent).toContain('href="/products.html"');
+    expect(postContent).toContain('href="#section"');
+    expect(postContent).toContain('href="../about.html"');
+    expect(postContent).toContain('src="/images/photo.jpg"');
+  });
 });

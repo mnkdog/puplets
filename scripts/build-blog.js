@@ -27,14 +27,20 @@ const DOMPurify = createDOMPurify(window);
 DOMPurify.addHook('afterSanitizeAttributes', function(node) {
   if (node.hasAttribute('href')) {
     const href = node.getAttribute('href');
-    if (href && !href.match(/^(https?|mailto|tel):/i)) {
-      node.removeAttribute('href');
+    // Only check scheme if one exists; leave relative/anchor URLs untouched
+    if (href && /^[a-z][a-z0-9+.-]*:/i.test(href)) {
+      if (!href.match(/^(https?|mailto|tel):/i)) {
+        node.removeAttribute('href');
+      }
     }
   }
   if (node.hasAttribute('src')) {
     const src = node.getAttribute('src');
-    if (src && !src.match(/^https?:/i)) {
-      node.removeAttribute('src');
+    // Only check scheme if one exists; leave relative paths untouched
+    if (src && /^[a-z][a-z0-9+.-]*:/i.test(src)) {
+      if (!src.match(/^https?:/i)) {
+        node.removeAttribute('src');
+      }
     }
   }
 });
@@ -160,7 +166,6 @@ function generatePostHTML(frontmatter, body, slug) {
   const sanitizedHTML = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'a', 'img', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre'],
     ALLOWED_ATTR: ['href', 'src', 'alt', 'title'],
-    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):)/i,
     ALLOW_DATA_ATTR: false
   });
 
